@@ -1,0 +1,11 @@
+# Ignore node_modules directory
+node_modules
+
+# Ignore .git directory
+.git
+
+# Ignore .env file
+.env
+
+# Ignore any files with the .ts extension
+**/*.ts

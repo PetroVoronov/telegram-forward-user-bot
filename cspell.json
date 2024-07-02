@@ -1,0 +1,18 @@
+{
+    "version": "0.2",
+    "language": "en,uk,ru,de",
+    "ignorePaths": [],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [
+        "arrowParens",
+        "genversion",
+        "localstorage",
+        "MTProto",
+        "NOSONAR",
+        "sonarjs",
+        "Voronov"
+    ],
+    "ignoreWords": [],
+    "import": []
+}

@@ -1,0 +1,8 @@
+{
+    "eslint.lintTask.enable": true,
+    "eslint.ignoreUntitled": true,
+    "eslint.enable": true,
+    "eslint.format.enable": true,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnPaste": true
+}
