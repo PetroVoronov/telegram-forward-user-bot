@@ -996,9 +996,6 @@ async function refreshDialogs() {
               logWarning(`Topic with id ${rule[key].topicId} not found in ${item.title}!`);
               rule.enabled = false;
             }
-          } else {
-            logWarning(`${key} with id ${rule[key].id} not found!`);
-            rule.enabled = false;
           }
         }
         let maxCountOfMissed = options.processMissed || configuration.processMissedMaxCount;

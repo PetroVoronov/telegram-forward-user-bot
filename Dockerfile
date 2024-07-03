@@ -3,8 +3,7 @@ FROM node:18-alpine
 # Copy across the files from our `intermediate` container
 RUN mkdir app
 
-COPY ../index.js /app
-COPY ../lib /app/lib
+COPY ../src /app/src
 
 COPY ../package.json /app
 
@@ -14,4 +13,4 @@ RUN mkdir data
 
 RUN npm install
 
-CMD [ "node", "index.js"]
+CMD [ "node", "src/index.js"]
