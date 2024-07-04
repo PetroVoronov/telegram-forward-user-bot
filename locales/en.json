@@ -51,5 +51,9 @@
 	"Keyword to be included in the message, at least one is mandatory": "Keyword to be included in the message, at least one is mandatory",
 	"Exit": "Exit",
 	"Home": "Home",
-	"Back": "Back"
+	"Back": "Back",
+	"Keyword to exclude": "Keyword to exclude",
+	"Keyword to be not included in the message": "Keyword to be not included in the message",
+	"Refresh interval": "Refresh interval",
+	"Interval to refresh data from Telegram servers in seconds": "Interval to refresh data from Telegram servers in seconds"
 }

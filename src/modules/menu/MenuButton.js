@@ -28,7 +28,7 @@ class MenuButton extends MenuItem {
   }
 
   valueToText(value) {
-    return value;
+    return value !== null && value !== undefined ? `${value}` : '';
   }
 
   get label() {
@@ -111,10 +111,6 @@ class MenuButtonInputText extends MenuButton {
     if (template !== '') {
       this.template = template;
     }
-  }
-
-  valueToText(value) {
-    return value;
   }
 
   get text() {

@@ -15,99 +15,21 @@ const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQue
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 
-const options = yargs
-  .usage('Usage: $0 [options]')
-  .option('r', {
-    alias: 'refresh-interval',
-    describe: 'Refresh information from Telegram servers, in seconds',
-    type: 'number',
-    default: 300,
-    demandOption: false,
-  })
-  .option('m', {
-    alias: 'process-missed',
-    describe: 'Process missed messages, max count is 10 messages per channel/group',
-    type: 'number',
-    default: 0,
-    demandOption: false,
-  })
-  .option('b', {
-    alias: 'no-bot',
-    describe: 'Start without the bot instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('d', {
-    alias: 'debug',
-    describe: 'Debug level of logging',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('debug-client-user', {
-    describe: 'Debug level of logging for the client "user" instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('debug-client-bot', {
-    describe: 'Debug level of logging for the client "bot" instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('c', {
-    alias: 'command',
-    describe: 'Test menu command from the command line',
-    type: 'string',
-    demandOption: false,
-  })
-  .version(scriptVersion)
-  .help('h')
-  .alias('h', 'help')
-  .epilog(`${scriptName} v${scriptVersion}`).argv;
+const refreshIntervalDefault = 300;
+let refreshInterval = refreshIntervalDefault * 1000;
 
-setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
-
-logInfo(`${scriptName} v${scriptVersion} started!`);
-logInfo(`Refresh interval: ${options.refreshInterval} seconds!`);
-logInfo(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
-if (options.noBot === true) logInfo('Starting without bot instance!');
-if (options.debug === true) logInfo('Verbose logging is enabled!');
-if (options.command !== undefined) logInfo(`Command to test: ${options.command}`);
-
-const refreshInterval = options.refreshInterval * 1000,
-  timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
-  storage = new LocalStorage('data/storage'),
-  storeSession = new StoreSession('data/session'),
-  cache = new Cache({
-    getItem: (key) => storage.getItem(key),
-    setItem: (key, value) => storage.setItem(key, value),
-    removeItem: (key) => storage.removeItem(key),
-  }),
-  allowedUsers = cache.getItem('allowedUsers') || [],
-  lastProcessed = cache.getItem('lastProcessed') || {},
-  configurationId = 'configuration',
-  forwardRulesId = 'forwardRules';
-let apiId = cache.getItem('apiId', 'number'),
-  apiHash = cache.getItem('apiHash'),
-  botAuthToken = cache.getItem('botAuthToken'),
-  forwardRules = cache.getItem(forwardRulesId) || [],
-  configuration = cache.getItem(configurationId, 'object') || {},
-  meUser = null,
-  meBot = null,
-  meUserId = -1,
-  meBotId = -1,
-  fromIds = [],
-  clientAsUser = null,
-  clientAsBot = null,
-  clientDialogs = [],
-  refreshIntervalId = null,
-  eventHandlerForwards = null,
-  menuRoot = null;
 const getLanguages = () => {
     return new Map(i18n.getLocales().map((locale) => [locale, locale]));
   },
   onLanguageChange = (currentItem, key, data, path) => {
     i18n.setLocale(data.language);
     return true;
+  },
+  onRefreshIntervalChange = (currentItem, key, data, path) => {
+    if (refreshIntervalSetOnStart === false) {
+      refreshInterval = (data?.refreshInterval || 300) * 1000;
+      refreshDialogsStart();
+    }
   },
   onMenuColumnsMaxCountChange = (currentItem, key, data, path) => {
     if (menuRoot !== null && menuRoot !== undefined) {
@@ -154,20 +76,21 @@ const getLanguages = () => {
         label: 'Menu language',
         text: 'Language of the Menu',
       },
-      processMissedMaxCount: {
+      refreshInterval: {
         type: 'number',
         subType: 'integer',
         options: {
-          min: 0,
-          max: 100,
-          step: 1,
+          min: 30,
+          max: 900,
+          step: 10,
         },
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
-        default: 0,
-        label: 'Process missed messages',
-        text: 'Process missed messages, max count is 100 messages per channel/group',
+        onSetAfter: onRefreshIntervalChange,
+        default: refreshIntervalDefault,
+        label: 'Refresh interval',
+        text: 'Interval to refresh data from Telegram servers in seconds',
       },
       menuColumnsMaxCount: {
         type: 'number',
@@ -235,6 +158,104 @@ const getLanguages = () => {
       },
     },
   },
+  storage = new LocalStorage('data/storage'),
+  cache = new Cache({
+    getItem: (key) => storage.getItem(key),
+    setItem: (key, value) => storage.setItem(key, value),
+    removeItem: (key) => storage.removeItem(key),
+  }),
+  configurationId = 'configuration';
+let configuration = cache.getItem(configurationId, 'object') || {};
+
+if (Object.keys(configuration).length !== Object.keys(configurationStructure.itemContent).length) {
+  Object.keys(configurationStructure.itemContent).forEach((key) => {
+    if (configuration[key] === undefined) {
+      configuration[key] = configurationStructure.itemContent[key].default;
+    }
+  });
+  cache.setItem(configurationId, configuration);
+}
+
+const options = yargs
+  .usage('Usage: $0 [options]')
+  .option('r', {
+    alias: 'refresh-interval',
+    describe: 'Refresh information from Telegram servers, in seconds',
+    type: 'number',
+    default: refreshIntervalDefault,
+    demandOption: false,
+  })
+  .option('b', {
+    alias: 'no-bot',
+    describe: 'Start without the bot instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('d', {
+    alias: 'debug',
+    describe: 'Debug level of logging',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('debug-client-user', {
+    describe: 'Debug level of logging for the client "user" instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('debug-client-bot', {
+    describe: 'Debug level of logging for the client "bot" instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('c', {
+    alias: 'command',
+    describe: 'Test menu command from the command line',
+    type: 'string',
+    demandOption: false,
+  })
+  .version(scriptVersion)
+  .help('h')
+  .alias('h', 'help')
+  .epilog(`${scriptName} v${scriptVersion}`).argv;
+
+setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
+
+logInfo(`${scriptName} v${scriptVersion} started!`);
+logInfo(`Refresh interval: ${options.refreshInterval} seconds!`);
+logInfo(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
+if (options.noBot === true) logInfo('Starting without bot instance!');
+if (options.debug === true) logInfo('Verbose logging is enabled!');
+if (options.command !== undefined) logInfo(`Command to test: ${options.command}`);
+
+const refreshIntervalSetOnStart = Boolean(process.argv.indexOf('-r') > -1 || process.argv.indexOf('--refresh-interval') > -1);
+if (refreshIntervalSetOnStart === false) {
+  refreshInterval = configuration.refreshInterval * 1000;
+} else {
+  refreshInterval = options.refreshInterval * 1000;
+}
+
+const
+  timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
+  storeSession = new StoreSession('data/session'),
+  allowedUsers = cache.getItem('allowedUsers') || [],
+  lastProcessed = cache.getItem('lastProcessed') || {},
+  forwardRulesId = 'forwardRules';
+let apiId = cache.getItem('apiId', 'number'),
+  apiHash = cache.getItem('apiHash'),
+  botAuthToken = cache.getItem('botAuthToken'),
+  forwardRules = cache.getItem(forwardRulesId) || [],
+  meUser = null,
+  meBot = null,
+  meUserId = -1,
+  meBotId = -1,
+  fromIds = [],
+  clientAsUser = null,
+  clientAsBot = null,
+  clientDialogs = [],
+  refreshIntervalId = null,
+  eventHandlerForwards = null,
+  menuRoot = null;
+const
   getItemLabel = (data) => data.label,
   fromToTypes = new Map([
     ['channel', i18n.__('Channel')],
@@ -390,7 +411,7 @@ const getLanguages = () => {
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
-        default: configuration.processMissedMaxCount || 0,
+        default: 0,
         onSetReset: ['enabled'],
         label: 'Process missed messages',
         text: 'Process missed messages, max count is 100 messages per channel/group',
@@ -485,6 +506,7 @@ const getLanguages = () => {
             default: [],
             label: 'Keywords to include',
             text: 'Keywords to be included in the message, at least one is mandatory',
+            onSetReset: ['enabled'],
             structure: {
               primaryId: 'value',
               plain: true,
@@ -507,6 +529,7 @@ const getLanguages = () => {
             default: [],
             label: 'Keywords to exclude',
             text: 'Keywords to be not included in the message',
+            onSetReset: ['enabled'],
             structure: {
               primaryId: 'value',
               plain: true,
@@ -751,14 +774,7 @@ function startBotClient() {
 
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
-if (Object.keys(configuration).length !== Object.keys(configurationStructure.itemContent).length) {
-  Object.keys(configurationStructure.itemContent).forEach((key) => {
-    if (configuration[key] === undefined) {
-      configuration[key] = configurationStructure.itemContent[key].default;
-    }
-  });
-  cache.setItem(configurationId, configuration);
-}
+
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListener);
 initMenu().then((menu) => {
@@ -998,8 +1014,8 @@ async function refreshDialogs() {
             }
           }
         }
-        let maxCountOfMissed = options.processMissed || configuration.processMissedMaxCount;
-        if (rule.enabled && maxCountOfMissed > 0 && dialogFrom !== null && dialogFrom !== undefined) {
+        fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id));
+        if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
           const lastId = lastProcessed[rule.from.id],
             lastSourceId = dialogFrom.dialog?.topMessage;
           if (lastId !== undefined && lastSourceId !== undefined && lastId < lastSourceId) {
@@ -1007,9 +1023,9 @@ async function refreshDialogs() {
               `In "${dialogFrom.title}" the last processed message id: ${lastId}, ` + `last source message id: ${lastSourceId}`,
               false,
             );
-            const messageCount = lastSourceId - lastId > maxCountOfMissed ? maxCountOfMissed : lastSourceId - lastId,
+            const messageCount = lastSourceId - lastId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastId,
               messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
-              messages = await clientAsUser.getMessages(rule.from.entity, {
+              messages = await clientAsUser.getMessages(dialogFrom, {
                 ids: messageIds,
               });
             if (Array.isArray(messages) && messages.length > 0) {
@@ -1019,6 +1035,12 @@ async function refreshDialogs() {
               });
             }
           } else if (lastId === undefined && lastSourceId !== undefined) {
+            lastProcessed[rule.from.id] = lastSourceId;
+            cache.setItem('lastProcessed', lastProcessed);
+          }
+        } else if (rule.enabled && dialogFrom !== null && dialogFrom !== undefined) {
+          const lastSourceId = dialogFrom.dialog?.topMessage;
+          if (lastSourceId !== undefined) {
             lastProcessed[rule.from.id] = lastSourceId;
             cache.setItem('lastProcessed', lastProcessed);
           }

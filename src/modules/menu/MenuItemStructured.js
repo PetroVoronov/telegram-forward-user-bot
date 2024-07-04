@@ -443,9 +443,11 @@ class MenuItemStructured extends MenuItem {
    * @param {number=} index - The index of the item
    **/
   async appendNested(item, path = null, value = undefined, index = -1) {
-    let indexCurrent = index;
+    let indexCurrent = index,
+      itemToSkip = false;
     if (item === null && Array.isArray(path) && path.length > 0) {
       const structureItem = this.getItemFromStructure(path);
+      itemToSkip = this.getItemPresence(path, structureItem) !== 'mandatory' && value === undefined;
       logDebug(
         `MenuItemStructured.appendNested '${this.command}'| path: ${path.join('.')}, value: ${stringify(value)},` +
           ` item: ${stringify(structureItem)}`,
@@ -454,7 +456,7 @@ class MenuItemStructured extends MenuItem {
         structureItem !== undefined &&
         structureItem !== null &&
         structureItem.editable === true &&
-        (this.getItemPresence(path, structureItem) === 'mandatory' || value !== undefined)
+        itemToSkip === false
       ) {
         const command = [this.command, path.join('$')].join('?'),
           label = structureItem.label ? i18n.__(structureItem.label) : i18n.__(path.join('.')),
@@ -522,6 +524,15 @@ class MenuItemStructured extends MenuItem {
     }
     if (item !== null) {
       return (await super.appendNested(item, indexCurrent)) + 1;
+    } else if (itemToSkip === true && Array.isArray(path) && path.length > 0 && index >= 0){
+      const command = [this.command, path.join('$')].join('?');
+      indexCurrent = this.nested.findIndex((nestedItem) => nestedItem.command === command);
+      if (indexCurrent === index) {
+        this.nested.splice(indexCurrent, 1);
+      } else {
+        indexCurrent = index + 1;
+      }
+      return indexCurrent;
     } else {
       return indexCurrent + 1;
     }
@@ -589,10 +600,10 @@ class MenuItemStructured extends MenuItem {
           await this.appendNested(null, ['value'], dataItem, index);
         } else {
           for (const rowId of Object.keys(this.structure.itemContent)) {
-            const row = dataItem[rowId] || {};
             if (this.structure.itemContent[rowId].type !== 'object') {
-              index = await this.appendNested(null, [rowId], row[rowId], index);
+              index = await this.appendNested(null, [rowId], dataItem[rowId], index);
             } else {
+              const row = dataItem[rowId] || {};
               for (const itemId of Object.keys(this.structure.itemContent[rowId].itemContent)) {
                 index = await this.appendNested(null, [rowId, itemId], row[itemId], index);
               }
