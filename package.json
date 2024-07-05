@@ -35,6 +35,6 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^1.0.3",
     "genversion": "^3.2.0",
-    "globals": "^15.6.0"
+    "globals": "^15.8.0"
   }
 }
