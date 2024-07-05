@@ -5,6 +5,8 @@ RUN mkdir app
 
 COPY ../src /app/src
 
+COPY ../locales /app/locales
+
 COPY ../package.json /app
 
 WORKDIR /app
