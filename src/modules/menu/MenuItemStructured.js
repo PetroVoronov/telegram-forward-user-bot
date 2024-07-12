@@ -1,5 +1,5 @@
 const stringify = require('json-stringify-safe');
-const {logDebug, logInfo} = require('../logging/logging');
+const {logDebug, logInfo, logWarning, logError} = require('../logging/logging');
 const {MenuItem} = require('./MenuItem');
 const {
   MenuButton,

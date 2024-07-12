@@ -2,7 +2,7 @@
 
 const stringify = require('json-stringify-safe');
 const {Button} = require('telegram/tl/custom/button');
-const {logDebug, logInfo, logWarning} = require('../logging/logging');
+const {logDebug, logInfo, logWarning, logError} = require('../logging/logging');
 const emojiRegex = require('emoji-regex');
 const i18n = require('../i18n/i18n.config');
 
