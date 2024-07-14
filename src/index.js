@@ -626,7 +626,7 @@ function onMessageToForward(event) {
       });
       let toForward = true;
       if (typeof rule.message === 'object' && Array.isArray(rule.message.includes) && rule.message.includes.length > 0) {
-        toForward = rule.message.includes.find((item) => event.message.message.includes(item)) !== undefined;
+        toForward = rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
       }
       if (toForward) {
         const forwardMessageInput = {
