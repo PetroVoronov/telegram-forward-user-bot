@@ -588,17 +588,17 @@ async function initMenu() {
 }
 
 function updateForwardListener() {
-  if (clientAsUser !== null && clientAsUser.connected === true) {
-    if (eventHandlerForwards !== null) {
-      clientAsUser.removeEventHandler(onMessageToForward, eventHandlerForwards);
-    }
-    fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id));
-    eventHandlerForwards = new NewMessage({chats: fromIds});
-    logInfo(`Starting listen on events in : ${stringify(fromIds)}`, false);
-    clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
-  } else {
-    fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => rule.from.id);
-    logDebug(`Id's to listen : ${stringify(fromIds)}`, false);
+  const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id));
+  if (fromIds.length !== newFromIds.length || fromIds.some((id) => !newFromIds.includes(id))) {
+    fromIds = newFromIds;
+    if (clientAsUser !== null && clientAsUser.connected === true) {
+      if (eventHandlerForwards !== null) {
+        clientAsUser.removeEventHandler(onMessageToForward, eventHandlerForwards);
+      }
+      eventHandlerForwards = new NewMessage({chats: fromIds});
+      logInfo(`Starting listen on events in : ${stringify(fromIds)}`, false);
+      clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
+    } fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => rule.from.id);
   }
 }
 
