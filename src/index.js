@@ -598,7 +598,7 @@ function updateForwardListener() {
       eventHandlerForwards = new NewMessage({chats: fromIds});
       logInfo(`Starting listen on events in : ${stringify(fromIds)}`, false);
       clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
-    } fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => rule.from.id);
+    }
   }
 }
 
@@ -1014,7 +1014,6 @@ async function refreshDialogs() {
             }
           }
         }
-        fromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id));
         if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
           const lastId = lastProcessed[rule.from.id],
             lastSourceId = dialogFrom.dialog?.topMessage;
@@ -1048,7 +1047,9 @@ async function refreshDialogs() {
       }
       cache.setItem(forwardRulesId, forwardRules);
       logDebug(
-        `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, fromIds: ${stringify(fromIds)}`,
+        `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, IdsToMonitor: ${stringify(
+          forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
+        )}`,
         false,
       );
       result = true;
