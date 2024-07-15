@@ -55,5 +55,7 @@
 	"Keyword to exclude": "Keyword to exclude",
 	"Keyword to be not included in the message": "Keyword to be not included in the message",
 	"Refresh interval": "Refresh interval",
-	"Interval to refresh data from Telegram servers in seconds": "Interval to refresh data from Telegram servers in seconds"
+	"Interval to refresh data from Telegram servers in seconds": "Interval to refresh data from Telegram servers in seconds",
+	"Process replay on forwarded message": "Process replay on forwarded message",
+	"Process (i.e. forward) reply on last forwarded message": "Process (i.e. forward) reply on last forwarded message"
 }

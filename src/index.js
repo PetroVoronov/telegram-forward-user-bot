@@ -234,11 +234,11 @@ if (refreshIntervalSetOnStart === false) {
   refreshInterval = options.refreshInterval * 1000;
 }
 
-const
-  timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
+const timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
   storeSession = new StoreSession('data/session'),
   allowedUsers = cache.getItem('allowedUsers') || [],
   lastProcessed = cache.getItem('lastProcessed') || {},
+  lastForwarded = cache.getItem('lastForwarded') || {},
   forwardRulesId = 'forwardRules';
 let apiId = cache.getItem('apiId', 'number'),
   apiHash = cache.getItem('apiHash'),
@@ -255,8 +255,7 @@ let apiId = cache.getItem('apiId', 'number'),
   refreshIntervalId = null,
   eventHandlerForwards = null,
   menuRoot = null;
-const
-  getItemLabel = (data) => data.label,
+const getItemLabel = (data) => data.label,
   fromToTypes = new Map([
     ['channel', i18n.__('Channel')],
     ['group', i18n.__('Group')],
@@ -399,6 +398,15 @@ const
         onSetBefore: onEnabledChange,
         label: 'Enabled',
         text: 'Enable/disable rule',
+      },
+      processReplyOnForwarded: {
+        type: 'boolean',
+        presence: 'mandatory',
+        editable: true,
+        default: false,
+        onSetReset: ['enabled'],
+        label: 'Process replay on forwarded message',
+        text: 'Process (i.e. forward) reply on last forwarded message',
       },
       processMissedMaxCount: {
         type: 'number',
@@ -624,8 +632,10 @@ function onMessageToForward(event) {
       clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
         logWarning(`MarkAsRead error: ${stringify(err)}`, false);
       });
-      let toForward = true;
-      if (typeof rule.message === 'object' && Array.isArray(rule.message.includes) && rule.message.includes.length > 0) {
+      let toForward = false;
+      if (rule.processReplyOnForwarded === true && event.message?.replyTo?.replyToMsgId === lastForwarded[rule.from.id]) {
+        toForward = true;
+      } else if (typeof rule.message === 'object' && Array.isArray(rule.message.includes) && rule.message.includes.length > 0) {
         toForward = rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
       }
       if (toForward) {
@@ -651,6 +661,8 @@ function onMessageToForward(event) {
             logDebug(`Message is forwarded successfully!`, false);
             lastProcessed[rule.from.id] = event.message.id;
             cache.setItem('lastProcessed', lastProcessed);
+            lastForwarded[rule.from.id] = event.message.id;
+            cache.setItem('lastForwarded', lastForwarded);
           })
           .catch((err) => {
             logWarning(err, false);
@@ -685,12 +697,10 @@ function onCommand(event) {
     logDebug(`onCommand | peerId: ${stringify(peerId)}, messageId: ${messageId}, command: ${command}`, false);
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
       logDebug(`onCommand | peerId: ${stringify(peerId)}, messageId: ${messageId}, command: ${command}`, false);
-      if (`${event.chatId}` === `${meUserId}`) {
-        if (command.startsWith(MenuItem.CmdPrefix)) {
-          menuRoot.onCommand(clientAsUser, peerId, messageId, command, false, false);
-        }
-      } else {
+      if (event._client?._bot === true) {
         menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
+      } else if (command.startsWith(MenuItem.CmdPrefix)) {
+        menuRoot.onCommand(clientAsUser, peerId, messageId, command, false, false);
       }
     }
   } else {
