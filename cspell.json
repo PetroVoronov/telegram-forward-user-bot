@@ -12,6 +12,7 @@
         "MTProto",
         "NOSONAR",
         "sonarjs",
+        "strftime",
         "Voronov"
     ],
     "ignoreWords": [],

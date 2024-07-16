@@ -1,6 +1,6 @@
 {
   "name": "telegram-forward-user-bot",
-  "version": "1.0.68",
+  "version": "1.0.70",
   "description": "A Telegram \"bot\" working as user, using MTProto via [gramjs](https://github.com/gram-js/gramjs), to forward messages between chats/groups/channels. Configurable via Bot menu.",
   "main": "src/index.js",
   "keywords": [
@@ -17,6 +17,7 @@
     "i18n": "^0.15.1",
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
+    "strftime": "^0.10.3",
     "telegram": "^2.22.2",
     "yargs": "^17.7.2"
   },

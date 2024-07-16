@@ -1,4 +1,6 @@
 /** @module logging **/
+const strftime = require('strftime');
+
 
 const logLevelDebug = 0,
   logLevelInfo = 1,
@@ -15,8 +17,18 @@ function workAs(isBot) {
   if (isBot === undefined) {
     return '';
   } else {
-    return `${isBot ? 'Bot' : 'User'}| `;
+    return `${isBot ? 'Bot ' : 'User'}`;
   }
+}
+
+/**
+ * To show the prefix of the logs
+ * @param {boolean=} isBot - If the log is from the bot or not
+ * @param {string} level - The log level
+ * @returns {string} - The prefix of the log
+ **/
+function logPrefix(isBot, level) {
+  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] [${workAs(isBot)}] - `;
 }
 
 /**
@@ -34,7 +46,7 @@ function setLogLevel(level) {
  */
 function logDebug(message, isBot) {
   if (logLevel <= logLevelDebug) {
-    console.log(`${workAs(isBot)}${message}`);
+    console.log(`${logPrefix(isBot, 'DBG ')}${message}`);
   }
 }
 
@@ -45,7 +57,7 @@ function logDebug(message, isBot) {
  */
 function logInfo(message, isBot) {
   if (logLevel <= logLevelInfo) {
-    console.log(`${workAs(isBot)}${message}`);
+    console.log(`${logPrefix(isBot, 'INFO')}${message}`);
   }
 }
 
@@ -56,7 +68,7 @@ function logInfo(message, isBot) {
  */
 function logWarning(message, isBot) {
   if (logLevel <= logLevelWarning) {
-    console.warn(`${workAs(isBot)}${message}`);
+    console.warn(`${logPrefix(isBot, 'WARN')}${message}`);
   }
 }
 
@@ -67,7 +79,7 @@ function logWarning(message, isBot) {
  */
 function logError(message, isBot) {
   if (logLevel <= logLevelError) {
-    console.error(`${workAs(isBot)}${message}`);
+    console.error(`${logPrefix(isBot, 'ERR ')}${message}`);
   }
 }
 
