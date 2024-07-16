@@ -57,5 +57,15 @@
 	"Refresh interval": "Refresh interval",
 	"Interval to refresh data from Telegram servers in seconds": "Interval to refresh data from Telegram servers in seconds",
 	"Process replay on forwarded message": "Process replay on forwarded message",
-	"Process (i.e. forward) reply on last forwarded message": "Process (i.e. forward) reply on last forwarded message"
+	"Process (i.e. forward) reply on last forwarded message": "Process (i.e. forward) reply on last forwarded message",
+	"Universal keywords rules": "Universal keywords rules",
+	"Keywords to be included or excluded in the message by rules": "Keywords to be included or excluded in the message by rules",
+	"Keywords rules list": "Keywords rules list",
+	"Text item": "Text item",
+	"Include": "Include",
+	"Include or exclude the keyword": "Include or exclude the keyword",
+	"Keywords rule label": "Keywords rule label",
+	"Keywords rule identification label": "Keywords rule identification label",
+	"AND/OR": "AND/OR",
+	"AND/OR for the list items": "AND/OR for the list items"
 }
