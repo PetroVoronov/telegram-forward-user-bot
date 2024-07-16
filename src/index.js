@@ -558,7 +558,6 @@ const getItemLabel = (data) => data.label,
     },
   };
 
-
 async function initMenu() {
   const menuConfiguration = new MenuItemStructured(
       i18n.__('Configuration'),
@@ -632,14 +631,30 @@ function onMessageToForward(event) {
       clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
         logWarning(`MarkAsRead error: ${stringify(err)}`, false);
       });
-      let toForward = false;
+      let toForward = false,
+        replyOnForward = false;
       if (
         rule.processReplyOnForwarded === true &&
-        event.message?.replyTo?.replyToMsgId !== undefined && event.message.replyTo?.replyToMsgId === lastForwarded[rule.from.id]
+        event.message?.replyTo?.replyToMsgId !== undefined &&
+        event.message.replyTo?.replyToMsgId === lastForwarded[rule.from.id]
       ) {
         toForward = true;
-      } else if (typeof rule.message === 'object' && Array.isArray(rule.message.includes) && rule.message.includes.length > 0) {
-        toForward = rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
+        replyOnForward = true;
+        logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
+      } else if (typeof rule.message === 'object' && Array.isArray(rule.message.includes)) {
+        toForward =
+          rule.message.includes.length === 0 || rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
+        logInfo(`Message includes some of the keywords! Going to forward it.`, false);
+      }
+      if (
+        toForward === true &&
+        replyOnForward === false &&
+        typeof rule.message === 'object' &&
+        Array.isArray(rule.message.excludes) &&
+        rule.message.excludes.length > 0
+      ) {
+        toForward = rule.message.excludes.find((item) => event.message.message?.includes(item)) === undefined;
+        logInfo(`Message doesn't include any of the exclude keywords! Will not forward it.`, false);
       }
       if (toForward) {
         const forwardMessageInput = {
@@ -1092,6 +1107,3 @@ function refreshDialogsStart() {
   if (refreshIntervalId !== undefined && refreshIntervalId !== null) clearInterval(refreshIntervalId);
   refreshIntervalId = setInterval(refreshDialogsOnce, refreshInterval);
 }
-
-
-
