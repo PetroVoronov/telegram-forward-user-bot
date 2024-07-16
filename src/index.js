@@ -633,7 +633,10 @@ function onMessageToForward(event) {
         logWarning(`MarkAsRead error: ${stringify(err)}`, false);
       });
       let toForward = false;
-      if (rule.processReplyOnForwarded === true && event.message?.replyTo?.replyToMsgId === lastForwarded[rule.from.id]) {
+      if (
+        rule.processReplyOnForwarded === true &&
+        event.message?.replyTo?.replyToMsgId !== undefined && event.message.replyTo?.replyToMsgId === lastForwarded[rule.from.id]
+      ) {
         toForward = true;
       } else if (typeof rule.message === 'object' && Array.isArray(rule.message.includes) && rule.message.includes.length > 0) {
         toForward = rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
