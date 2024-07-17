@@ -1119,9 +1119,13 @@ async function refreshDialogs() {
                 ids: messageIds,
               });
             if (Array.isArray(messages) && messages.length > 0) {
-              messages.forEach((message) => {
-                logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
-                onMessageToForward({message});
+              messages.forEach((message, index) => {
+                if (message !== undefined) {
+                  logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
+                  onMessageToForward({message});
+                } else {
+                  logDebug(`Missed message [${index}] is undefined!`, false);
+                }
               });
             }
           } else if (lastId === undefined && lastSourceId !== undefined) {
