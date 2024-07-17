@@ -28,7 +28,7 @@ function workAs(isBot) {
  * @returns {string} - The prefix of the log
  **/
 function logPrefix(isBot, level) {
-  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] [${workAs(isBot)}] - `;
+  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] - [${workAs(isBot)}] : `;
 }
 
 /**

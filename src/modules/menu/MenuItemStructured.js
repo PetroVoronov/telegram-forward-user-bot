@@ -83,7 +83,7 @@ class MenuItemStructured extends MenuItem {
     let result = super.text;
     if (this.isArray === false || this.index >= 0) {
       let text = this.structure.text;
-      if ((text === null || text === undefined) && this.structure.primaryId !== undefined) {
+      if ((text === null || text === undefined) && typeof this.structure.primaryId === 'string') {
         text = this.getItemFromStructure(this.structure.primaryId.split('.'))?.text;
       }
       if (typeof text === 'function') {

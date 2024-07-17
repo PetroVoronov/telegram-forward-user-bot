@@ -562,7 +562,7 @@ const getItemLabel = (data) => data.label,
             text: 'Keywords to be included or excluded in the message by rules',
             onSetReset: ['enabled'],
             structure: {
-              primaryId: 'label',
+              primaryId: (data) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
               itemContent: {
                 label: {
                   type: 'string',
@@ -572,13 +572,13 @@ const getItemLabel = (data) => data.label,
                   label: 'Keywords rule label',
                   text: 'Keywords rule identification label',
                 },
-                andOr: {
+                includeAll: {
                   type: 'boolean',
                   presence: 'mandatory',
                   editable: true,
                   default: true,
-                  label: 'AND/OR',
-                  text: 'AND/OR for the list items',
+                  label: 'Include all',
+                  text: 'Include keywords must be present all',
                   onSetReset: ['enabled'],
                 },
                 list: {
@@ -590,7 +590,7 @@ const getItemLabel = (data) => data.label,
                   text: 'Keywords rules list',
                   onSetReset: ['enabled'],
                   structure: {
-                    primaryId: 'text',
+                    primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.text}`,
                     itemContent: {
                       text: {
                         type: 'string',
@@ -696,6 +696,8 @@ function onMessageToForward(event, onRefresh = false) {
       });
       let toForward = false,
         replyOnForward = false;
+      const message = event.message.message,
+        messageIsString = typeof message === 'string';
       if (
         rule.processReplyOnForwarded === true &&
         event.message?.replyTo?.replyToMsgId !== undefined &&
@@ -704,20 +706,43 @@ function onMessageToForward(event, onRefresh = false) {
         toForward = true;
         replyOnForward = true;
         logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
-      } else if (typeof rule.message === 'object' && Array.isArray(rule.message.includes)) {
+      } else if (messageIsString && typeof rule.message === 'object' && Array.isArray(rule.message.includes)) {
         toForward =
-          rule.message.includes.length === 0 || rule.message.includes.find((item) => event.message.message?.includes(item)) !== undefined;
+          rule.message.includes.length === 0 || rule.message.includes.find((item) => message.includes(item)) !== undefined;
         logInfo(`Message includes some of the keywords! Going to forward it.`, false);
       }
       if (
         toForward === true &&
         replyOnForward === false &&
+        messageIsString &&
         typeof rule.message === 'object' &&
         Array.isArray(rule.message.excludes) &&
         rule.message.excludes.length > 0
       ) {
-        toForward = rule.message.excludes.find((item) => event.message.message?.includes(item)) === undefined;
-        logInfo(`Message doesn't include any of the exclude keywords! Will not forward it.`, false);
+        toForward = rule.message.excludes.find((item) => message.includes(item)) === undefined;
+        logInfo(`Message include some of the exclude keywords! Will not forward it.`, false);
+      }
+      if (messageIsString && Array.isArray(rule.message.universal) && rule.message.universal.length > 0) {
+        toForward =
+          toForward ||
+          rule.message.universal.some((universal) => {
+            const includes = universal.list.filter((item) => item.include === true).map((item) => item.text),
+              excludes = universal.list.filter((item) => item.include === false).map((item) => item.text);
+            let includesFound = false;
+            if (includes.length === 0) {
+              if (universal.includeAll === true) {
+                includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
+                logDebug(`All includes: ${includesFound}`, false);
+              } else {
+                includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
+                logDebug(`Some includes: ${includesFound}`, false);
+              }
+            }
+            const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
+            logDebug(`All excludes: ${excludesNotFound}`, false);
+            return includesFound && excludesNotFound;
+          });
+        logInfo(`Result of universal rules: ${toForward}`, false);
       }
       if (toForward) {
         const forwardMessageInput = {
@@ -749,7 +774,7 @@ function onMessageToForward(event, onRefresh = false) {
             logWarning(err, false);
           });
       } else {
-        logDebug(`Message is not forwarded! Message doesn't include any of the keywords!`, false);
+        logDebug(`Message is not forwarded! See reasons above.`, false);
         lastProcessed[rule.from.id] = event.message.id;
         cache.setItem('lastProcessed', lastProcessed);
       }
