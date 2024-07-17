@@ -672,9 +672,9 @@ function updateForwardListener() {
   }
 }
 
-function onMessageToForward(event) {
+function onMessageToForward(event, onRefresh = false) {
   const peerId = event.message?.peerId;
-  logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)}`, false);
+  logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)} via ${onRefresh ? 'refresh' : 'event'}.`, false);
   logDebug(`type of peerId === 'object': ${typeof peerId === 'object'}`, false);
   logDebug(`Number(peerId.channelId): ${Number(peerId.channelId)}`, false);
   logDebug(`fromIds.includes(Number(peerId.channelId)): ${fromIds.includes(Number(peerId.channelId))}`, false);
@@ -1122,7 +1122,7 @@ async function refreshDialogs() {
               messages.forEach((message, index) => {
                 if (message !== undefined) {
                   logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
-                  onMessageToForward({message});
+                  onMessageToForward({message}, true);
                 } else {
                   logDebug(`Missed message [${index}] is undefined!`, false);
                 }
