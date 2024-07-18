@@ -502,115 +502,62 @@ const getItemLabel = (data) => data.label,
           },
         },
       },
-      message: {
-        type: 'object',
+      keywordsGroups: {
+        type: 'array',
         presence: 'mandatory',
         editable: true,
-        itemContent: {
-          includes: {
-            type: 'array',
-            presence: 'mandatory',
-            editable: true,
-            default: [],
-            label: 'Keywords to include',
-            text: 'Keywords to be included in the message, at least one is mandatory',
-            onSetReset: ['enabled'],
-            structure: {
-              primaryId: 'value',
-              plain: true,
-              itemContent: {
-                value: {
-                  type: 'string',
-                  presence: 'mandatory',
-                  editable: true,
-                  sourceType: 'input',
-                  label: 'Keyword to include',
-                  text: 'Keyword to be included in the message, at least one is mandatory',
-                },
-              },
+        default: [],
+        label: 'Keywords groups',
+        text: 'Keywords to be included or excluded in the message by groups',
+        onSetReset: ['enabled'],
+        structure: {
+          primaryId: (data) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
+          itemContent: {
+            label: {
+              type: 'string',
+              presence: 'mandatory',
+              editable: true,
+              sourceType: 'input',
+              label: 'Keywords group label',
+              text: 'Keywords group identification label',
             },
-          },
-          excludes: {
-            type: 'array',
-            presence: 'mandatory',
-            editable: true,
-            default: [],
-            label: 'Keywords to exclude',
-            text: 'Keywords to be not included in the message',
-            onSetReset: ['enabled'],
-            structure: {
-              primaryId: 'value',
-              plain: true,
-              itemContent: {
-                value: {
-                  type: 'string',
-                  presence: 'mandatory',
-                  editable: true,
-                  sourceType: 'input',
-                  label: 'Keyword to exclude',
-                  text: 'Keyword to be not included in the message',
-                },
-              },
+            includeAll: {
+              type: 'boolean',
+              presence: 'mandatory',
+              editable: true,
+              default: true,
+              label: 'Included all',
+              text: 'Included keywords must be present all or some',
+              onSetReset: ['enabled'],
             },
-          },
-          universal: {
-            type: 'array',
-            presence: 'mandatory',
-            editable: true,
-            default: [],
-            label: 'Universal keywords rules',
-            text: 'Keywords to be included or excluded in the message by rules',
-            onSetReset: ['enabled'],
-            structure: {
-              primaryId: (data) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
-              itemContent: {
-                label: {
-                  type: 'string',
-                  presence: 'mandatory',
-                  editable: true,
-                  sourceType: 'input',
-                  label: 'Keywords rule label',
-                  text: 'Keywords rule identification label',
-                },
-                includeAll: {
-                  type: 'boolean',
-                  presence: 'mandatory',
-                  editable: true,
-                  default: true,
-                  label: 'Include all',
-                  text: 'Include keywords must be present all',
-                  onSetReset: ['enabled'],
-                },
-                list: {
-                  type: 'array',
-                  presence: 'mandatory',
-                  editable: true,
-                  default: [],
-                  label: 'Keywords rules list',
-                  text: 'Keywords rules list',
-                  onSetReset: ['enabled'],
-                  structure: {
-                    primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.text}`,
-                    itemContent: {
-                      text: {
-                        type: 'string',
-                        presence: 'mandatory',
-                        editable: true,
-                        sourceType: 'input',
-                        label: 'Text item',
-                        text: 'Text item',
-                        onSetReset: ['enabled'],
-                      },
-                      include: {
-                        type: 'boolean',
-                        presence: 'mandatory',
-                        editable: true,
-                        default: true,
-                        label: 'Include',
-                        text: 'Include or exclude the keyword',
-                        onSetReset: ['enabled'],
-                      },
-                    },
+            keywords: {
+              type: 'array',
+              presence: 'mandatory',
+              editable: true,
+              default: [],
+              label: 'Keywords groups',
+              text: 'Keywords groups array',
+              onSetReset: ['enabled'],
+              structure: {
+                primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.text}`,
+                itemContent: {
+                  keyword: {
+                    type: 'string',
+                    presence: 'mandatory',
+                    editable: true,
+                    sourceType: 'input',
+                    label: 'Keyword item',
+                    text: 'Keyword item, i.e. text string to be included or excluded',
+                    onSetReset: ['enabled'],
+                  },
+                  include: {
+                    type: 'boolean',
+                    presence: 'mandatory',
+                    editable: true,
+                    default: true,
+                    label: 'Included',
+                    text: 'Is keyword has to be included or excluded in the message',
+                    onSetReset: ['enabled'],
                   },
                 },
               },
@@ -694,8 +641,7 @@ function onMessageToForward(event, onRefresh = false) {
       clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
         logWarning(`MarkAsRead error: ${stringify(err)}`, false);
       });
-      let toForward = false,
-        replyOnForward = false;
+      let toForward = false;
       const message = event.message.message,
         messageIsString = typeof message === 'string';
       if (
@@ -704,42 +650,23 @@ function onMessageToForward(event, onRefresh = false) {
         event.message.replyTo?.replyToMsgId === lastForwarded[rule.from.id]
       ) {
         toForward = true;
-        replyOnForward = true;
         logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
-      } else if (messageIsString && typeof rule.message === 'object' && Array.isArray(rule.message.includes)) {
-        toForward =
-          rule.message.includes.length === 0 || rule.message.includes.find((item) => message.includes(item)) !== undefined;
-        logInfo(`Message includes some of the keywords! Going to forward it.`, false);
-      }
-      if (
-        toForward === true &&
-        replyOnForward === false &&
-        messageIsString &&
-        typeof rule.message === 'object' &&
-        Array.isArray(rule.message.excludes) &&
-        rule.message.excludes.length > 0
-      ) {
-        toForward = rule.message.excludes.find((item) => message.includes(item)) === undefined;
-        logInfo(`Message include some of the exclude keywords! Will not forward it.`, false);
-      }
-      if (messageIsString && Array.isArray(rule.message.universal) && rule.message.universal.length > 0) {
+      } else if (messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
         toForward =
           toForward ||
-          rule.message.universal.some((universal) => {
-            const includes = universal.list.filter((item) => item.include === true).map((item) => item.text),
-              excludes = universal.list.filter((item) => item.include === false).map((item) => item.text);
+          rule.keywordsGroups.some((keywordsGroup) => {
+            const includes = keywordsGroup.keywords.filter((item) => item.include === true).map((item) => item.keyword),
+              excludes = keywordsGroup.keywords.filter((item) => item.include === false).map((item) => item.keyword);
             let includesFound = false;
-            if (includes.length === 0) {
-              if (universal.includeAll === true) {
-                includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
-                logDebug(`All includes: ${includesFound}`, false);
-              } else {
-                includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
-                logDebug(`Some includes: ${includesFound}`, false);
-              }
+            if (keywordsGroup.includeAll === true) {
+              includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
+              logDebug(`All includes are found: ${includesFound}`, false);
+            } else {
+              includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
+              logDebug(`Some includes are found: ${includesFound}`, false);
             }
             const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
-            logDebug(`All excludes: ${excludesNotFound}`, false);
+            logDebug(`No any exclude is found: ${excludesNotFound}`, false);
             return includesFound && excludesNotFound;
           });
         logInfo(`Result of universal rules: ${toForward}`, false);
