@@ -68,5 +68,18 @@
 	"Keywords rule identification label": "Keywords rule identification label",
 	"All": "All",
 	"Include all": "Include all",
-	"Include keywords must be present all": "Include keywords must be present all"
+	"Include keywords must be present all": "Include keywords must be present all",
+	"Process edits of forwarded message": "Process edits of forwarded message",
+	"Process (i.e. forward) edits of last forwarded message": "Process (i.e. forward) edits of last forwarded message",
+	"Keywords groups": "Keywords groups",
+	"Keywords to be included or excluded in the message by groups": "Keywords to be included or excluded in the message by groups",
+	"Keywords group label": "Keywords group label",
+	"Keywords group identification label": "Keywords group identification label",
+	"Included all": "Included all",
+	"Included keywords must be present all or some": "Included keywords must be present all or some",
+	"Keywords groups array": "Keywords groups array",
+	"Keyword item": "Keyword item",
+	"Keyword item, i.e. text string to be included or excluded": "Keyword item, i.e. text string to be included or excluded",
+	"Included": "Included",
+	"Is keyword has to be included or excluded in the message": "Is keyword has to be included or excluded in the message"
 }

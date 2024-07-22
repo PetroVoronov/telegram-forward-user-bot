@@ -10,11 +10,13 @@ const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
 const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
-const {NewMessage, NewMessageEvent, EditMessage} = require('telegram/events');
+const {NewMessage, NewMessageEvent} = require('telegram/events');
+const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const { type } = require('node:os');
+const { on } = require('node:events');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -278,15 +280,15 @@ const getItemLabel = (data) => data.label,
         let dialogs = [];
         switch (type) {
           case 'channel': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isChannel && !dialog.isGroup);
+            dialogs = clientDialogs.filter((dialog) => dialog.isGroup !== true && dialog.isChannel === true  );
             break;
           }
           case 'group': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isGroup && !dialog.isChannel);
+            dialogs = clientDialogs.filter((dialog) => dialog.isGroup === true && dialog.isChannel !== true);
             break;
           }
           case 'chat': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isUser);
+            dialogs = clientDialogs.filter((dialog) => dialog.isGroup !== true && dialog.isChannel !== true);
             break;
           }
           case 'topic': {
@@ -551,7 +553,7 @@ const getItemLabel = (data) => data.label,
               text: 'Keywords groups array',
               onSetReset: ['enabled'],
               structure: {
-                primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.text}`,
+                primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.keyword}`,
                 itemContent: {
                   keyword: {
                     type: 'string',
@@ -617,40 +619,47 @@ async function initMenu() {
 }
 
 function updateForwardListener() {
-  const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id));
-  if (fromIds.length !== newFromIds.length || fromIds.some((id) => !newFromIds.includes(id))) {
-    fromIds = newFromIds;
-    if (clientAsUser !== null && clientAsUser.connected === true) {
-      if (eventHandlerForwards !== null) {
-        clientAsUser.removeEventHandler(onMessageToForward, eventHandlerForwards);
+  if (clientAsUser !== null && clientAsUser.connected === true) {
+    const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
+      newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
+    if (
+      fromIds.length !== newFromIds.length ||
+      fromIds.some((id) => !newFromIds.includes(id)) ||
+      fromIdsWithEdit.length !== newFromIdsWithEdit.length ||
+      fromIdsWithEdit.some((id) => !newFromIdsWithEdit.includes(id))
+    ) {
+      //!  Fix for handlers cleanup
+      const eventHandlers = clientAsUser.listEventHandlers();
+      if (Array.isArray(eventHandlers) && eventHandlers.length > 0) {
+        eventHandlers.forEach((item) => {
+          clientAsUser.removeEventHandler(item[1], item[0]);
+        });
       }
-      eventHandlerForwards = new NewMessage({chats: fromIds});
-      logInfo(`Starting listen on events in : ${stringify(fromIds)}`, false);
-      clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
-    }
-  }
-  const newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
-  if (fromIdsWithEdit.length !== newFromIdsWithEdit.length || fromIdsWithEdit.some((id) => !newFromIdsWithEdit.includes(id))) {
-    fromIdsWithEdit = newFromIdsWithEdit;
-    if (clientAsUser !== null && clientAsUser.connected === true) {
-      if (eventHandlerForwardsOnEdit !== null) {
-        clientAsUser.removeEventHandler(onMessageToForward, eventHandlerForwardsOnEdit);
+      fromIds = newFromIds;
+      if (fromIds.length > 0) {
+        eventHandlerForwards = new NewMessage({chats: fromIds});
+        logInfo(`Starting listen on New Messages in : ${stringify(fromIds)}`, false);
+        clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
       }
-      eventHandlerForwardsOnEdit = new EditMessage({chats: fromIdsWithEdit});
-      logInfo(`Starting listen on events in : ${stringify(fromIdsWithEdit)}`, false);
-      clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), eventHandlerForwardsOnEdit);
+      fromIdsWithEdit = newFromIdsWithEdit;
+      if (fromIdsWithEdit.length > 0) {
+        eventHandlerForwardsOnEdit = new EditedMessage({chats: fromIdsWithEdit});
+        logInfo(`Starting listen on Edited Messages in : ${stringify(fromIdsWithEdit)}`, false);
+        clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), eventHandlerForwardsOnEdit);
+      }
     }
   }
 }
 
 function onMessageToForward(event, onRefresh = false, onEdit = false) {
-  const peerId = event.message?.peerId;
-  logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)} via ${onRefresh ? 'refresh' : 'event'}.`, false);
+  const peerId = event.message?.peerId,
+    sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0);
+  logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)} via ${onRefresh ? 'refresh' : 'event'}${onEdit ? ' onEdit': ''}.`, false);
   logDebug(`type of peerId === 'object': ${typeof peerId === 'object'}`, false);
-  logDebug(`Number(peerId.channelId): ${Number(peerId.channelId)}`, false);
-  logDebug(`fromIds.includes(Number(peerId.channelId)): ${fromIds.includes(Number(peerId.channelId))}`, false);
-  if (typeof peerId === 'object' && fromIds.includes(Number(peerId.channelId))) {
-    const rule = forwardRules.find((rule) => rule.from.id === `${peerId.channelId}`),
+  logDebug(`sourceId: ${sourceId}`, false);
+  logDebug(`fromIds.includes(sourceId): ${fromIds.includes(sourceId)}`, false);
+  if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
+    const rule = forwardRules.find((rule) => rule.from.id === `${sourceId}`),
       entityFrom = rule ? getEntityById(rule.from.id) : null,
       entityTo = rule ? getEntityById(rule.to.id) : null;
     if (
@@ -669,18 +678,28 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       }
       const message = event.message.message,
         messageIsString = typeof message === 'string',
-        lastForwardedId = (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-        lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0;
-      let toForward = onEdit && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
+        lastForwardedId =
+          (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
+          lastProcessedId = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : 0,
+        lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
+        skipProcessing = onEdit === true && lastProcessedId !== event.message.id && lastForwardedId !== event.message.id;
+      let toForward = onEdit === true && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
       if (
         toForward === false &&
+        skipProcessing === false &&
         rule.processReplyOnForwarded === true &&
         event.message?.replyTo?.replyToMsgId !== undefined &&
         event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
         logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
-      } else if (toForward === false && messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
+      } else if (
+        toForward === false &&
+        skipProcessing === false &&
+        messageIsString &&
+        Array.isArray(rule.keywordsGroups) &&
+        rule.keywordsGroups.length > 0
+      ) {
         toForward =
           toForward ||
           rule.keywordsGroups.some((keywordsGroup) => {
@@ -721,9 +740,9 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
           .then((res) => {
             logDebug(`Message is forwarded successfully!`, false);
-            lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
+            lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
             cache.setItem('lastProcessed', lastProcessed);
-            lastForwarded[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
+            lastForwarded[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
             cache.setItem('lastForwarded', lastForwarded);
           })
           .catch((err) => {
@@ -731,7 +750,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           });
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
-        lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
+        lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
         cache.setItem('lastProcessed', lastProcessed);
       }
     }
@@ -937,7 +956,7 @@ initMenu().then((menu) => {
                       });
                     }
                     logInfo(`Starting listen on commands from : ${stringify([meUserId])}`, false);
-                    clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
+                    // clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
                     refreshDialogsStart();
                     const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
                     let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
@@ -1088,23 +1107,29 @@ async function refreshDialogs() {
         }
         if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
           const lastProcessedId = (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
-            lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0;
+            lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
             lastSourceId = dialogFrom.dialog?.topMessage;
           if (rule.processEditsOnForwarded === true) {
             const lastForwardedId = (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-              lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0;
+              lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
             if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
-              const message = await clientAsUser.getMessage(dialogFrom, lastForwardedId);
-              if (message !== undefined && message.editDate > lastForwardedEditDate) {
-                logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
-                onMessageToForward({message}, true, true);
+              const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
+              if  (Array.isArray(messages) && messages.length > 0) {
+                  const message = messages[0];
+                if (message !== undefined && message.editDate > lastForwardedEditDate) {
+                  logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                  onMessageToForward({message}, true, true);
+                }
               }
             }
             if (lastProcessedId !== 0  && lastProcessedId !== lastForwardedId && lastProcessedEditDate !== 0) {
-              const message = await clientAsUser.getMessage(dialogFrom, lastProcessedId);
-              if (message !== undefined && message.editDate > lastProcessedEditDate) {
-                logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
-                onMessageToForward({message}, true, true);
+              const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
+              if (Array.isArray(messages) && messages.length > 0) {
+                const message = messages[0];
+                if (message !== undefined && message.editDate > lastProcessedEditDate) {
+                  logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                  onMessageToForward({message}, true, true);
+                }
               }
             }
           }
