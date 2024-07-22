@@ -10,10 +10,11 @@ const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
 const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
-const {NewMessage, NewMessageEvent} = require('telegram/events');
+const {NewMessage, NewMessageEvent, EditMessage} = require('telegram/events');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
+const { type } = require('node:os');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -249,11 +250,13 @@ let apiId = cache.getItem('apiId', 'number'),
   meUserId = -1,
   meBotId = -1,
   fromIds = [],
+  fromIdsWithEdit = [],
   clientAsUser = null,
   clientAsBot = null,
   clientDialogs = [],
   refreshIntervalId = null,
   eventHandlerForwards = null,
+  eventHandlerForwardsOnEdit = null,
   menuRoot = null;
 const getItemLabel = (data) => data.label,
   fromToTypes = new Map([
@@ -407,6 +410,15 @@ const getItemLabel = (data) => data.label,
         onSetReset: ['enabled'],
         label: 'Process replay on forwarded message',
         text: 'Process (i.e. forward) reply on last forwarded message',
+      },
+      processEditsOnForwarded: {
+        type: 'boolean',
+        presence: 'mandatory',
+        editable: true,
+        default: false,
+        onSetReset: ['enabled'],
+        label: 'Process edits of forwarded message',
+        text: 'Process (i.e. forward) edits of last forwarded message',
       },
       processMissedMaxCount: {
         type: 'number',
@@ -617,9 +629,21 @@ function updateForwardListener() {
       clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
     }
   }
+  const newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
+  if (fromIdsWithEdit.length !== newFromIdsWithEdit.length || fromIdsWithEdit.some((id) => !newFromIdsWithEdit.includes(id))) {
+    fromIdsWithEdit = newFromIdsWithEdit;
+    if (clientAsUser !== null && clientAsUser.connected === true) {
+      if (eventHandlerForwardsOnEdit !== null) {
+        clientAsUser.removeEventHandler(onMessageToForward, eventHandlerForwardsOnEdit);
+      }
+      eventHandlerForwardsOnEdit = new EditMessage({chats: fromIdsWithEdit});
+      logInfo(`Starting listen on events in : ${stringify(fromIdsWithEdit)}`, false);
+      clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), eventHandlerForwardsOnEdit);
+    }
+  }
 }
 
-function onMessageToForward(event, onRefresh = false) {
+function onMessageToForward(event, onRefresh = false, onEdit = false) {
   const peerId = event.message?.peerId;
   logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)} via ${onRefresh ? 'refresh' : 'event'}.`, false);
   logDebug(`type of peerId === 'object': ${typeof peerId === 'object'}`, false);
@@ -638,20 +662,25 @@ function onMessageToForward(event, onRefresh = false) {
       entityTo !== null &&
       entityTo !== undefined
     ) {
-      clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
-        logWarning(`MarkAsRead error: ${stringify(err)}`, false);
-      });
-      let toForward = false;
+      if (onEdit === false) {
+        clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
+          logWarning(`MarkAsRead error: ${stringify(err)}`, false);
+        });
+      }
       const message = event.message.message,
-        messageIsString = typeof message === 'string';
+        messageIsString = typeof message === 'string',
+        lastForwardedId = (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
+        lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0;
+      let toForward = onEdit && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
       if (
+        toForward === false &&
         rule.processReplyOnForwarded === true &&
         event.message?.replyTo?.replyToMsgId !== undefined &&
-        event.message.replyTo?.replyToMsgId === lastForwarded[rule.from.id]
+        event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
         logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
-      } else if (messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
+      } else if (toForward === false && messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
         toForward =
           toForward ||
           rule.keywordsGroups.some((keywordsGroup) => {
@@ -692,9 +721,9 @@ function onMessageToForward(event, onRefresh = false) {
           .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
           .then((res) => {
             logDebug(`Message is forwarded successfully!`, false);
-            lastProcessed[rule.from.id] = event.message.id;
+            lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
             cache.setItem('lastProcessed', lastProcessed);
-            lastForwarded[rule.from.id] = event.message.id;
+            lastForwarded[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
             cache.setItem('lastForwarded', lastForwarded);
           })
           .catch((err) => {
@@ -702,7 +731,7 @@ function onMessageToForward(event, onRefresh = false) {
           });
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
-        lastProcessed[rule.from.id] = event.message.id;
+        lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate};
         cache.setItem('lastProcessed', lastProcessed);
       }
     }
@@ -1058,14 +1087,33 @@ async function refreshDialogs() {
           }
         }
         if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
-          const lastId = lastProcessed[rule.from.id],
+          const lastProcessedId = (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
+            lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0;
             lastSourceId = dialogFrom.dialog?.topMessage;
-          if (lastId !== undefined && lastSourceId !== undefined && lastId < lastSourceId) {
+          if (rule.processEditsOnForwarded === true) {
+            const lastForwardedId = (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
+              lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0;
+            if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
+              const message = await clientAsUser.getMessage(dialogFrom, lastForwardedId);
+              if (message !== undefined && message.editDate > lastForwardedEditDate) {
+                logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                onMessageToForward({message}, true, true);
+              }
+            }
+            if (lastProcessedId !== 0  && lastProcessedId !== lastForwardedId && lastProcessedEditDate !== 0) {
+              const message = await clientAsUser.getMessage(dialogFrom, lastProcessedId);
+              if (message !== undefined && message.editDate > lastProcessedEditDate) {
+                logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                onMessageToForward({message}, true, true);
+              }
+            }
+          }
+          if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
             logDebug(
-              `In "${dialogFrom.title}" the last processed message id: ${lastId}, ` + `last source message id: ${lastSourceId}`,
+              `In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` + `last source message id: ${lastSourceId}`,
               false,
             );
-            const messageCount = lastSourceId - lastId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastId,
+            const messageCount = lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
               messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
               messages = await clientAsUser.getMessages(dialogFrom, {
                 ids: messageIds,
@@ -1080,7 +1128,7 @@ async function refreshDialogs() {
                 }
               });
             }
-          } else if (lastId === undefined && lastSourceId !== undefined) {
+          } else if (lastProcessedId === undefined && lastSourceId !== undefined) {
             lastProcessed[rule.from.id] = lastSourceId;
             cache.setItem('lastProcessed', lastProcessed);
           }
