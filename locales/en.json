@@ -81,5 +81,7 @@
 	"Keyword item": "Keyword item",
 	"Keyword item, i.e. text string to be included or excluded": "Keyword item, i.e. text string to be included or excluded",
 	"Included": "Included",
-	"Is keyword has to be included or excluded in the message": "Is keyword has to be included or excluded in the message"
+	"Is keyword has to be included or excluded in the message": "Is keyword has to be included or excluded in the message",
+	"User": "User",
+	"Bot": "Bot"
 }

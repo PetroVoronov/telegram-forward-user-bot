@@ -262,9 +262,10 @@ let apiId = cache.getItem('apiId', 'number'),
   menuRoot = null;
 const getItemLabel = (data) => data.label,
   fromToTypes = new Map([
-    ['channel', i18n.__('Channel')],
+    ['user', i18n.__('User')],
+    ['bot', i18n.__('Bot')],
     ['group', i18n.__('Group')],
-    ['chat', i18n.__('Chat')],
+    ['channel', i18n.__('Channel')],
     ['topic', i18n.__('Topic')],
   ]),
   topicIdPresence = (item, path) => {
@@ -279,16 +280,24 @@ const getItemLabel = (data) => data.label,
       if (fromToTypes.has(type)) {
         let dialogs = [];
         switch (type) {
-          case 'channel': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isGroup !== true && dialog.isChannel === true  );
+          case 'user': {
+            dialogs = clientDialogs.filter(
+              (dialog) => dialog.isGroup !== true && dialog.isChannel !== true && dialog.isUser === true && dialog.entity?.bot === false,
+            );
+            break;
+          }
+          case 'bot': {
+            dialogs = clientDialogs.filter(
+              (dialog) => dialog.isGroup !== true && dialog.isChannel !== true && dialog.isUser === true && dialog.entity?.bot === true,
+            );
             break;
           }
           case 'group': {
             dialogs = clientDialogs.filter((dialog) => dialog.isGroup === true && dialog.isChannel !== true);
             break;
           }
-          case 'chat': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isGroup !== true && dialog.isChannel !== true);
+          case 'channel': {
+            dialogs = clientDialogs.filter((dialog) => dialog.isGroup !== true && dialog.isChannel === true);
             break;
           }
           case 'topic': {
@@ -352,23 +361,39 @@ const getItemLabel = (data) => data.label,
       result = data.processMissedMaxCount !== undefined && data.processMissedMaxCount !== null;
       if (result === true) {
         for (const key of ['from', 'to']) {
-          const entity = getEntityById(data[key].id);
-          if (entity !== null && entity !== undefined) {
+          const dialog = getDialogById(data[key].id);
+          if (dialog !== null && dialog !== undefined) {
             switch (data[key].type) {
-              case 'channel': {
-                result = entity.isChannel && !entity.isGroup && typeof data[key].topicId !== 'number';
+              case 'user': {
+                result =
+                  dialog.isGroup !== true &&
+                  dialog.isChannel !== true &&
+                  dialog.isUser === true &&
+                  typeof data[key].topicId !== 'number' &&
+                  dialog.entity?.bot === false;
+                break;
+              }
+              case 'bot': {
+                result =
+                  dialog.isGroup !== true &&
+                  dialog.isChannel !== true &&
+                  dialog.isUser === true &&
+                  typeof data[key].topicId !== 'number' &&
+                  dialog.entity?.bot === true;
                 break;
               }
               case 'group': {
-                result = entity.isGroup && !entity.isChannel && typeof data[key].topicId !== 'number';
+                result =
+                  dialog.isGroup === true && dialog.isChannel !== true && dialog.isUser !== true && typeof data[key].topicId !== 'number';
                 break;
               }
-              case 'chat': {
-                result = entity.isUser && typeof data[key].topicId !== 'number';
+              case 'channel': {
+                result =
+                  dialog.isGroup !== true && dialog.isChannel === true && dialog.isUser !== true && typeof data[key].topicId !== 'number';
                 break;
               }
               case 'topic': {
-                result = entity.forum === true && typeof data[key].topicId === 'number';
+                result = dialog.entity.forum === true && typeof data[key].topicId === 'number';
                 break;
               }
             }
@@ -635,16 +660,15 @@ function updateForwardListener() {
           clientAsUser.removeEventHandler(item[1], item[0]);
         });
       }
+      clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
       fromIds = newFromIds;
       if (fromIds.length > 0) {
-        eventHandlerForwards = new NewMessage({chats: fromIds});
         logInfo(`Starting listen on New Messages in : ${stringify(fromIds)}`, false);
-        clientAsUser.addEventHandler(onMessageToForward, eventHandlerForwards);
+        clientAsUser.addEventHandler(onMessageToForward, new NewMessage({chats: fromIds}));
       }
       fromIdsWithEdit = newFromIdsWithEdit;
       if (fromIdsWithEdit.length > 0) {
-        eventHandlerForwardsOnEdit = new EditedMessage({chats: fromIdsWithEdit});
-        logInfo(`Starting listen on Edited Messages in : ${stringify(fromIdsWithEdit)}`, false);
+        logInfo(`Starting listen on Edited Messages in : ${stringify(new EditedMessage({chats: fromIdsWithEdit}))}`, false);
         clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), eventHandlerForwardsOnEdit);
       }
     }
@@ -956,7 +980,6 @@ initMenu().then((menu) => {
                       });
                     }
                     logInfo(`Starting listen on commands from : ${stringify([meUserId])}`, false);
-                    // clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
                     refreshDialogsStart();
                     const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
                     let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
@@ -998,15 +1021,17 @@ function getRandomId() {
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
 
-function getEntityById(id) {
+function getDialogById(id) {
   let result = null;
   if (typeof id === 'string' && Array.isArray(clientDialogs) && clientDialogs.length > 0) {
-    const dialog = clientDialogs.find((dialog) => id === `${dialog.entity.id}`);
-    if (dialog !== undefined) {
-      result = dialog.entity;
-    }
+    result = clientDialogs.find((dialog) => id === `${dialog.entity.id}`);
   }
   return result;
+}
+
+function getEntityById(id) {
+  const dialog = getDialogById(id);
+  return dialog !== undefined ? dialog.entity : null;
 }
 
 async function getAPIAttributes() {
@@ -1115,7 +1140,7 @@ async function refreshDialogs() {
             if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
               const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
               if  (Array.isArray(messages) && messages.length > 0) {
-                  const message = messages[0];
+                const message = messages[0];
                 if (message !== undefined && message.editDate > lastForwardedEditDate) {
                   logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
                   onMessageToForward({message}, true, true);
