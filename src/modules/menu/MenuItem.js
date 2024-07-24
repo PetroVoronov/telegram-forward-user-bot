@@ -442,7 +442,6 @@ class MenuItem {
       row.unshift(MenuItem.createButton(i18n.__('Back'), this.holder.command));
     }
     buttons.push(row);
-    logDebug(`MenuItem.getButtons '${this.command}'| Buttons: ${stringify(buttons)}`);
     return buttons;
   }
 
@@ -467,24 +466,16 @@ class MenuItem {
     if (refreshed === true) {
       const menuMessageId = this.getMessageId(peerId?.userId),
         buttons = this.getButtons(peerId?.userId);
-      logDebug(`MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringify(buttons)}`);
-      if (client === null && peerId === null) {
-        logDebug(`MenuItem.draw '${this.command}'| Command debug mode is On!`, true);
-        logDebug(
-          `MenuItem.draw '${this.command}'| label: ${this.label}, text: ${this.text}, buttons: ${stringify(
-            buttons,
-            (_key, value) => {
-              if (value?.type === 'Buffer') {
-                return Buffer.from(value.data).toString('utf8');
-              } else {
-                return value;
-              }
-            },
-            1,
-          )}`,
-          true,
-        );
-      } else {
+      logDebug(
+        `MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringify(buttons, (_key, value) => {
+          if (value?.type === 'Buffer') {
+            return Buffer.from(value.data).toString('utf8');
+          } else {
+            return value;
+          }
+        })}`,
+      );
+      if (client !== null && peerId !== null) {
         client.isBot().then((isBot) => {
           const messageParams = {};
           if (Array.isArray(buttons) && buttons.length > 0) {
@@ -514,9 +505,9 @@ class MenuItem {
                   this.draw(client, peerId);
                 } else {
                   logWarning(
-                    `MenuItem.draw '${this.command}'| Message edit error: ${stringify(err)}, text: ${this.text}, buttons: ${stringify(
-                      buttons,
-                    )}`,
+                    `MenuItem.draw '${this.command}'| Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${
+                      this.text
+                    }`,
                     true,
                   );
                 }
@@ -530,10 +521,7 @@ class MenuItem {
             client
               .sendMessage(peerId, messageParams)
               .then((res) => {
-                logDebug(`Message sent successfully!`, true);
-                Object.keys(res).forEach((key) => {
-                  logDebug(`  ${key}: ${stringify(res[key])}`);
-                });
+                logDebug(`MenuItem.draw '${this.command}'| Message sent successfully!`, true);
                 client.isBot().then((isBot) => {
                   if (isBot) {
                     this.setMessageId(peerId?.userId, res.id);
@@ -542,9 +530,9 @@ class MenuItem {
               })
               .catch((err) => {
                 logWarning(
-                  `MenuItem.draw '${this.command}'| Message send error: ${stringify(err)}, text: ${this.text}, buttons: ${stringify(
-                    buttons,
-                  )}`,
+                  `MenuItem.draw '${this.command}'| Message send error: ${stringify(err)}, text: ${
+                    this.text
+                  },  menuMessageId: ${menuMessageId}`,
                   true,
                 );
               });
@@ -622,7 +610,7 @@ class MenuItem {
         isBot,
       );
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
-      logDebug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target)}`, isBot);
+      logDebug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target.command)}`, isBot);
       if (target !== null) {
         await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
       } else {
@@ -761,7 +749,7 @@ class MenuItemRoot extends MenuItem {
       commandToCheck = command.replace(`$bo=${buttonsOffset}`, '');
     let result = null;
     this.setValue('buttonsOffset', buttonsOffset, chatId);
-    if (this.command === commandToCheck  || commandToCheck === MenuItem.CmdExit) {
+    if (this.command === commandToCheck || commandToCheck === MenuItem.CmdExit) {
       if (commandToCheck === MenuItem.CmdExit) {
         this.removeValue('lastCommand', chatId);
       }

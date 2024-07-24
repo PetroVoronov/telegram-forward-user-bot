@@ -15,8 +15,8 @@ const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
-const { type } = require('node:os');
-const { on } = require('node:events');
+const {type} = require('node:os');
+const {on} = require('node:events');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -678,10 +678,12 @@ function updateForwardListener() {
 function onMessageToForward(event, onRefresh = false, onEdit = false) {
   const peerId = event.message?.peerId,
     sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0);
-  logDebug(`Message in monitored channel/group - peerId: ${stringify(peerId)} via ${onRefresh ? 'refresh' : 'event'}${onEdit ? ' onEdit': ''}.`, false);
-  logDebug(`type of peerId === 'object': ${typeof peerId === 'object'}`, false);
-  logDebug(`sourceId: ${sourceId}`, false);
-  logDebug(`fromIds.includes(sourceId): ${fromIds.includes(sourceId)}`, false);
+  logDebug(
+    `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'}${
+      onEdit ? ' onEdit' : ''
+    }.`,
+    false,
+  );
   if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
     const rule = forwardRules.find((rule) => rule.from.id === `${sourceId}`),
       entityFrom = rule ? getEntityById(rule.from.id) : null,
@@ -704,7 +706,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         messageIsString = typeof message === 'string',
         lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-          lastProcessedId = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : 0,
+        lastProcessedId = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : 0,
         lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
         skipProcessing = onEdit === true && lastProcessedId !== event.message.id && lastForwardedId !== event.message.id;
       let toForward = onEdit === true && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
@@ -783,25 +785,23 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
 
 function onCommand(event) {
   if (event instanceof CallbackQueryEvent) {
-    const {userId, peer: peerId, msgId: messageId, data} = event.query;
-    logDebug(`onCommand | userId: ${userId}, peerId: ${stringify(peerId)}, messageId: ${messageId}, data: ${data}`, true);
+    const {userId, peer, msgId: messageId, data} = event.query;
+    logDebug(`onCommand | CallBack | userId: ${userId}, messageId: ${messageId}, data: ${data}`, true);
     if (
       data !== undefined &&
       ((userId !== undefined && allowedUsers.includes(Number(userId))) ||
-        (peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))))
+        (peer.userId !== undefined && allowedUsers.includes(Number(peer.userId))))
     ) {
       const command = data.toString();
       logDebug(`onCommand | command: ${command}`, true);
       if (command.startsWith(MenuItem.CmdPrefix)) {
-        logDebug(`onCommand | userId: ${userId}, peerId: ${peerId}, messageId: ${messageId},` + ` command: ${command}`, true);
-        menuRoot.onCommand(clientAsBot, peerId, messageId, command, true, true);
+        menuRoot.onCommand(clientAsBot, peer, messageId, command, true, true);
       }
     }
   } else if (event instanceof NewMessageEvent) {
     const {peerId, id: messageId, message: command} = event.message;
-    logDebug(`onCommand | peerId: ${stringify(peerId)}, messageId: ${messageId}, command: ${command}`, false);
+    logDebug(`onCommand | userId: ${peerId.userId}, isBot: ${event._client?._bot}, messageId: ${messageId}, command: ${command}`, false);
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
-      logDebug(`onCommand | peerId: ${stringify(peerId)}, messageId: ${messageId}, command: ${command}`, false);
       if (event._client?._bot === true) {
         menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
       } else if (command.startsWith(MenuItem.CmdPrefix)) {
@@ -809,10 +809,7 @@ function onCommand(event) {
       }
     }
   } else {
-    logWarning(`onCommand | Unknown event!`, false);
-    Object.keys(event).forEach((key) => {
-      logDebug(`Key: ${key}, value: ${stringify(event[key])}`, false);
-    });
+    logWarning(`onCommand | Unknown event: ${event.constructor.name}!`, false);
   }
 }
 
@@ -839,14 +836,6 @@ function startBotClient() {
               clientAsBot.addEventHandler(onCommand, new NewMessage({chats: allowedUsers}));
               if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
                 const items = clientDialogs.filter((dialog) => dialog.isUser && `${dialog.id}` === `${meBot.id}`);
-                items.forEach((item) => {
-                  logDebug(`Dialog: ${item.title}, id: ${item.id}`, true);
-                  Object.keys(item)
-                    .filter((key) => key.startsWith('is'))
-                    .forEach((key) => {
-                      logDebug(`  ${key}: ${item[key]}`, true);
-                    });
-                });
                 if (items.length === 0 && meUser !== null) {
                   logInfo(`Chat with bot is not open!`, true);
                   clientAsUser
@@ -856,10 +845,10 @@ function startBotClient() {
                       clientAsUser
                         .sendMessage(botId, {message: '/start'})
                         .then((msg) => {
-                          logDebug(`Message to chat with bot sent successfully!`, false);
+                          logDebug(`Message to the chat with bot sent successfully!`, false);
                         })
                         .catch((err) => {
-                          logWarning(`Can't send message to bot! Error is ${stringify(err)}`, false);
+                          logWarning(`Can't send message to the bot! Error is ${stringify(err)}`, false);
                         });
                     })
                     .catch((err) => {
@@ -944,64 +933,26 @@ initMenu().then((menu) => {
                     }
                   }
                   logDebug(`Allowed users: ${stringify(allowedUsers)}`, true);
-                  refreshDialogs().then(() => {
-                    if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
-                      const items = clientDialogs.filter(
-                        (dialog) =>
-                          (dialog.isChannel || dialog.isGroup) &&
-                          (dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null),
-                      );
-                      items.forEach((item) => {
-                        if (item.entity?.forum === true) {
-                          clientAsUser
-                            .invoke(
-                              new Api.channels.GetForumTopics({
-                                channel: item.entity,
-                                limit: 100,
-                                offsetId: 0,
-                                offsetDate: 0,
-                                addOffset: 0,
-                              }),
-                            )
-                            .then((res) => {
-                              logDebug(`${item.isChannel ? 'Channel' : 'Group'}: ${item.title}, id: ${item.entity.id}`, false);
-                              if (Array.isArray(res.topics) && res.topics.length > 0) {
-                                res.topics.forEach((topic) => {
-                                  logDebug(`  Topic: title: ${topic.title}, id: ${topic.id}`, false);
-                                });
-                              }
-                            })
-                            .catch((err) => {
-                              logWarning(err, false);
-                            });
-                        } else {
-                          logDebug(`${item.isChannel ? 'Channel' : 'Group'}: ${item.title}, id: ${item.entity.id}`, false);
-                        }
-                      });
-                    }
-                    logInfo(`Starting listen on commands from : ${stringify([meUserId])}`, false);
-                    refreshDialogsStart();
-                    const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
-                    let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
-                    logDebug(
-                      `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` +
-                        ` now: ${Date.now()}`,
-                      false,
-                    );
-                    if (timeOut >= timeOutToPreventBotFlood) {
-                      timeOut = 0;
-                    } else if (timeOut > 0) {
-                      timeOut = timeOutToPreventBotFlood - timeOut;
-                    }
-                    if (timeOut > 0) {
-                      logDebug(`Bot flood prevention timeout: ${timeOut} ms`);
-                      setTimeout(() => {
-                        startBotClient();
-                      }, timeOut);
-                    } else {
+                  refreshDialogsStart(true);
+                  const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
+                  let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
+                  logDebug(
+                    `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`,
+                    false,
+                  );
+                  if (timeOut >= timeOutToPreventBotFlood) {
+                    timeOut = 0;
+                  } else if (timeOut > 0) {
+                    timeOut = timeOutToPreventBotFlood - timeOut;
+                  }
+                  if (timeOut > 0) {
+                    logDebug(`Bot flood prevention timeout: ${timeOut} ms`);
+                    setTimeout(() => {
                       startBotClient();
-                    }
-                  });
+                    }, timeOut);
+                  } else {
+                    startBotClient();
+                  }
                 });
               })
               .catch((err) => {
@@ -1031,7 +982,7 @@ function getDialogById(id) {
 
 function getEntityById(id) {
   const dialog = getDialogById(id);
-  return dialog !== undefined ? dialog.entity : null;
+  return dialog !== undefined && dialog !== null ? dialog.entity : null;
 }
 
 async function getAPIAttributes() {
@@ -1131,28 +1082,30 @@ async function refreshDialogs() {
           }
         }
         if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
-          const lastProcessedId = (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
+          const lastProcessedId =
+              (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
             lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
-            lastSourceId = dialogFrom.dialog?.topMessage;
+          lastSourceId = dialogFrom.dialog?.topMessage;
           if (rule.processEditsOnForwarded === true) {
-            const lastForwardedId = (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
+            const lastForwardedId =
+                (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
               lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
             if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
               const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
-              if  (Array.isArray(messages) && messages.length > 0) {
+              if (Array.isArray(messages) && messages.length > 0) {
                 const message = messages[0];
                 if (message !== undefined && message.editDate > lastForwardedEditDate) {
-                  logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                  logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
                   onMessageToForward({message}, true, true);
                 }
               }
             }
-            if (lastProcessedId !== 0  && lastProcessedId !== lastForwardedId && lastProcessedEditDate !== 0) {
+            if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate !== 0) {
               const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
               if (Array.isArray(messages) && messages.length > 0) {
                 const message = messages[0];
                 if (message !== undefined && message.editDate > lastProcessedEditDate) {
-                  logDebug(`Edit message - id: ${message.id}, message: ${message.message}`, false);
+                  logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
                   onMessageToForward({message}, true, true);
                 }
               }
@@ -1163,7 +1116,8 @@ async function refreshDialogs() {
               `In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` + `last source message id: ${lastSourceId}`,
               false,
             );
-            const messageCount = lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
+            const messageCount =
+                lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
               messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
               messages = await clientAsUser.getMessages(dialogFrom, {
                 ids: messageIds,
@@ -1220,7 +1174,8 @@ function refreshDialogsOnce() {
   });
 }
 
-function refreshDialogsStart() {
+function refreshDialogsStart(isInitial = false) {
+  if (isInitial) refreshDialogsOnce();
   if (refreshIntervalId !== undefined && refreshIntervalId !== null) clearInterval(refreshIntervalId);
   refreshIntervalId = setInterval(refreshDialogsOnce, refreshInterval);
 }

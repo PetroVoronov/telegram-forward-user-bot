@@ -94,7 +94,7 @@ class MenuItemStructured extends MenuItem {
       if (text === null || text === undefined) {
         result = this.label;
       } else {
-        if (this.isArray === true && this.index >= 0 || this.isArray === false) {
+        if ((this.isArray === true && this.index >= 0) || this.isArray === false) {
           let value = '?';
           if (this.data !== null && this.data !== undefined) {
             value = this.structure.primaryId ? this.getItemFromStructure(this.structure.primaryId.split('.'), this.data) : this.data;
@@ -108,9 +108,7 @@ class MenuItemStructured extends MenuItem {
 
   get command() {
     let result = super.command;
-    logDebug(
-      `MenuItemStructured.command| index: ${this.index}, data: ${stringify(this.holder?.data)},` + ` length: ${this.holder?.data?.length}`,
-    );
+    logDebug(`MenuItemStructured.command| index: ${this.index},  holder.data.length: ${this.holder?.data?.length}`);
     if (this.isDataHolder === false && this.holder?.isArray === true) {
       if (this.index >= 0 && this.index < this.holder.data.length) {
         result = [result, this.index].join('#');
@@ -260,7 +258,7 @@ class MenuItemStructured extends MenuItem {
             break;
           }
         }
-      } else if (typeof a === 'object'  && a !== null) {
+      } else if (typeof a === 'object' && a !== null) {
         result = -1;
       } else if (typeof b === 'object' && b !== null) {
         result = 1;
@@ -452,12 +450,7 @@ class MenuItemStructured extends MenuItem {
         `MenuItemStructured.appendNested '${this.command}'| path: ${path.join('.')}, value: ${stringify(value)},` +
           ` item: ${stringify(structureItem)}`,
       );
-      if (
-        structureItem !== undefined &&
-        structureItem !== null &&
-        structureItem.editable === true &&
-        itemToSkip === false
-      ) {
+      if (structureItem !== undefined && structureItem !== null && structureItem.editable === true && itemToSkip === false) {
         const command = [this.command, path.join('$')].join('?'),
           label = structureItem.label ? i18n.__(structureItem.label) : i18n.__(path.join('.')),
           text = structureItem.text ? i18n.__(structureItem.text) : i18n.__(path.slice(-1).pop()),
@@ -524,7 +517,7 @@ class MenuItemStructured extends MenuItem {
     }
     if (item !== null) {
       return (await super.appendNested(item, indexCurrent)) + 1;
-    } else if (itemToSkip === true && Array.isArray(path) && path.length > 0 && index >= 0){
+    } else if (itemToSkip === true && Array.isArray(path) && path.length > 0 && index >= 0) {
       const command = [this.command, path.join('$')].join('?');
       indexCurrent = this.nested.findIndex((nestedItem) => nestedItem.command === command);
       if (indexCurrent === index) {
@@ -566,9 +559,9 @@ class MenuItemStructured extends MenuItem {
               );
             }
           }
-          for (let index = this.data.length; index < this.nested.length; index++) {
-            this.nested.pop();
-          }
+        }
+        for (let index = this.data?.length || 0; index < this.nested.length; index++) {
+          this.nested.pop();
         }
         if (buttonAdd instanceof MenuButtonNewItem) {
           root.updateCommands();
@@ -584,7 +577,7 @@ class MenuItemStructured extends MenuItem {
       (this.isDataHolder === true && this.isArray === false) ||
       (this.holder !== null && this.holder.isDataHolder === true && this.holder.isArray === true)
     ) {
-      logDebug(`MenuItemStructured.refresh '${this.command}'| index: ${this.index}, holder?.data: ${stringify(this.holder?.data)}`);
+      logDebug(`MenuItemStructured.refresh '${this.command}'| index: ${this.index}, holder.data.length: ${this.holder?.data?.length}`);
       if (this.isArray === false || (this.index >= 0 && this.index < this.holder?.data?.length)) {
         let dataItem = this.isDataHolder === true ? this.data : this.holder.data[this.index];
         if (dataItem === null || dataItem === undefined) {
