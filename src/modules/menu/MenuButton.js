@@ -334,7 +334,7 @@ class MenuButtonListTyped extends MenuButton {
     this.updateList();
     for (const [key, value] of this.list) {
       logDebug(`MenuButtonListTyped.refresh| this.label: ${this.label}, key: ${key}, value: ${value}`);
-      const command = key.startsWith(MenuItem.CmdPrefix) ? key : `${this.command}$v=${key}`;
+      const command = typeof key === 'string' && key.startsWith(MenuItem.CmdPrefix) ? key : `${this.command}$v=${key}`;
       await this.appendNested(new MenuButtonListItem(value, command, value, key === currentValue, this.group));
     }
     return true;

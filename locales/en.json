@@ -83,5 +83,10 @@
 	"Included": "Included",
 	"Is keyword has to be included or excluded in the message": "Is keyword has to be included or excluded in the message",
 	"User": "User",
-	"Bot": "Bot"
+	"Bot": "Bot",
+	"Additional users": "Additional users",
+	"Additional users to be allowed to use the bot": "Additional users to be allowed to use the bot",
+	"User Name": "User Name",
+	"User Name to be allowed to use the bot": "User Name to be allowed to use the bot",
+	"Some": "Some"
 }

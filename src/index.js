@@ -159,6 +159,46 @@ const getLanguages = () => {
         label: 'Max buttons on "page"',
         text: 'Max count of buttons on the one "page" of the menu',
       },
+      users: {
+        type: 'array',
+        presence: 'mandatory',
+        editable: true,
+        default: [],
+        label: 'Additional users',
+        text: 'Additional users to be allowed to use the bot',
+        structure: {
+          primaryId: (data, isShort = false) => {
+            let result = ` [${data}]`;
+            const user = clientDialogs.find((dialog) => dialog.isUser && `${dialog.id}` === `${data}`);
+            if (typeof user === 'object' && typeof user.title === 'string') {
+              result = `${user.title}${isShort ? '' : result}`;
+            }
+            return result;
+          },
+          plain: true,
+          itemContent: {
+            value: {
+              type: 'number',
+              presence: 'mandatory',
+              editable: true,
+              sourceType: 'list',
+              source: () => {
+                const result = new Map(),
+                  users = clientDialogs.filter(
+                    (dialog) =>
+                      dialog.isGroup !== true && dialog.isChannel !== true && dialog.isUser === true && dialog.entity?.bot === false,
+                  );
+                users.forEach((dialog) => {
+                  result.set(Number(dialog.entity.id), dialog.title);
+                });
+                return result;
+              },
+              label: 'User Name',
+              text: 'User Name to be allowed to use the bot',
+            },
+          },
+        },
+      },
     },
   },
   storage = new LocalStorage('data/storage'),
@@ -257,8 +297,6 @@ let apiId = cache.getItem('apiId', 'number'),
   clientAsBot = null,
   clientDialogs = [],
   refreshIntervalId = null,
-  eventHandlerForwards = null,
-  eventHandlerForwardsOnEdit = null,
   menuRoot = null;
 const getItemLabel = (data) => data.label,
   fromToTypes = new Map([
@@ -550,7 +588,7 @@ const getItemLabel = (data) => data.label,
         text: 'Keywords to be included or excluded in the message by groups',
         onSetReset: ['enabled'],
         structure: {
-          primaryId: (data) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
+          primaryId: (data, isShort = false) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
           itemContent: {
             label: {
               type: 'string',
@@ -578,7 +616,7 @@ const getItemLabel = (data) => data.label,
               text: 'Keywords groups array',
               onSetReset: ['enabled'],
               structure: {
-                primaryId: (data) => `(${data.include ? '+' : '-'}) ${data.keyword}`,
+                primaryId: (data, isShort = false) => `(${data.include ? '+' : '-'}) ${data.keyword}`,
                 itemContent: {
                   keyword: {
                     type: 'string',
@@ -668,8 +706,8 @@ function updateForwardListener() {
       }
       fromIdsWithEdit = newFromIdsWithEdit;
       if (fromIdsWithEdit.length > 0) {
-        logInfo(`Starting listen on Edited Messages in : ${stringify(new EditedMessage({chats: fromIdsWithEdit}))}`, false);
-        clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), eventHandlerForwardsOnEdit);
+        logInfo(`Starting listen on Edited Messages in : ${stringify(fromIdsWithEdit)}`, false);
+        clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), new EditedMessage({chats: fromIdsWithEdit}));
       }
     }
   }

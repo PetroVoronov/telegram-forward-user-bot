@@ -70,7 +70,13 @@ class MenuItemStructured extends MenuItem {
         }
       }
     } else if (this.isArray === true && this.index === -1) {
-      if (this.structure.plain === true) {
+      if (typeof this.structure.primaryId === 'function') {
+        result += ' [';
+        if (Array.isArray(this.data) && this.data.length > 0) {
+          result += this.data.map((item) => this.structure.primaryId(item, true)).join(', ');
+        }
+        result += ']';
+      } else if (this.structure.plain === true) {
         result = `${result} ${JSON.stringify(this.data).replace(/null/g, '"?"')}`;
       } else {
         result = `${result} (${this.data.length})`;
