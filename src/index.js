@@ -168,7 +168,7 @@ const getLanguages = () => {
         text: 'Additional users to be allowed to use the bot',
         structure: {
           primaryId: (data, isShort = false) => {
-            let result = ` [${data}]`;
+            let result = ` [${data || '?'}]`;
             const user = clientDialogs.find((dialog) => dialog.isUser && `${dialog.id}` === `${data}`);
             if (typeof user === 'object' && typeof user.title === 'string') {
               result = `${user.title}${isShort ? '' : result}`;
@@ -279,7 +279,6 @@ if (refreshIntervalSetOnStart === false) {
 
 const timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
   storeSession = new StoreSession('data/session'),
-  allowedUsers = cache.getItem('allowedUsers') || [],
   lastProcessed = cache.getItem('lastProcessed') || {},
   lastForwarded = cache.getItem('lastForwarded') || {},
   forwardRulesId = 'forwardRules';
@@ -295,6 +294,7 @@ let apiId = cache.getItem('apiId', 'number'),
   fromIdsWithEdit = [],
   clientAsUser = null,
   clientAsBot = null,
+  allowedUsers = [],
   clientDialogs = [],
   refreshIntervalId = null,
   menuRoot = null;
@@ -653,7 +653,10 @@ async function initMenu() {
       configurationStructure,
       false,
       -1,
-      () => (configuration = cache.getItem(configurationId, 'object')),
+      () => {
+        configuration = cache.getItem(configurationId, 'object');
+        updateCommandListeners();
+      },
     ),
     menuForwardRules = new MenuItemStructured(
       i18n.__('Forward Rules'),
@@ -681,11 +684,32 @@ async function initMenu() {
   return Promise.resolve(menuRoot);
 }
 
-function updateForwardListener() {
+function updateCommandListeners(force = false) {
+  if (clientAsBot !== null && clientAsBot.connected === true) {
+    const allowedUSersFromConfig = (configuration.users || []).filter((id) => typeof id === 'number'),
+      allowedUsersFiltered = allowedUsers.filter((id) => typeof id === 'number' && id !== meUserId);
+    if (force || allowedUSersFromConfig.length !== allowedUsersFiltered.length || allowedUSersFromConfig.some((id) => !allowedUsersFiltered.includes(id))) {
+      allowedUsers = [meUserId, ...allowedUSersFromConfig];
+      const eventHandlers = clientAsBot.listEventHandlers();
+      if (Array.isArray(eventHandlers) && eventHandlers.length > 0) {
+        eventHandlers.forEach((item) => {
+          clientAsBot.removeEventHandler(item[1], item[0]);
+        });
+      }
+      logInfo(`Listen on commands from : ${stringify(allowedUsers)}`, true);
+      clientAsBot.addEventHandler(onCommand, new CallbackQuery({chats: allowedUsers}));
+      clientAsBot.addEventHandler(onCommand, new NewMessage({chats: allowedUsers}));
+    }
+  }
+}
+
+
+function updateForwardListeners(force = false) {
   if (clientAsUser !== null && clientAsUser.connected === true) {
     const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
       newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
     if (
+      force ||
       fromIds.length !== newFromIds.length ||
       fromIds.some((id) => !newFromIds.includes(id)) ||
       fromIdsWithEdit.length !== newFromIdsWithEdit.length ||
@@ -869,9 +893,7 @@ function startBotClient() {
             clientAsBot.getMe().then((user) => {
               meBot = user;
               meBotId = Number(meBot.id);
-              logInfo(`Starting listen on commands from : ${stringify(allowedUsers)}`, true);
-              clientAsBot.addEventHandler(onCommand, new CallbackQuery({chats: allowedUsers}));
-              clientAsBot.addEventHandler(onCommand, new NewMessage({chats: allowedUsers}));
+              updateCommandListeners(true);
               if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
                 const items = clientDialogs.filter((dialog) => dialog.isUser && `${dialog.id}` === `${meBot.id}`);
                 if (items.length === 0 && meUser !== null) {
@@ -918,7 +940,7 @@ process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
 i18n.setLocale(configuration.language);
-cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListener);
+cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
 initMenu().then((menu) => {
   menuRoot = menu;
   if (options.command !== undefined) {
@@ -966,11 +988,7 @@ initMenu().then((menu) => {
                   meUser = user;
                   if (meUser !== null) {
                     meUserId = Number(meUser.id);
-                    if (allowedUsers.indexOf(meUserId) === -1) {
-                      allowedUsers.push(meUserId);
-                    }
                   }
-                  logDebug(`Allowed users: ${stringify(allowedUsers)}`, true);
                   refreshDialogsStart(true);
                   const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
                   let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;

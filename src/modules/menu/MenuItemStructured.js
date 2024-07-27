@@ -16,7 +16,7 @@ const {options} = require('yargs');
 
 class MenuItemStructured extends MenuItem {
   dataId = '';
-  onSave = () => {};
+  onSave = (data) => {};
   index = null;
   isDataHolder = false;
   data = null;
@@ -188,7 +188,7 @@ class MenuItemStructured extends MenuItem {
     if (this.isDataHolder === true) {
       this.setValue(this.dataId, this.data);
       if (this.onSave !== null && typeof this.onSave === 'function') {
-        this.onSave();
+        this.onSave(this.data);
       }
     } else if (this.holder !== null && typeof this.holder.save === 'function') {
       this.holder.save();

@@ -466,15 +466,7 @@ class MenuItem {
     if (refreshed === true) {
       const menuMessageId = this.getMessageId(peerId?.userId),
         buttons = this.getButtons(peerId?.userId);
-      logDebug(
-        `MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringify(buttons, (_key, value) => {
-          if (value?.type === 'Buffer') {
-            return Buffer.from(value.data).toString('utf8');
-          } else {
-            return value;
-          }
-        })}`,
-      );
+      logDebug(`MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
       if (client !== null && peerId !== null) {
         client.isBot().then((isBot) => {
           const messageParams = {};
@@ -485,7 +477,9 @@ class MenuItem {
             messageParams.message = menuMessageId;
             messageParams.text = this.text;
             logDebug(
-              `MenuItem.draw '${this.command}'| Going to edit message: ${menuMessageId} with messageParams: ${stringify(messageParams)}`,
+              `MenuItem.draw '${this.command}'| Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(
+                messageParams,
+              )}`,
               true,
             );
             client
@@ -515,7 +509,7 @@ class MenuItem {
           } else {
             messageParams.message = this.text;
             logDebug(
-              `MenuItem.draw '${this.command}'| Going to send new message ` + `with messageParams: ${stringify(messageParams)}!`,
+              `MenuItem.draw '${this.command}'| Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
               true,
             );
             client
@@ -778,6 +772,17 @@ class MenuItemRoot extends MenuItem {
     return result;
   }
 }
+
+function stringifyButtons(value, space = 0) {
+  return stringify(value, (_key, value) => {
+    if (value?.type === 'Buffer') {
+      return Buffer.from(value.data).toString('utf8');
+    } else {
+      return value;
+    }
+  }, space);
+}
+
 
 /**
  * @typedef {MenuItem} MenuItem
