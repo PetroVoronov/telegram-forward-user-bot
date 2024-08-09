@@ -2,9 +2,17 @@
 
 A Telegram "bot" working as a user, using MTProto via [gramjs](https://github.com/gram-js/gramjs), to forward messages between chats/groups/channels. Configurable via Bot menu.
 
+## Description
+This package provides a functionality to forward messages between chats/groups/channels using a Telegram API to work as a user.
+It has a built-in bot to configure the behavior of the user instance.
+The bot can be used to configure:
+ - the common parameters, such as setting the refresh interval, the number of columns in a row, the text summary max length, the space between columns, the max buttons on a "page", and additional users.
+ - The forwarding rules itself, such as the source chat and the destination chat, including the separate topics for "forums" and "super groups", and keywords or phrases to filter messages.
+
 ## Table of Contents
 
 - [Telegram Forward User Bot](#telegram-forward-user-bot)
+  - [Description](#description)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -110,63 +118,63 @@ The Telegram Forward User Bot can be configured directly through its interactive
 
 3. Use the ```/start``` command to show the menu.
 
+![Initial, i.e. "Main" menu](docs/images/bot-menu-initial.png)
+
 ### Configuration Options
 
-The bot menu provides several configuration options to customize the behavior of the bot. Below are the available options:
+The bot menu provides several configuration options to customize the behavior of the bot.
+
+![Configuration menu](docs/images/bot-menu-configuration.png)
+
+Below are the available options:
 
 #### Menu Language
 
-- **Label**: Menu language
-- **Description**: Language of the Menu
-- **Default**: The default locale set in the configuration.
+![Language of the Menu](docs/images/bot-menu-configuation-language.png)
+
+Used to set the language of the menu. Currently, only four languages are supported: English, German, Ukrainian, and Russian.
 
 #### Refresh Interval
 
-- **Label**: Refresh interval
-- **Description**: Interval to refresh data from Telegram servers in seconds
-- **Type**: Number (integer)
-- **Options**: Minimum 30 seconds, Maximum 900 seconds, Step 10 seconds
-- **Default**: 300 seconds
+Used to set the interval to refresh data from Telegram servers, in seconds. In some cases the "standard" subscription on changes in sources chats is not working properly, so this interval is used to refresh the not only a list of available chats, but also the messages in the sources chats.
+
+![Interval to refresh data from Telegram servers in seconds](docs/images/bot-menu-configuration-refresh-interval.png)
 
 #### Max Columns in Row
 
-- **Label**: Max columns in row
-- **Description**: Max count of columns in one row of the menu
-- **Type**: Number (integer)
-- **Options**: Minimum 0, Maximum 10, Step 1
-- **Default**: 3 columns
+Used to set the maximum count of columns in one row of the menu. Zero means that the bot will try to calculate the optimal count of columns in each rows individually based on the value of next parameter - [Text Summary Max Length](#text-summary-max-length).
+
+![Max count of columns in one row of the menu](docs/images/bot-menu-configuration-max-columns.png)
 
 #### Text Summary Max Length
 
-- **Label**: Text summary max length
-- **Description**: Approximated max length of the text in one row of the menu
-- **Type**: Number (integer)
-- **Options**: Minimum 0, Maximum 100, Step 1
-- **Default**: 50 characters
+Used to set the approximated max length of the text in one row of the menu. The bot will try to calculate the optimal count of columns based on this value and the value of the previous parameter - [Max Columns in Row](#max-columns-in-row).
+
+![Approximated max length of the text in one row of the menu](docs/images/bot-menu-configuration-max-length.png)
 
 #### Space Between Columns
 
-- **Label**: Space between columns
-- **Description**: Space between columns in the menu
-- **Type**: Number (integer)
-- **Options**: Minimum 1, Maximum 5, Step 1
-- **Default**: 2 characters
+Used to set the space between columns in the menu. The value is in characters.
+
+![Space between columns in the menu](docs/images/bot-menu-configuration-space-between-columns.png)
 
 #### Max Buttons on "Page"
 
-- **Label**: Max buttons on "page"
-- **Description**: Max count of buttons on one "page" of the menu
-- **Type**: Number (integer)
-- **Options**: Minimum 10, Maximum 50, Step 1
-- **Default**: 30 buttons
+![Max count of buttons on one "page" of the menu](docs/images/bot-menu-configuration-max-buttons-on-page.png)
+
+Used to set the maximum count of buttons on one "page" or "screen" of the menu. If not all buttons fit on one "page", the bot will split them into multiple "pages", and the user will be able to navigate between them.
 
 #### Additional Users
 
-- **Label**: Additional users
-- **Description**: List of additional users, except the primary one
-- **Type**: Array
-- **Default**: []
+Used to add additional users to the bot. The primary user is the one who can access the bot menu and configure the bot. Additional users can be added to have an access to the bot menu and configure the bot as well.
 
+![List of additional users, except the primary one](docs/images/bot-menu-configuration-additional-users.png)
+
+To add a new user, use the "Add" button.
+
+![Additional users: adding new one.](docs/images/bot-menu-configuration-additional-users-add-new.png)
+
+Then simple select appropriate one from the list of available users. The list of available users is limited to the users known by the primary user.
 
 ## Scripts
 
