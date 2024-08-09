@@ -609,7 +609,13 @@ class MenuItemStructured extends MenuItem {
             }
           }
         }
-        if (this.isArray === true && this.index >= 0 && this.index < this.holder?.data?.length) {
+        if (
+          this.isArray === true &&
+          this.index >= 0 &&
+          this.index < this.holder?.data?.length &&
+          this.nested.length > 0 &&
+          this.nested[this.nested.length - 1] instanceof MenuButtonDeleteItem === false
+        ) {
           await this.appendNested(new MenuButtonDeleteItem(this.command));
         }
       } else {
