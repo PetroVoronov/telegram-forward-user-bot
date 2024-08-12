@@ -32,7 +32,7 @@
     "@babel/core": "^7.25.2",
     "@babel/eslint-parser": "^7.25.1",
     "@eslint/js": "^9.8.0",
-    "eslint": "^9.8.0",
+    "eslint": "^9.9.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^1.0.4",
     "genversion": "^3.2.0",
