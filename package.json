@@ -18,7 +18,7 @@
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
     "strftime": "^0.10.3",
-    "telegram": "^2.23.10",
+    "telegram": "^2.24.11",
     "yargs": "^17.7.2"
   },
   "scripts": {
