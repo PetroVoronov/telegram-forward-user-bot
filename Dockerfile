@@ -13,6 +13,6 @@ WORKDIR /app
 
 RUN mkdir data
 
-RUN npm install
+RUN npm install --omit=dev
 
 CMD [ "node", "src/index.js"]
