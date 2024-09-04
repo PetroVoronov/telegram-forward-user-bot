@@ -828,8 +828,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
           .then((res) => {
             logDebug(`Message is forwarded successfully!`, false);
-            lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
-            cache.setItem('lastProcessed', lastProcessed);
+            if (event.message.id > lastProcessedId) {
+              lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
+              cache.setItem('lastProcessed', lastProcessed);
+            }
             lastForwarded[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
             cache.setItem('lastForwarded', lastForwarded);
           })
@@ -838,8 +840,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           });
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
-        lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
-        cache.setItem('lastProcessed', lastProcessed);
+        if (event.message.id > lastProcessedId) {
+          lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
+          cache.setItem('lastProcessed', lastProcessed);
+        }
       }
     }
   }
@@ -1137,64 +1141,63 @@ async function refreshDialogs() {
             }
           }
         }
-        if (rule.enabled && rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
+        if (rule.enabled) {
           const lastProcessedId =
               (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
             lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
           lastSourceId = dialogFrom.dialog?.topMessage;
-          if (rule.processEditsOnForwarded === true) {
-            const lastForwardedId =
-                (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-              lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
-            if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
-              const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
-              if (Array.isArray(messages) && messages.length > 0) {
-                const message = messages[0];
-                if (message !== undefined && message.editDate > lastForwardedEditDate) {
-                  logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
-                  onMessageToForward({message}, true, true);
+          if (rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
+            if (rule.processEditsOnForwarded === true) {
+              const lastForwardedId =
+                  (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
+                lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
+              if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
+                const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
+                if (Array.isArray(messages) && messages.length > 0) {
+                  const message = messages[0];
+                  if (message !== undefined && message.editDate > lastForwardedEditDate) {
+                    logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
+                    onMessageToForward({message}, true, true);
+                  }
+                }
+              }
+              if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate === 0) {
+                const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
+                if (Array.isArray(messages) && messages.length > 0) {
+                  const message = messages[0];
+                  if (message !== undefined && message.editDate > lastProcessedEditDate) {
+                    logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
+                    onMessageToForward({message}, true, true);
+                  }
                 }
               }
             }
-            if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate === 0) {
-              const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
+            if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
+              logDebug(
+                `In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` + `last source message id: ${lastSourceId}`,
+                false,
+              );
+              const messageCount =
+                  lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
+                messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
+                messages = await clientAsUser.getMessages(dialogFrom, {
+                  ids: messageIds,
+                });
               if (Array.isArray(messages) && messages.length > 0) {
-                const message = messages[0];
-                if (message !== undefined && message.editDate > lastProcessedEditDate) {
-                  logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
-                  onMessageToForward({message}, true, true);
-                }
+                messages.forEach((message, index) => {
+                  if (message !== undefined) {
+                    logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
+                    onMessageToForward({message}, true);
+                  } else {
+                    logDebug(`Missed message [${index}] is undefined!`, false);
+                  }
+                });
               }
+            } else if (lastProcessedId === undefined && lastSourceId !== undefined) {
+              lastProcessed[rule.from.id] = lastSourceId;
+              cache.setItem('lastProcessed', lastProcessed);
             }
-          }
-          if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
-            logDebug(
-              `In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` + `last source message id: ${lastSourceId}`,
-              false,
-            );
-            const messageCount =
-                lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
-              messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
-              messages = await clientAsUser.getMessages(dialogFrom, {
-                ids: messageIds,
-              });
-            if (Array.isArray(messages) && messages.length > 0) {
-              messages.forEach((message, index) => {
-                if (message !== undefined) {
-                  logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
-                  onMessageToForward({message}, true);
-                } else {
-                  logDebug(`Missed message [${index}] is undefined!`, false);
-                }
-              });
-            }
-          } else if (lastProcessedId === undefined && lastSourceId !== undefined) {
-            lastProcessed[rule.from.id] = lastSourceId;
-            cache.setItem('lastProcessed', lastProcessed);
-          }
-        } else if (rule.enabled && dialogFrom !== null && dialogFrom !== undefined) {
-          const lastSourceId = dialogFrom.dialog?.topMessage;
-          if (lastSourceId !== undefined) {
+          } else if (rule.enabled && dialogFrom !== null && dialogFrom !== undefined && lastSourceId !== undefined && lastSourceId > lastProcessedId) {
             lastProcessed[rule.from.id] = lastSourceId;
             cache.setItem('lastProcessed', lastProcessed);
           }
