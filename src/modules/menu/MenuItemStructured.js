@@ -406,7 +406,7 @@ class MenuItemStructured extends MenuItem {
                           }
                           if (resetItem !== undefined && resetItem.hasOwnProperty(resetKey)) {
                             if (resetStructure?.[resetKey]?.default !== undefined) {
-                              resetItem[resetKey] = resetStructure[resetKey].default;
+                              resetItem[resetKey] = structuredClone(resetStructure[resetKey].default);
                             } else {
                               delete resetItem[resetKey];
                             }
@@ -647,7 +647,7 @@ class MenuItemStructured extends MenuItem {
     if (this.isDataHolder === true && this.isArray === true && Array.isArray(this.data) === true) {
       let newItem;
       if (this.structure.plain === true) {
-        newItem = this.structure?.itemContent?.value?.default;
+        newItem = structuredClone(this.structure?.itemContent?.value?.default);
       } else {
         newItem = {};
         Object.keys(this.structure.itemContent).forEach((rowId) => {
@@ -656,11 +656,11 @@ class MenuItemStructured extends MenuItem {
               newItem[rowId] = {};
               Object.keys(this.structure.itemContent[rowId].itemContent).forEach((itemId) => {
                 if (this.getItemPresence([rowId, itemId], this.structure.itemContent[rowId].itemContent[itemId]) === 'mandatory') {
-                  newItem[rowId][itemId] = this.structure.itemContent[rowId].itemContent[itemId].default;
+                  newItem[rowId][itemId] = structuredClone(this.structure.itemContent[rowId].itemContent[itemId].default);
                 }
               });
             } else {
-              newItem[rowId] = this.structure.itemContent[rowId].default;
+              newItem[rowId] = structuredClone(this.structure.itemContent[rowId].default);
             }
           }
         });
