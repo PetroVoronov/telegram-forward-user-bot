@@ -1152,7 +1152,7 @@ async function refreshDialogs() {
                   (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
                 lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
               if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
-                const messages = await clientAsUser.getMessages(dialogFrom, [lastForwardedId]);
+                const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
                   if (message !== undefined && message.editDate > lastForwardedEditDate) {
@@ -1162,7 +1162,7 @@ async function refreshDialogs() {
                 }
               }
               if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate === 0) {
-                const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
+                const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
                   if (message !== undefined && message.editDate > lastProcessedEditDate) {
