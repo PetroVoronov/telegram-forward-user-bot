@@ -1156,7 +1156,7 @@ async function refreshDialogs() {
                 }
               }
             }
-            if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate !== 0) {
+            if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate === 0) {
               const messages = await clientAsUser.getMessages(dialogFrom, [lastProcessedId]);
               if (Array.isArray(messages) && messages.length > 0) {
                 const message = messages[0];
