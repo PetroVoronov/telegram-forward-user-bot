@@ -1151,21 +1151,21 @@ async function refreshDialogs() {
               const lastForwardedId =
                   (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
                 lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
-              if (lastForwardedId !== 0 && lastForwardedEditDate !== 0) {
+              if (lastForwardedId !== 0) {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
-                  if (message !== undefined && message.editDate > lastForwardedEditDate) {
+                  if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
                     logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
                     onMessageToForward({message}, true, true);
                   }
                 }
               }
-              if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId && lastProcessedEditDate === 0) {
+              if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId) {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
-                  if (message !== undefined && message.editDate > lastProcessedEditDate) {
+                  if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
                     logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
                     onMessageToForward({message}, true, true);
                   }
