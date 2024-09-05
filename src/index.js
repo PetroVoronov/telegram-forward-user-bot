@@ -688,7 +688,11 @@ function updateCommandListeners(force = false) {
   if (clientAsBot !== null && clientAsBot.connected === true) {
     const allowedUSersFromConfig = (configuration.users || []).filter((id) => typeof id === 'number'),
       allowedUsersFiltered = allowedUsers.filter((id) => typeof id === 'number' && id !== meUserId);
-    if (force || allowedUSersFromConfig.length !== allowedUsersFiltered.length || allowedUSersFromConfig.some((id) => !allowedUsersFiltered.includes(id))) {
+    if (
+      force ||
+      allowedUSersFromConfig.length !== allowedUsersFiltered.length ||
+      allowedUSersFromConfig.some((id) => !allowedUsersFiltered.includes(id))
+    ) {
       allowedUsers = [meUserId, ...allowedUSersFromConfig];
       const eventHandlers = clientAsBot.listEventHandlers();
       if (Array.isArray(eventHandlers) && eventHandlers.length > 0) {
@@ -702,7 +706,6 @@ function updateCommandListeners(force = false) {
     }
   }
 }
-
 
 function updateForwardListeners(force = false) {
   if (clientAsUser !== null && clientAsUser.connected === true) {
@@ -1155,8 +1158,16 @@ async function refreshDialogs() {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
+                  logDebug(
+                    `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
+                      message.message
+                    }, message.date: ${new Date(message.date).toTimeString()}, message.editDate: ${new Date(
+                      message.editDate,
+                    ).toTimeString()}, lastForwardedEditDate: ${new Date(lastForwardedEditDate).toTimeString()}`,
+                    false,
+                  );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
-                    logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
+                    logDebug(`In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message: ${message.message}`, false);
                     onMessageToForward({message}, true, true);
                   }
                 }
@@ -1165,8 +1176,16 @@ async function refreshDialogs() {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
+                  logDebug(
+                    `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
+                      message.message
+                    }, message.date: ${new Date(message.date).toTimeString()}, message.editDate: ${new Date(
+                      message.editDate,
+                    ).toTimeString()}, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toTimeString()}`,
+                    false,
+                  );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
-                    logDebug(`Edited message - id: ${message.id}, message: ${message.message}`, false);
+                    logDebug(`In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message: ${message.message}`, false);
                     onMessageToForward({message}, true, true);
                   }
                 }
@@ -1197,7 +1216,13 @@ async function refreshDialogs() {
               lastProcessed[rule.from.id] = lastSourceId;
               cache.setItem('lastProcessed', lastProcessed);
             }
-          } else if (rule.enabled && dialogFrom !== null && dialogFrom !== undefined && lastSourceId !== undefined && lastSourceId > lastProcessedId) {
+          } else if (
+            rule.enabled &&
+            dialogFrom !== null &&
+            dialogFrom !== undefined &&
+            lastSourceId !== undefined &&
+            lastSourceId > lastProcessedId
+          ) {
             lastProcessed[rule.from.id] = lastSourceId;
             cache.setItem('lastProcessed', lastProcessed);
           }
