@@ -1157,10 +1157,10 @@ async function refreshDialogs() {
         }
         if (rule.enabled) {
           if (fromIds.includes(rule.from.id) === false) {
-            fromIds.push(rule.from.id);
+            fromIds.push(Number(rule.from.id));
           }
           if (fromIdsWithEdit.includes(rule.from.id) === false && rule.processEditsOnForwarded === true) {
-            fromIdsWithEdit.push(rule.from.id);
+            fromIdsWithEdit.push(Number(rule.from.id));
           }
           const lastProcessedId =
               (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
