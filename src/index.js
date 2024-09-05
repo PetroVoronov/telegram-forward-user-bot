@@ -744,11 +744,11 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
   const peerId = event.message?.peerId,
     sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0);
   logDebug(
-    `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'}${
-      onEdit ? ' onEdit' : 'onNew'
-    }, id: ${event.message.id}, message.date: ${event.message.date}(${printMessageDate(event.message.date)}), message.editDate: ${
+    `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'} ${
+      onEdit ? 'onEdit' : 'onNew'
+    }, id: ${event.message.id}, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
       event.message.editDate
-    }(${printMessageDate(event.message.editDate)}), message: ${event.message.message}.`,
+    } (${printMessageDate(event.message.editDate)}), message: ${event.message.message}.`,
     false,
   );
   if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
