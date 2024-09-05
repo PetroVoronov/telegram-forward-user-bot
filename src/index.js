@@ -742,13 +742,17 @@ function updateForwardListeners(force = false) {
 
 function onMessageToForward(event, onRefresh = false, onEdit = false) {
   const peerId = event.message?.peerId,
-    sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0);
+    sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0),
+    message = event.message.message || '',
+    messageId = event.message.id,
+    messageEditDate = event.message.editDate || 0,
+    messageIsString = typeof event.message.message === 'string';
   logDebug(
     `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
     }, id: ${event.message.id}, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
       event.message.editDate
-    } (${printMessageDate(event.message.editDate)}), message: ${event.message.message}.`,
+    } (${printMessageDate(messageEditDate)}), message: ${message}.`,
     false,
   );
   if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
@@ -769,15 +773,15 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           logWarning(`MarkAsRead error: ${stringify(err)}`, false);
         });
       }
-      const message = event.message.message,
-        messageIsString = typeof message === 'string',
-        lastForwardedId =
+      const lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-        lastProcessedId = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : 0,
-        lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
         lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
-        skipProcessing = onEdit === true && lastProcessedId !== event.message.id && lastForwardedId !== event.message.id;
-      let toForward = onEdit === true && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
+        lastForwardedMessage = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].message : '',
+        lastProcessedId =
+          (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
+        lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
+        skipProcessing = onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId;
+      let toForward = onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate && lastForwardedMessage !== message;
       if (
         toForward === false &&
         skipProcessing === false &&
@@ -816,7 +820,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       if (toForward) {
         const forwardMessageInput = {
           fromPeer: peerId,
-          id: [event.message.id],
+          id: [messageId],
           toPeer: entityTo,
           randomId: [getRandomId()],
           silent: false,
@@ -834,11 +838,11 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
           .then((res) => {
             logDebug(`Message is forwarded successfully!`, false);
-            if (event.message.id > lastProcessedId) {
-              lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
+            if (messageId > lastProcessedId) {
+              lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
               cache.setItem('lastProcessed', lastProcessed);
             }
-            lastForwarded[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
+            lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
             cache.setItem('lastForwarded', lastForwarded);
           })
           .catch((err) => {
@@ -847,10 +851,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
         if (
-          event.message.id > lastProcessedId ||
-          (event.message.id === lastProcessedId && event.message.editDate > lastProcessedEditDate)
+          messageId > lastProcessedId ||
+          (messageId === lastProcessedId && messageEditDate > lastProcessedEditDate)
         ) {
-          lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
+          lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate || 0};
           cache.setItem('lastProcessed', lastProcessed);
         }
       }
@@ -1174,19 +1178,21 @@ async function refreshDialogs() {
               if (lastForwardedId !== 0) {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
                 if (Array.isArray(messages) && messages.length > 0) {
-                  const message = messages[0];
+                  const message = messages[0],
+                    messageDate = message.date || 0,
+                    messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
                     logDebug(
                       `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
                         message.message
-                      }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
-                        message.editDate,
+                      }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
+                        messageEditDate,
                       )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
                       false,
                     );
-                    if (message.editDate > message.date && message.editDate > lastForwardedEditDate) {
+                    if (messageEditDate > messageDate && messageEditDate > lastForwardedEditDate) {
                       logDebug(
-                        `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
+                        `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
                         false,
                       );
                       onMessageToForward({message}, true, true);
@@ -1197,19 +1203,21 @@ async function refreshDialogs() {
               if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId) {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
                 if (Array.isArray(messages) && messages.length > 0) {
-                  const message = messages[0];
+                  const message = messages[0],
+                    messageDate = message.date || 0,
+                    messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
                     logDebug(
                       `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                         message.message
-                      }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
-                        message.editDate,
+                      }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
+                        messageEditDate,
                       )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
                       false,
                     );
-                    if (message.editDate > message.date && message.editDate > lastProcessedEditDate) {
+                    if (messageEditDate > messageDate && messageEditDate > lastProcessedEditDate) {
                       logDebug(
-                        `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
+                        `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
                         false,
                       );
                       onMessageToForward({message}, true, true);
