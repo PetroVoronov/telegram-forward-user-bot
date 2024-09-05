@@ -1039,6 +1039,11 @@ function getRandomId() {
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
 
+
+function printMessageDate(date){
+  return new Date(date * 1000).toLocaleString();
+}
+
 function getDialogById(id) {
   let result = null;
   if (typeof id === 'string' && Array.isArray(clientDialogs) && clientDialogs.length > 0) {
@@ -1149,6 +1154,12 @@ async function refreshDialogs() {
           }
         }
         if (rule.enabled) {
+          if (fromIds.includes(rule.from.id) === false) {
+            fromIds.push(rule.from.id);
+          }
+          if (fromIdsWithEdit.includes(rule.from.id) === false && rule.processEditsOnForwarded === true) {
+            fromIdsWithEdit.push(rule.from.id);
+          }
           const lastProcessedId =
               (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
             lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
@@ -1165,9 +1176,9 @@ async function refreshDialogs() {
                   logDebug(
                     `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
                       message.message
-                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${new Date(
+                    }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
                       message.editDate,
-                    ).toString()}, lastForwardedEditDate: ${new Date(lastForwardedEditDate).toString()}`,
+                    )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
@@ -1186,9 +1197,9 @@ async function refreshDialogs() {
                   logDebug(
                     `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                       message.message
-                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${new Date(
+                    }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
                       message.editDate,
-                    ).toString()}, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toString()}`,
+                    )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
