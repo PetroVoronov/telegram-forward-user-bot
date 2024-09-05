@@ -844,7 +844,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           });
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
-        if (event.message.id > lastProcessedId || event.message.id === lastProcessedId && event.message.editDate > lastProcessedEditDate) {
+        if (
+          event.message.id > lastProcessedId ||
+          (event.message.id === lastProcessedId && event.message.editDate > lastProcessedEditDate)
+        ) {
           lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
           cache.setItem('lastProcessed', lastProcessed);
         }
@@ -1183,9 +1186,9 @@ async function refreshDialogs() {
                   logDebug(
                     `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                       message.message
-                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${
-                      new Date(message.editDate).to
-                    }, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toString()}`,
+                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${new Date(
+                      message.editDate,
+                    ).toString()}, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toString()}`,
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
