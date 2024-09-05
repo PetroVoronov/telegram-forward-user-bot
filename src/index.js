@@ -772,6 +772,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
         lastProcessedId = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : 0,
+        lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
         lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
         skipProcessing = onEdit === true && lastProcessedId !== event.message.id && lastForwardedId !== event.message.id;
       let toForward = onEdit === true && lastForwardedId === event.message.id && lastForwardedEditDate < event.message.editDate;
@@ -843,7 +844,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           });
       } else {
         logDebug(`Message is not forwarded! See reasons above.`, false);
-        if (event.message.id > lastProcessedId) {
+        if (event.message.id > lastProcessedId || event.message.id === lastProcessedId && event.message.editDate > lastProcessedEditDate) {
           lastProcessed[rule.from.id] = {id: event.message.id, editDate: event.message.editDate || 0};
           cache.setItem('lastProcessed', lastProcessed);
         }
@@ -1161,9 +1162,9 @@ async function refreshDialogs() {
                   logDebug(
                     `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
                       message.message
-                    }, message.date: ${new Date(message.date).toTimeString()}, message.editDate: ${new Date(
+                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${new Date(
                       message.editDate,
-                    ).toTimeString()}, lastForwardedEditDate: ${new Date(lastForwardedEditDate).toTimeString()}`,
+                    ).toString()}, lastForwardedEditDate: ${new Date(lastForwardedEditDate).toString()}`,
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
@@ -1182,9 +1183,9 @@ async function refreshDialogs() {
                   logDebug(
                     `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                       message.message
-                    }, message.date: ${new Date(message.date).toTimeString()}, message.editDate: ${new Date(
-                      message.editDate,
-                    ).toTimeString()}, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toTimeString()}`,
+                    }, message.date: ${new Date(message.date).toString()}, message.editDate: ${
+                      new Date(message.editDate).to
+                    }, lastProcessedEditDate: ${new Date(lastProcessedEditDate).toString()}`,
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
