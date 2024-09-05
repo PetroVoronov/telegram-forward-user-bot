@@ -445,7 +445,7 @@ const getItemLabel = (data) => data.label,
     return result;
   },
   forwardRuleStructure = {
-    primaryId: 'label',
+    primaryId: (data, isShort = false) => (`${data.label} ${data.enabled ? '✅' : '❌'}`),
     type: 'object',
     label: 'Forward Rule',
     text: 'Forward rule for messages',
@@ -1175,20 +1175,22 @@ async function refreshDialogs() {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
-                  logDebug(
-                    `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
-                      message.message
-                    }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
-                      message.editDate,
-                    )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
-                    false,
-                  );
-                  if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
+                  if (typeof message === 'object' && message !== null) {
                     logDebug(
-                      `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
+                      `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
+                        message.message
+                      }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
+                        message.editDate,
+                      )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
                       false,
                     );
-                    onMessageToForward({message}, true, true);
+                    if (message.editDate > message.date && message.editDate > lastForwardedEditDate) {
+                      logDebug(
+                        `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
+                        false,
+                      );
+                      onMessageToForward({message}, true, true);
+                    }
                   }
                 }
               }
@@ -1196,20 +1198,22 @@ async function refreshDialogs() {
                 const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
                 if (Array.isArray(messages) && messages.length > 0) {
                   const message = messages[0];
-                  logDebug(
-                    `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
-                      message.message
-                    }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
-                      message.editDate,
-                    )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
-                    false,
-                  );
-                  if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
+                  if (typeof message === 'object' && message !== null) {
                     logDebug(
-                      `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
+                      `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
+                        message.message
+                      }, message.date: ${printMessageDate(message.date)}, message.editDate: ${printMessageDate(
+                        message.editDate,
+                      )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
                       false,
                     );
-                    onMessageToForward({message}, true, true);
+                    if (message.editDate > message.date && message.editDate > lastProcessedEditDate) {
+                      logDebug(
+                        `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
+                        false,
+                      );
+                      onMessageToForward({message}, true, true);
+                    }
                   }
                 }
               }

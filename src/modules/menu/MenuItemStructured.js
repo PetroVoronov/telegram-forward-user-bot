@@ -103,7 +103,13 @@ class MenuItemStructured extends MenuItem {
         if ((this.isArray === true && this.index >= 0) || this.isArray === false) {
           let value = '?';
           if (this.data !== null && this.data !== undefined) {
-            value = this.structure.primaryId ? this.getItemFromStructure(this.structure.primaryId.split('.'), this.data) : this.data;
+            if (typeof this.structure.primaryId === 'function') {
+              value = this.structure.primaryId(this.data, true);
+            } else if (typeof this.structure.primaryId === 'string' && this.structure.primaryId.length > 0) {
+              value = this.getItemFromStructure(this.structure.primaryId.split('.'), this.data);
+            } else if (this.structure.plain === true) {
+              value = this.data;
+            }
           }
           result += `: "${value}"`;
         }
