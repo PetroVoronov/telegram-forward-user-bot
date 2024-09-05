@@ -746,8 +746,8 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
   logDebug(
     `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'}${
       onEdit ? ' onEdit' : 'onNew'
-    }, id: ${event.message.id}, message.date: ${message.date}(${printMessageDate(event.message.date)}), message.editDate: ${
-      message.editDate
+    }, id: ${event.message.id}, message.date: ${event.message.date}(${printMessageDate(event.message.date)}), message.editDate: ${
+      event.message.editDate
     }(${printMessageDate(event.message.editDate)}), message: ${event.message.message}.`,
     false,
   );
@@ -1043,7 +1043,7 @@ function getRandomId() {
 
 
 function printMessageDate(date){
-  return new Date(date * 1000).toLocaleString();
+  return new Date(date * 1000).toString();
 }
 
 function getDialogById(id) {
