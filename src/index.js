@@ -1167,7 +1167,10 @@ async function refreshDialogs() {
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastForwardedEditDate) {
-                    logDebug(`In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message: ${message.message}`, false);
+                    logDebug(
+                      `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
+                      false,
+                    );
                     onMessageToForward({message}, true, true);
                   }
                 }
@@ -1185,7 +1188,10 @@ async function refreshDialogs() {
                     false,
                   );
                   if (message !== undefined && message.editDate > message.date && message.editDate > lastProcessedEditDate) {
-                    logDebug(`In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message: ${message.message}`, false);
+                    logDebug(
+                      `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${message.date}, message.editDate: ${message.editDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
+                      false,
+                    );
                     onMessageToForward({message}, true, true);
                   }
                 }
