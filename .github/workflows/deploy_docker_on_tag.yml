@@ -52,7 +52,8 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
       -
         name: Build and push
