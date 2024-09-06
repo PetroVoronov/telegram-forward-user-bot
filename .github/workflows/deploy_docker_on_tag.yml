@@ -48,8 +48,6 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
         env:
@@ -65,6 +63,7 @@ jobs:
           provenance: false
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
 
       -
