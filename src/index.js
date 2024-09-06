@@ -17,6 +17,7 @@ const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 const {type} = require('node:os');
 const {on} = require('node:events');
+const { log } = require('node:console');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -281,6 +282,7 @@ const timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
   storeSession = new StoreSession('data/session'),
   lastProcessed = cache.getItem('lastProcessed') || {},
   lastForwarded = cache.getItem('lastForwarded') || {},
+  lastForwardedDelayed = {},
   forwardRulesId = 'forwardRules';
 let apiId = cache.getItem('apiId', 'number'),
   apiHash = cache.getItem('apiHash'),
@@ -445,7 +447,7 @@ const getItemLabel = (data) => data.label,
     return result;
   },
   forwardRuleStructure = {
-    primaryId: (data, isShort = false) => (`${data.label} ${data.enabled ? '✅' : '❌'}`),
+    primaryId: (data, isShort = false) => `${data.label} ${data.enabled ? '✅' : '❌'}`,
     type: 'object',
     label: 'Forward Rule',
     text: 'Forward rule for messages',
@@ -500,6 +502,22 @@ const getItemLabel = (data) => data.label,
         onSetReset: ['enabled'],
         label: 'Process missed messages',
         text: 'Process missed messages, max count is 100 messages per channel/group',
+      },
+      antiFastEditDelay: {
+        type: 'number',
+        subType: 'integer',
+        options: {
+          min: 0,
+          max: 300,
+          step: 1,
+        },
+        sourceType: 'input',
+        presence: 'mandatory',
+        editable: true,
+        default: 0,
+        onSetReset: ['enabled'],
+        label: 'Anti-fast edit delay',
+        text: 'Delay to prevent multiple forwards of the same message due to fast edits on source side',
       },
       from: {
         type: 'object',
@@ -740,6 +758,42 @@ function updateForwardListeners(force = false) {
   }
 }
 
+function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate) {
+  const forwardMessageInput = {
+    fromPeer: fromPeer,
+    id: [messageId],
+    toPeer: toPeer,
+    randomId: [getRandomId()],
+    silent: false,
+    background: false,
+    withMyScore: false,
+    grouped: false,
+    fromLive: false,
+    useQuickAck: false,
+    scheduleDate: null,
+  };
+  if (rule.to.topicId !== null && rule.to.topicId !== undefined) {
+    forwardMessageInput.topMsgId = rule.to.topicId;
+  }
+  clientAsUser
+    .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
+    .then((res) => {
+      if (rule.antiFastEditDelay > 0 && lastForwardedDelayed[rule.from.id] === undefined) {
+        delete lastForwardedDelayed[rule.from.id];
+      }
+      logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is forwarded successfully!`, false);
+      if (messageId > lastProcessedId) {
+        lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
+        cache.setItem('lastProcessed', lastProcessed);
+      }
+      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
+      cache.setItem('lastForwarded', lastForwarded);
+    })
+    .catch((err) => {
+      logWarning(`[${rule.label}, ${sourceId}, ${messageId}]: ${err}`, false);
+    });
+}
+
 function onMessageToForward(event, onRefresh = false, onEdit = false) {
   const peerId = event.message?.peerId,
     sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0),
@@ -748,9 +802,9 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
     messageEditDate = event.message.editDate || 0,
     messageIsString = typeof event.message.message === 'string';
   logDebug(
-    `Message in monitored channel/group - sourceId: ${stringify(sourceId)} via ${onRefresh ? 'refresh' : 'event'} ${
+    `[${sourceId}, ${messageId}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
-    }, id: ${event.message.id}, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
+    }, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
       event.message.editDate
     } (${printMessageDate(messageEditDate)}), message: ${message}.`,
     false,
@@ -770,7 +824,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
     ) {
       if (onEdit === false) {
         clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
-          logWarning(`MarkAsRead error: ${stringify(err)}`, false);
+          logWarning(`[${rule.label}, ${sourceId}, ${messageId}]: MarkAsRead error: ${stringify(err)}`, false);
         });
       }
       const lastForwardedId =
@@ -780,8 +834,20 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         lastProcessedId =
           (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
         lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
-        skipProcessing = onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId;
-      let toForward = onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate && lastForwardedMessage !== message;
+        lastForwardedDelayedId = lastForwardedDelayed[rule.from.id]?.id || 0,
+        lastForwardedDelayedTimeout = lastForwardedDelayed[rule.from.id]?.timeout || null;
+      skipProcessing =
+        onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
+      let toForward =
+        onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate && lastForwardedMessage !== message;
+      if (onEdit === true && lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
+        clearTimeout(lastForwardedDelayedTimeout);
+        delete lastForwardedDelayed[rule.from.id];
+        toForward = true;
+        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before delay! Previous version will not forwarded!`, false);
+      } else if (onEdit === true) {
+        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited and going to be checked by rules!`, false);
+      }
       if (
         toForward === false &&
         skipProcessing === false &&
@@ -790,7 +856,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
-        logInfo(`Message is reply to last forwarded message! Going to forward it too.`, false);
+        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is reply on the last forwarded message! Going to forward it too.`, false);
       } else if (
         toForward === false &&
         skipProcessing === false &&
@@ -806,54 +872,33 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
             let includesFound = false;
             if (keywordsGroup.includeAll === true) {
               includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
-              logDebug(`All includes are found: ${includesFound}`, false);
+              logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, false);
             } else {
               includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
-              logDebug(`Some includes are found: ${includesFound}`, false);
+              logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, false);
             }
             const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
-            logDebug(`No any exclude is found: ${excludesNotFound}`, false);
+            logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, false);
             return includesFound && excludesNotFound;
           });
-        logInfo(`Result of universal rules: ${toForward}`, false);
+        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, false);
       }
       if (toForward) {
-        const forwardMessageInput = {
-          fromPeer: peerId,
-          id: [messageId],
-          toPeer: entityTo,
-          randomId: [getRandomId()],
-          silent: false,
-          background: false,
-          withMyScore: false,
-          grouped: false,
-          fromLive: false,
-          useQuickAck: false,
-          scheduleDate: null,
-        };
-        if (rule.to.topicId !== null && rule.to.topicId !== undefined) {
-          forwardMessageInput.topMsgId = rule.to.topicId;
+        if (rule.antiFastEditDelay > 0) {
+          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is going to be forwarded in ${rule.antiFastEditDelay} seconds!`, false);
+          lastForwardedDelayed[rule.from.id] = {
+            id: messageId,
+            timeout: setTimeout(
+              () => forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate),
+              rule.antiFastEditDelay * 1000,
+            ),
+          };
+        } else {
+          forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
         }
-        clientAsUser
-          .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
-          .then((res) => {
-            logDebug(`Message is forwarded successfully!`, false);
-            if (messageId > lastProcessedId) {
-              lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
-              cache.setItem('lastProcessed', lastProcessed);
-            }
-            lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
-            cache.setItem('lastForwarded', lastForwarded);
-          })
-          .catch((err) => {
-            logWarning(err, false);
-          });
       } else {
-        logDebug(`Message is not forwarded! See reasons above.`, false);
-        if (
-          messageId > lastProcessedId ||
-          (messageId === lastProcessedId && messageEditDate > lastProcessedEditDate)
-        ) {
+        logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is not forwarded! See reasons above.`, false);
+        if (messageId > lastProcessedId || (messageId === lastProcessedId && messageEditDate > lastProcessedEditDate)) {
           lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate || 0};
           cache.setItem('lastProcessed', lastProcessed);
         }
@@ -1045,8 +1090,7 @@ function getRandomId() {
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
 
-
-function printMessageDate(date){
+function printMessageDate(date) {
   return new Date(date * 1000).toString();
 }
 
@@ -1146,15 +1190,15 @@ async function refreshDialogs() {
               );
               if (Array.isArray(forum.topics) && forum.topics.length > 0) {
                 if (forum.topics.find((topic) => topic.id === rule[key].topicId) === undefined) {
-                  logWarning(`Topic with id ${rule[key].topicId} not found in ${item.title}!`);
+                  logWarning(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
                   rule.enabled = false;
                 }
               } else {
-                logWarning(`No topics found in ${item.title}!`);
+                logWarning(`[${rule.label}]: No topics found in ${item.title}!`);
                 rule.enabled = false;
               }
             } else {
-              logWarning(`Topic with id ${rule[key].topicId} not found in ${item.title}!`);
+              logWarning(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
               rule.enabled = false;
             }
           }
@@ -1183,7 +1227,7 @@ async function refreshDialogs() {
                     messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
                     logDebug(
-                      `In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
+                      `[${rule.label}]: In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
                         message.message
                       }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
                         messageEditDate,
@@ -1192,7 +1236,7 @@ async function refreshDialogs() {
                     );
                     if (messageEditDate > messageDate && messageEditDate > lastForwardedEditDate) {
                       logDebug(
-                        `In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
+                        `[${rule.label}]: In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
                         false,
                       );
                       onMessageToForward({message}, true, true);
@@ -1208,7 +1252,7 @@ async function refreshDialogs() {
                     messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
                     logDebug(
-                      `In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
+                      `[${rule.label}]: In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                         message.message
                       }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
                         messageEditDate,
@@ -1217,7 +1261,7 @@ async function refreshDialogs() {
                     );
                     if (messageEditDate > messageDate && messageEditDate > lastProcessedEditDate) {
                       logDebug(
-                        `In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
+                        `[${rule.label}]: In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
                         false,
                       );
                       onMessageToForward({message}, true, true);
@@ -1228,7 +1272,8 @@ async function refreshDialogs() {
             }
             if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
               logDebug(
-                `In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` + `last source message id: ${lastSourceId}`,
+                `[${rule.label}]: In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` +
+                  `last source message id: ${lastSourceId}`,
                 false,
               );
               const messageCount =
@@ -1240,10 +1285,10 @@ async function refreshDialogs() {
               if (Array.isArray(messages) && messages.length > 0) {
                 messages.forEach((message, index) => {
                   if (message !== undefined) {
-                    logDebug(`Missed message - id: ${message.id}, message: ${message.message}`, false);
+                    logDebug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, false);
                     onMessageToForward({message}, true);
                   } else {
-                    logDebug(`Missed message [${index}] is undefined!`, false);
+                    logDebug(`[${rule.label}]: Missed message [${index}] is undefined!`, false);
                   }
                 });
               }
