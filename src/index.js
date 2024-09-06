@@ -838,8 +838,15 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         lastForwardedDelayedTimeout = lastForwardedDelayed[rule.from.id]?.timeout || null;
       skipProcessing =
         onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
-      let toForward =
-        onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate && lastForwardedMessage !== message;
+      let toForward = false;
+      if (onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
+        if (lastForwardedMessage === message) {
+          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited but content is the same!`, false);
+        } else {
+          toForward = true;
+          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited but content is different!`, false);
+        }
+      }
       if (onEdit === true && lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
         clearTimeout(lastForwardedDelayedTimeout);
         delete lastForwardedDelayed[rule.from.id];
