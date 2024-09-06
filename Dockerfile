@@ -15,6 +15,7 @@ RUN mkdir data
 
 RUN apk --no-cache --update --virtual build-dependencies add \
     build-base python3 \
+    && npm install -g npm@latest \
     && npm install --omit=dev \
     && apk del build-dependencies
 
