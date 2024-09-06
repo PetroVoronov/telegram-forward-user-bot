@@ -13,6 +13,9 @@ WORKDIR /app
 
 RUN mkdir data
 
-RUN npm install --omit=dev
+RUN apk --no-cache --update --virtual build-dependencies add \
+    build-base python3 \
+    && npm install --omit=dev \
+    && apk del build-dependencies
 
 CMD [ "node", "src/index.js"]
