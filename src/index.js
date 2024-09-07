@@ -786,7 +786,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
         lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
         cache.setItem('lastProcessed', lastProcessed);
       }
-      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate};
+      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
       cache.setItem('lastForwarded', lastForwarded);
     })
     .catch((err) => {
@@ -830,6 +830,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       const lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
         lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
+        lastForwardedMessage = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].message : '',
         lastProcessedId =
           (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
         lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
@@ -839,14 +840,28 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
       let toForward = false;
       if (onEdit === true) {
+        if (lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
+          if (message !== lastForwardedMessage) {
+            toForward = true;
+            logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`, false);
+          } else {
+            skipProcessing = true;
+            logDebug(
+              `[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited but content is the same! Processing is skipped!`,
+              false,
+            );
+          }
+        }
         if (lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
           clearTimeout(lastForwardedDelayedTimeout);
           delete lastForwardedDelayed[rule.from.id];
-          toForward = true;
-          logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`, false);
-        } else if (lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
-          toForward = true;
-          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`, false);
+          if (skipProcessing === false) {
+            toForward = true;
+            logInfo(
+              `[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`,
+              false,
+            );
+          }
         }
       }
       if (
@@ -893,7 +908,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           lastForwardedDelayed[rule.from.id] = {
             id: messageId,
             timeout: setTimeout(
-              () => forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate),
+              () => {
+                delete lastForwardedDelayed[rule.from.id];
+                forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
+              },
               rule.antiFastEditDelay * 1000,
             ),
           };
