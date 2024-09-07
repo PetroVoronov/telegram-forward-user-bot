@@ -77,6 +77,6 @@
 	"User Name to be allowed to use the bot": "User Name to be allowed to use the bot",
 	"Some": "Some",
 	"All": "All",
-	"Anti-fast edit delay": "Anti-fast edit delay",
+	"Anti fast edit delay": "Anti fast edit delay",
 	"Delay to prevent multiple forwards of the same message due to fast edits on source side": "Delay to prevent multiple forwards of the same message due to fast edits on source side"
 }

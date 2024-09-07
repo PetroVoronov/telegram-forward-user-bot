@@ -487,6 +487,22 @@ const getItemLabel = (data) => data.label,
         label: 'Process edits of forwarded message',
         text: 'Process (i.e. forward) edits of last forwarded message',
       },
+      antiFastEditDelay: {
+        type: 'number',
+        subType: 'integer',
+        options: {
+          min: 0,
+          max: 300,
+          step: 1,
+        },
+        sourceType: 'input',
+        presence: 'mandatory',
+        editable: true,
+        default: 0,
+        onSetReset: ['enabled'],
+        label: 'Anti fast edit delay',
+        text: 'Delay to prevent multiple forwards of the same message due to fast edits on source side',
+      },
       processMissedMaxCount: {
         type: 'number',
         subType: 'integer',
@@ -502,22 +518,6 @@ const getItemLabel = (data) => data.label,
         onSetReset: ['enabled'],
         label: 'Process missed messages',
         text: 'Process missed messages, max count is 100 messages per channel/group',
-      },
-      antiFastEditDelay: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: 0,
-          max: 300,
-          step: 1,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        default: 0,
-        onSetReset: ['enabled'],
-        label: 'Anti-fast edit delay',
-        text: 'Delay to prevent multiple forwards of the same message due to fast edits on source side',
       },
       from: {
         type: 'object',
@@ -786,7 +786,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
         lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
         cache.setItem('lastProcessed', lastProcessed);
       }
-      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
+      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate};
       cache.setItem('lastForwarded', lastForwarded);
     })
     .catch((err) => {
@@ -830,7 +830,6 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       const lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
         lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
-        lastForwardedMessage = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].message : '',
         lastProcessedId =
           (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
         lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
@@ -839,21 +838,16 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       skipProcessing =
         onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
       let toForward = false;
-      if (onEdit === true && lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
-        if (lastForwardedMessage === message) {
-          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited but content is the same!`, false);
-        } else {
+      if (onEdit === true) {
+        if (lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
+          clearTimeout(lastForwardedDelayedTimeout);
+          delete lastForwardedDelayed[rule.from.id];
           toForward = true;
-          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited but content is different!`, false);
+          logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`, false);
+        } else if (lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
+          toForward = true;
+          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`, false);
         }
-      }
-      if (onEdit === true && lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
-        clearTimeout(lastForwardedDelayedTimeout);
-        delete lastForwardedDelayed[rule.from.id];
-        toForward = true;
-        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before delay! Previous version will not forwarded!`, false);
-      } else if (onEdit === true) {
-        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is edited and going to be checked by rules!`, false);
       }
       if (
         toForward === false &&
@@ -863,7 +857,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
-        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is reply on the last forwarded message! Going to forward it too.`, false);
+        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`, false);
       } else if (
         toForward === false &&
         skipProcessing === false &&
@@ -891,8 +885,11 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, false);
       }
       if (toForward) {
-        if (rule.antiFastEditDelay > 0) {
-          logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is going to be forwarded in ${rule.antiFastEditDelay} seconds!`, false);
+        if (rule.processEditsOnForwarded === true && rule.antiFastEditDelay > 0) {
+          logDebug(
+            `[${rule.label}, ${sourceId}, ${messageId}]: Message is going to be forwarded in ${rule.antiFastEditDelay} seconds!`,
+            false,
+          );
           lastForwardedDelayed[rule.from.id] = {
             id: messageId,
             timeout: setTimeout(
