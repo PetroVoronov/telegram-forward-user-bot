@@ -1,4 +1,4 @@
-name: Build docker image and push to GitHub Container Registry
+name: Build docker image and push to Docker Hub and to GitHub Container Registry
 
 on:
   workflow_dispatch:
