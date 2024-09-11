@@ -46,6 +46,9 @@ const i18n = require('../i18n/i18n.config');
 class MenuItem {
   static CmdPrefix = '/';
   static CmdExit = `${MenuItem.CmdPrefix}exit`;
+
+  static buttonsOffsetRegex = new RegExp(`^${MenuItem.CmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
+
   static MenuMessageId = 'menuMessageId';
 
   static columnsMaxCountDefault = 0;
@@ -80,9 +83,24 @@ class MenuItem {
     return Button.inline(label || '?', Buffer.from(command));
   }
 
+  /**
+   * Get key for the value
+   * @param {string} key - Key to get item
+   * @param {string=} chatId - Chat Id
+   * @returns {string} - Key for the value
+   **/
+  static getValueKey(key, chatId = null) {
+    return chatId ? `${key}.${chatId}` : key;
+  }
+
   #label = '';
   #command = '';
   #text = '';
+
+  #getValue = (key, type) => null;
+  #setValue = (key, value) => {};
+  #removeValue = (key) => {};
+
   isRoot = false;
   onRun;
   group = '';
@@ -90,6 +108,11 @@ class MenuItem {
   holder = null;
   nested = new Array();
   commands = {};
+
+  columnsMaxCount = MenuItem.columnsMaxCountDefault;
+  textSummaryMaxLength = MenuItem.textSummaryMaxLengthDefault;
+  spaceBetweenColumns = MenuItem.spaceBetweenColumnsDefault;
+  buttonsMaxCount = MenuItem.buttonsMaxCountDefault;
 
   /**
    * @param {string|function} label - Label of the menu item
@@ -197,6 +220,36 @@ class MenuItem {
     this.updateCommands();
   }
 
+  async initRoot(configuration, nested = []) {
+    if (configuration) {
+      this.isRoot = true;
+      if (typeof configuration.getValue === 'function') {
+        this.#getValue = configuration.getValue;
+      }
+      if (typeof configuration.setValue === 'function') {
+        this.#setValue = configuration.setValue;
+      }
+      if (typeof configuration.removeValue === 'function') {
+        this.#removeValue = configuration.removeValue;
+      }
+      if (typeof configuration.columnsMaxCount === 'number') {
+        this.columnsMaxCount = configuration.columnsMaxCount;
+      }
+      if (typeof configuration.textSummaryMaxLength === 'number') {
+        this.textSummaryMaxLength = configuration.textSummaryMaxLength;
+      }
+      if (typeof configuration.spaceBetweenColumns === 'number') {
+        this.spaceBetweenColumns = configuration.spaceBetweenColumns;
+      }
+      if (typeof configuration.buttonsMaxCount === 'number') {
+        this.buttonsMaxCount = configuration.buttonsMaxCount;
+      }
+      for (const item of nested) {
+        await this.appendNested(item);
+      }
+    }
+  }
+
   /**
    * Get item from cache
    * @param {string} key - Key to get item
@@ -206,9 +259,13 @@ class MenuItem {
    **/
   getValue(key, type, chatId = null) {
     let result = null;
-    const root = this.getRoot();
-    if (root) {
-      result = root.getValue(key, type, chatId);
+    if (this.isRoot === true) {
+      result = this.#getValue(MenuItem.getValueKey(key, chatId), type);
+    } else {
+      const root = this.getRoot();
+      if (root) {
+        result = root.getValue(key, type, chatId);
+      }
     }
     return result;
   }
@@ -220,8 +277,12 @@ class MenuItem {
    * @param {string=} chatId - Chat Id
    **/
   setValue(key, value, chatId = null) {
-    const root = this.getRoot();
-    if (root) root.setValue(key, value, chatId);
+    if (this.isRoot === true) {
+      this.#setValue(MenuItem.getValueKey(key, chatId), value);
+    } else {
+      const root = this.getRoot();
+      if (root) root.setValue(key, value, chatId);
+    }
   }
 
   /**
@@ -230,8 +291,12 @@ class MenuItem {
    * @param {string=} chatId - Chat Id
    **/
   removeValue(key, chatId = null) {
-    const root = this.getRoot();
-    if (root) root.removeValue(key, chatId);
+    if (this.isRoot === true) {
+      this.#removeValue(key, MenuItem.getValueKey(key, chatId));
+    } else {
+      const root = this.getRoot();
+      if (root) root.removeValue(key, chatId);
+    }
   }
 
   /**
@@ -280,6 +345,12 @@ class MenuItem {
     return false;
   }
 
+  setLastCommand(command, chatId) {
+    if (typeof command === 'string' && command !== '' && typeof chatId === 'string' && chatId !== '') {
+      this.setValue('lastCommand', command, chatId);
+    }
+  }
+
   /**
    * Update commands of the menu item and it's subordinates to root item
    **/
@@ -289,6 +360,8 @@ class MenuItem {
       this.nested.forEach((item) => {
         item.updateCommands(root);
       });
+    } else if (this.isRoot === true) {
+      this.updateCommands(this);
     } else {
       const root = this.getRoot();
       if (root !== null) {
@@ -333,27 +406,42 @@ class MenuItem {
    * @returns {null} - Null if item is not found
    **/
   async getByCommand(command, chatId = null) {
-    if (this.command === command) {
-      return this;
-    } else if (command.startsWith(this.command) === true) {
-      await this.refresh();
-      let current = null;
+    let result = null;
+    let commandToCheck = command;
+    if (this.isRoot === true) {
+      const matchOffset = MenuItem.buttonsOffsetRegex.exec(command);
+      const buttonsOffset = isNaN(matchOffset?.groups?.offset) ? 0 : parseInt(matchOffset.groups.offset);
+      commandToCheck = command.replace(`$bo=${buttonsOffset}`, '');
+      this.setValue('buttonsOffset', buttonsOffset, chatId);
+    }
+    if (this.command === commandToCheck || (this.isRoot && commandToCheck === MenuItem.CmdExit)) {
+      if (commandToCheck !== commandToCheck) {
+        this.removeValue('lastCommand', chatId);
+      }
+      result = this;
+    } else {
+      if (this.isRoot === false) await this.refresh();
       for (const item of this.nested) {
-        current = await item.getByCommand(command);
+        result = await item.getByCommand(commandToCheck);
         logDebug(
-          `MenuItem.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, item.label: ${stringify(item.label)}`,
+          `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${commandToCheck}, item.label: ${stringify(
+            item.label,
+          )}`,
         );
-        if (current !== null) {
+        if (result !== null) {
           break;
         }
       }
       logDebug(
-        `MenuItem.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, label: ${stringify(current?.label)}`,
+        `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, label: ${stringify(result?.label)}`,
       );
-      return current;
-    } else {
-      return null;
     }
+    if (result !== null && result !== undefined) {
+      if (this.isRoot === true) this.setLastCommand(command, chatId);
+    } else {
+      result = null;
+    }
+    return result;
   }
 
   /**
@@ -567,7 +655,7 @@ class MenuItem {
             logWarning(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`, isBot);
           });
       }
-      if (this.onRun !== null) {
+      if (typeof this.onRun === 'function') {
         const reDraw = await this.onRun(client, peerId, isBot, messageId, command);
         logDebug(`MenuItem.onCommand '${this.command}'| command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
         if (reDraw === true && menuMessageId !== 0 && isEvent === true && isBot === true) {
@@ -604,7 +692,7 @@ class MenuItem {
         isBot,
       );
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
-      logDebug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target.command)}`, isBot);
+      logDebug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`, isBot);
       if (target !== null) {
         await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
       } else {
@@ -614,180 +702,23 @@ class MenuItem {
   }
 }
 
-class MenuItemRoot extends MenuItem {
-  static buttonsOffsetRegex = new RegExp(`^${MenuItem.CmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
-
-  isRoot = true;
-  columnsMaxCount = 0;
-  textSummaryMaxLength = 0;
-  spaceBetweenColumns = 1;
-
-  #getValue = (key, type, chatId) => null;
-  #setValue = (key, value, chatId) => {};
-  #removeValue = (key, chatId) => {};
-
-  /**
-   * @param {string|function} label - Label of the menu item
-   * @param {string|function} command - Command of the menu item
-   * @param {string|function} text - Text of the menu item
-   * @property {function} getValue - Get value from cache
-   * @property {function} setValue - Set value to cache
-   * @property {function} removeValue - Remove value from cache
-   * @param {number=} columnsMaxCount - Maximum columns of the menu item
-   * @param {number=} textSummaryMaxLength - Maximum length of the text summary
-   * @param {number=} spaceBetweenColumns - Space between columns
-   * @param {number=} buttonsMaxCount - Maximum buttons count
-   **/
-  constructor(
-    label,
-    command,
-    text,
-    getValue,
-    setValue,
-    removeValue,
-    columnsMaxCount = MenuItem.columnsMaxCountDefault,
-    textSummaryMaxLength = MenuItem.textSummaryMaxLengthDefault,
-    spaceBetweenColumns = MenuItem.spaceBetweenColumnsDefault,
-    buttonsMaxCount = MenuItem.buttonsMaxCountDefault,
-  ) {
-    super(label, command, text, null, '');
-    this.columnsMaxCount = columnsMaxCount;
-    this.textSummaryMaxLength = textSummaryMaxLength;
-    this.spaceBetweenColumns = spaceBetweenColumns;
-    this.buttonsMaxCount = buttonsMaxCount;
-    this.buttonsOffset = 0;
-    if (typeof getValue === 'function') {
-      this.#getValue = getValue;
-    }
-    if (typeof setValue === 'function') {
-      this.#setValue = setValue;
-    }
-    if (typeof removeValue === 'function') {
-      this.#removeValue = removeValue;
-    }
-    logDebug(
-      `MenuItemRoot '${this.command}'| typeof getValue: ${typeof getValue}, typeof setValue: ${typeof setValue}, ` +
-        `typeof removeValue: ${typeof removeValue}`,
-    );
-  }
-
-  /**
-   * Get key for the value
-   * @param {string} key - Key to get item
-   * @param {string=} chatId - Chat Id
-   * @returns {string} - Key for the value
-   **/
-  getValueKey(key, chatId = null) {
-    return chatId ? `${key}.${chatId}` : key;
-  }
-
-  /**
-   * Get value from cache
-   * @param {string} key - Key to get item
-   * @param {string=} type - Type of the item
-   * @param {string=} chatId - Chat Id
-   * @returns {any} - Item value
-   **/
-  getValue(key, type, chatId) {
-    const keyId = this.getValueKey(key, chatId);
-    return this.#getValue(keyId, type);
-  }
-
-  /**
-   * Set value to cache
-   * @param {string} key - Key to set item
-   * @param {any} value - Item value
-   * @param {string=} chatId - Chat Id
-   **/
-  setValue(key, value, chatId) {
-    const keyId = this.getValueKey(key, chatId);
-    this.#setValue(keyId, value);
-  }
-
-  /**
-   * Remove value from cache
-   * @param {string} key - Key to remove item
-   * @param {string=} chatId - Chat Id
-   **/
-  removeValue(key, chatId) {
-    const keyId = this.getValueKey(key, chatId);
-    this.#removeValue(keyId);
-  }
-
-  setLastCommand(command, chatId) {
-    if (typeof command === 'string' && command !== '' && typeof chatId === 'string' && chatId !== '') {
-      this.setValue('lastCommand', command, chatId);
-    }
-  }
-
-  /**
-   * Update commands of the menu item and it's subordinates to root item
-   **/
-  updateCommands(root = null) {
-    this.commands = {[this.command]: this};
-    this.nested.forEach((item) => {
-      item.updateCommands(this);
-    });
-  }
-
-  /**
-   * Get item by command from the menu items hierarchy
-   * @param {string} commandToCheck - Command to get item
-   * @param {string=} chatId - Chat Id
-   * @returns {MenuItem} - Item by command
-   * @returns {null} - Null if item is not found
-   **/
-  async getByCommand(command, chatId = '') {
-    const matchOffset = MenuItemRoot.buttonsOffsetRegex.exec(command),
-      buttonsOffset = isNaN(matchOffset?.groups?.offset) ? 0 : parseInt(matchOffset.groups.offset),
-      commandToCheck = command.replace(`$bo=${buttonsOffset}`, '');
-    let result = null;
-    this.setValue('buttonsOffset', buttonsOffset, chatId);
-    if (this.command === commandToCheck || commandToCheck === MenuItem.CmdExit) {
-      if (commandToCheck === MenuItem.CmdExit) {
-        this.removeValue('lastCommand', chatId);
-      }
-      result = this;
-    } else {
-      for (const item of this.nested) {
-        result = await item.getByCommand(commandToCheck);
-        logDebug(
-          `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${commandToCheck}, item.label: ${stringify(
-            item.label,
-          )}`,
-        );
-        if (result !== null) {
-          break;
-        }
-      }
-      logDebug(
-        `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, label: ${stringify(result?.label)}`,
-      );
-    }
-    if (result !== null && result !== undefined) {
-      this.setLastCommand(command, chatId);
-    } else {
-      result = null;
-    }
-    return result;
-  }
-}
-
 function stringifyButtons(value, space = 0) {
-  return stringify(value, (_key, value) => {
-    if (value?.type === 'Buffer') {
-      return Buffer.from(value.data).toString('utf8');
-    } else {
-      return value;
-    }
-  }, space);
+  return stringify(
+    value,
+    (_key, value) => {
+      if (value?.type === 'Buffer') {
+        return Buffer.from(value.data).toString('utf8');
+      } else {
+        return value;
+      }
+    },
+    space,
+  );
 }
-
 
 /**
  * @typedef {MenuItem} MenuItem
  **/
 module.exports = {
-  MenuItem,
-  MenuItemRoot,
+  MenuItem
 };

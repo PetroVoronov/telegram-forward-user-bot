@@ -4,8 +4,8 @@ const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
-const {MenuItem, MenuItemRoot} = require('./modules/menu/MenuItem');
-const {MenuItemStructured} = require('./modules/menu/MenuItemStructured');
+const {MenuItem} = require('./modules/menu/MenuItem');
+const {MenuItemRoot, MenuItemStructured} = require('./modules/menu/MenuItemStructured');
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
@@ -15,9 +15,6 @@ const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
-const {type} = require('node:os');
-const {on} = require('node:events');
-const { log } = require('node:console');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -663,44 +660,38 @@ const getItemLabel = (data) => data.label,
     },
   };
 
-async function initMenu() {
-  const menuConfiguration = new MenuItemStructured(
-      i18n.__('Configuration'),
-      '/configuration',
-      configurationId,
-      configurationStructure,
-      false,
-      -1,
-      () => {
+const menuRootStructure = {
+  isRoot: true,
+  id: 'start',
+  label: i18n.__('Menu'),
+  text: i18n.__('Menu'),
+  options: {
+    getValue: (key, type) => cache.getItem(key, type),
+    setValue: (key, value) => cache.setItem(key, value),
+    removeValue: (key) => cache.removeItem(key),
+    menuColumnsMaxCount: configuration.menuColumnsMaxCount,
+    textSummaryMaxLength: configuration.textSummaryMaxLength,
+    spaceBetweenColumns: configuration.spaceBetweenColumns,
+    buttonsMaxCount: configuration.buttonsMaxCount,
+  },
+  structure: {
+    [configurationId]: {
+      type: 'object',
+      label: i18n.__('Configuration'),
+      structure: configurationStructure,
+      save: () => {
         configuration = cache.getItem(configurationId, 'object');
         updateCommandListeners();
       },
-    ),
-    menuForwardRules = new MenuItemStructured(
-      i18n.__('Forward Rules'),
-      '/forwardRules',
-      forwardRulesId,
-      forwardRuleStructure,
-      true,
-      -1,
-      refreshDialogsOnce,
-    );
-  menuRoot = new MenuItemRoot(
-    i18n.__('Menu'),
-    '/start',
-    i18n.__('Menu'),
-    (key, type) => cache.getItem(key, type),
-    (key, value) => cache.setItem(key, value),
-    (key) => cache.removeItem(key),
-    configuration.menuColumnsMaxCount,
-    configuration.textSummaryMaxLength,
-    configuration.spaceBetweenColumns,
-    configuration.buttonsMaxCount,
-  );
-  await menuRoot.appendNested(menuConfiguration);
-  await menuRoot.appendNested(menuForwardRules);
-  return Promise.resolve(menuRoot);
-}
+    },
+    [forwardRulesId]: {
+      label: i18n.__('Forward Rules'),
+      type: 'array',
+      structure: forwardRuleStructure,
+      save: refreshDialogsOnce,
+    },
+  },
+};
 
 function updateCommandListeners(force = false) {
   if (clientAsBot !== null && clientAsBot.connected === true) {
@@ -872,7 +863,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
-        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`, false);
+        logInfo(
+          `[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`,
+          false,
+        );
       } else if (
         toForward === false &&
         skipProcessing === false &&
@@ -907,13 +901,10 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           );
           lastForwardedDelayed[rule.from.id] = {
             id: messageId,
-            timeout: setTimeout(
-              () => {
-                delete lastForwardedDelayed[rule.from.id];
-                forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
-              },
-              rule.antiFastEditDelay * 1000,
-            ),
+            timeout: setTimeout(() => {
+              delete lastForwardedDelayed[rule.from.id];
+              forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
+            }, rule.antiFastEditDelay * 1000),
           };
         } else {
           forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
@@ -1025,88 +1016,86 @@ process.on('SIGTERM', gracefulExit);
 
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
-initMenu().then((menu) => {
-  menuRoot = menu;
-  if (options.command !== undefined) {
-    logDebug(`Testing command: ${options.command}`);
-    menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
-  } else {
-    getAPIAttributes().then(() => {
-      if (apiId !== null && apiHash !== null) {
-        clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
+menuRoot = new MenuItemRoot(menuRootStructure);
+if (options.command !== undefined) {
+  logDebug(`Testing command: ${options.command}`);
+  menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
+} else {
+  getAPIAttributes().then(() => {
+    if (apiId !== null && apiHash !== null) {
+      clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
+        connectionRetries: Infinity,
+        autoReconnect: true,
+        appVersion: scriptVersion,
+      });
+      clientAsUser.setParseMode('html');
+      if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
+      if (options.noBot !== true) {
+        clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
           connectionRetries: Infinity,
           autoReconnect: true,
           appVersion: scriptVersion,
         });
-        clientAsUser.setParseMode('html');
-        if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
-        if (options.noBot !== true) {
-          clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
-            connectionRetries: Infinity,
-            autoReconnect: true,
-            appVersion: scriptVersion,
-          });
-          clientAsBot.setParseMode('html');
-          if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
-        }
-        const rl = readline.createInterface({
-          input,
-          output,
-        });
-        clientAsUser
-          .start({
-            phoneNumber: async () => await rl.question('Enter your phone number: '),
-            password: async () => rl.question('Enter your password: '),
-            phoneCode: async () => rl.question('Enter the code: '),
-            onError: (err) => {
-              logWarning(err, false);
-            },
-          })
-          .then((connect) => {
-            rl.close();
-            clientAsUser
-              .isUserAuthorized()
-              .then((isAuthorized) => {
-                logInfo(`User is authorized: ${isAuthorized}`, false);
-                clientAsUser.getMe().then((user) => {
-                  meUser = user;
-                  if (meUser !== null) {
-                    meUserId = Number(meUser.id);
-                  }
-                  refreshDialogsStart(true);
-                  const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
-                  let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
-                  logDebug(
-                    `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`,
-                    false,
-                  );
-                  if (timeOut >= timeOutToPreventBotFlood) {
-                    timeOut = 0;
-                  } else if (timeOut > 0) {
-                    timeOut = timeOutToPreventBotFlood - timeOut;
-                  }
-                  if (timeOut > 0) {
-                    logDebug(`Bot flood prevention timeout: ${timeOut} ms`);
-                    setTimeout(() => {
-                      startBotClient();
-                    }, timeOut);
-                  } else {
-                    startBotClient();
-                  }
-                });
-              })
-              .catch((err) => {
-                logWarning(`User is not authorized! Error is ${stringify(err)}`, false);
-              });
-          })
-          .catch((err) => {
-            rl.close();
-            logWarning(`User can't connect! Error is ${stringify(err)}`, false);
-          });
+        clientAsBot.setParseMode('html');
+        if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
       }
-    });
-  }
-});
+      const rl = readline.createInterface({
+        input,
+        output,
+      });
+      clientAsUser
+        .start({
+          phoneNumber: async () => await rl.question('Enter your phone number: '),
+          password: async () => rl.question('Enter your password: '),
+          phoneCode: async () => rl.question('Enter the code: '),
+          onError: (err) => {
+            logWarning(err, false);
+          },
+        })
+        .then((connect) => {
+          rl.close();
+          clientAsUser
+            .isUserAuthorized()
+            .then((isAuthorized) => {
+              logInfo(`User is authorized: ${isAuthorized}`, false);
+              clientAsUser.getMe().then((user) => {
+                meUser = user;
+                if (meUser !== null) {
+                  meUserId = Number(meUser.id);
+                }
+                refreshDialogsStart(true);
+                const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
+                let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
+                logDebug(
+                  `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`,
+                  false,
+                );
+                if (timeOut >= timeOutToPreventBotFlood) {
+                  timeOut = 0;
+                } else if (timeOut > 0) {
+                  timeOut = timeOutToPreventBotFlood - timeOut;
+                }
+                if (timeOut > 0) {
+                  logDebug(`Bot flood prevention timeout: ${timeOut} ms`);
+                  setTimeout(() => {
+                    startBotClient();
+                  }, timeOut);
+                } else {
+                  startBotClient();
+                }
+              });
+            })
+            .catch((err) => {
+              logWarning(`User is not authorized! Error is ${stringify(err)}`, false);
+            });
+        })
+        .catch((err) => {
+          rl.close();
+          logWarning(`User can't connect! Error is ${stringify(err)}`, false);
+        });
+    }
+  });
+}
 
 function getRandomId() {
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);

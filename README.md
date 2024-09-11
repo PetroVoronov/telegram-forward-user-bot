@@ -1,5 +1,13 @@
 # Telegram Forward User Bot
 
+[![Docker Image Version](https://img.shields.io/docker/v/petrovoronov/telegram-forward-user-bot)](https://hub.docker.com/r/petrovoronov/telegram-forward-user-bot)
+[![Docker Pulls](https://img.shields.io/docker/pulls/petrovoronov/telegram-forward-user-bot)](https://hub.docker.com/r/petrovoronov/telegram-forward-user-bot)
+[![GitHub license](https://img.shields.io/github/license/PetroVoronov/telegram-forward-user-bot)](LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/PetroVoronov/telegram-forward-user-bot)](https://github.com/PetroVoronov/telegram-forward-user-bot/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/PetroVoronov/telegram-forward-user-bot)](https://github.com/PetroVoronov/telegram-forward-user-bot/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/PetroVoronov/telegram-forward-user-bot)](https://github.com/PetroVoronov/telegram-forward-user-bot/pulls)
+
+## About
 A Telegram "bot" working as a user, using MTProto via [gramjs](https://github.com/gram-js/gramjs), to forward messages between chats/groups/channels. Configurable via Bot menu.
 
 ## Description
@@ -12,6 +20,7 @@ The bot can be used to configure:
 ## Table of Contents
 
 - [Telegram Forward User Bot](#telegram-forward-user-bot)
+  - [About](#about)
   - [Description](#description)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
