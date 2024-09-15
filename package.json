@@ -22,9 +22,6 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
-    "preversion": "genversion src/version.js --property name,version",
-    "tag" : "git tag -a v$npm_package_version -m \"Version $npm_package_version\"",
-    "tag-push" : "git push origin --tags",
     "lint": "eslint .",
     "start": "node src/index.js",
     "debug": "node src/index.js --debug",
@@ -35,7 +32,6 @@
     "@babel/eslint-parser": "^7.25.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^1.0.4",
-    "genversion": "^3.2.0",
     "globals": "^15.8.0"
   }
 }
