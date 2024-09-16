@@ -1,8 +1,9 @@
+/* eslint-disable sonarjs/public-static-readonly */
 /** @module menu/menu-item  **/
 
 const stringify = require('json-stringify-safe');
 const {Button} = require('telegram/tl/custom/button');
-const {logDebug, logInfo, logWarning, logError} = require('../logging/logging');
+const {securedLogger: log} = require('../logging/logging');
 const emojiRegex = require('emoji-regex');
 const i18n = require('../i18n/i18n.config');
 
@@ -195,7 +196,7 @@ class MenuItem {
     let result = -1;
     const root = this.getRoot(),
       command = item.command;
-    logDebug(`command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
+    log.debug(`command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
     root?.updateCommands();
     if (command !== null && Object.keys(root?.commands).includes(command) === false) {
       if (index === -1 || index >= this.nested.length) {
@@ -208,7 +209,7 @@ class MenuItem {
       item.setHolder(this);
       await item.postAppend();
     } else {
-      logWarning(`Command '${command}' is already exists! Item can't be added to the menu!`);
+      log.warn(`Command '${command}' is already exists! Item can't be added to the menu!`);
     }
     return result;
   }
@@ -423,7 +424,7 @@ class MenuItem {
       if (this.isRoot === false) await this.refresh();
       for (const item of this.nested) {
         result = await item.getByCommand(commandToCheck);
-        logDebug(
+        log.debug(
           `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${commandToCheck}, item.label: ${stringify(
             item.label,
           )}`,
@@ -432,7 +433,7 @@ class MenuItem {
           break;
         }
       }
-      logDebug(
+      log.debug(
         `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, label: ${stringify(result?.label)}`,
       );
     }
@@ -475,7 +476,7 @@ class MenuItem {
       nestedCountCurrent--;
       nested.forEach((item, index) => {
         const itemLabelLength = MenuItem.getStringLength(item.label);
-        logDebug(
+        log.debug(
           `MenuItem.getButtons '${this.command}'| index: ${index}, label: ${item.label},` +
             ` command: ${item.command}, group: ${item.group}`,
         );
@@ -548,13 +549,13 @@ class MenuItem {
    * @returns {Promise} Promise of the draw operation result
    **/
   async draw(client, peerId) {
-    logDebug(`MenuItem.draw '${this.command}'| label: ${this.label}, text: ${this.text}`);
+    log.debug(`MenuItem.draw '${this.command}'| label: ${this.label}, text: ${this.text}`);
     const refreshed = await this.refresh();
-    logDebug(`MenuItem.draw '${this.command}'| Refreshed with result: ${refreshed}!`);
+    log.debug(`MenuItem.draw '${this.command}'| Refreshed with result: ${refreshed}!`);
     if (refreshed === true) {
       const menuMessageId = this.getMessageId(peerId?.userId),
         buttons = this.getButtons(peerId?.userId);
-      logDebug(`MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
+      log.debug(`MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
       if (client !== null && peerId !== null) {
         client.isBot().then((isBot) => {
           const messageParams = {};
@@ -564,7 +565,7 @@ class MenuItem {
           if (isBot && menuMessageId !== 0) {
             messageParams.message = menuMessageId;
             messageParams.text = this.text;
-            logDebug(
+            log.debug(
               `MenuItem.draw '${this.command}'| Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(
                 messageParams,
               )}`,
@@ -573,7 +574,7 @@ class MenuItem {
             client
               .editMessage(peerId, messageParams)
               .then((res) => {
-                logDebug(`MenuItem.draw '${this.command}'| Message edited successfully!`, true);
+                log.debug(`MenuItem.draw '${this.command}'| Message edited successfully!`, true);
                 client.isBot().then((isBot) => {
                   if (isBot) {
                     this.setMessageId(peerId?.userId, res.id);
@@ -582,11 +583,11 @@ class MenuItem {
               })
               .catch((err) => {
                 if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
-                  logDebug(`MenuItem.draw '${this.command}'| Message Id is invalid! Going to send new message!`, true);
+                  log.debug(`MenuItem.draw '${this.command}'| Message Id is invalid! Going to send new message!`, true);
                   this.removeMessageId(peerId?.userId);
                   this.draw(client, peerId);
                 } else {
-                  logWarning(
+                  log.warn(
                     `MenuItem.draw '${this.command}'| Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${
                       this.text
                     }`,
@@ -596,14 +597,14 @@ class MenuItem {
               });
           } else {
             messageParams.message = this.text;
-            logDebug(
+            log.debug(
               `MenuItem.draw '${this.command}'| Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
               true,
             );
             client
               .sendMessage(peerId, messageParams)
               .then((res) => {
-                logDebug(`MenuItem.draw '${this.command}'| Message sent successfully!`, true);
+                log.debug(`MenuItem.draw '${this.command}'| Message sent successfully!`, true);
                 client.isBot().then((isBot) => {
                   if (isBot) {
                     this.setMessageId(peerId?.userId, res.id);
@@ -611,7 +612,7 @@ class MenuItem {
                 });
               })
               .catch((err) => {
-                logWarning(
+                log.warn(
                   `MenuItem.draw '${this.command}'| Message send error: ${stringify(err)}, text: ${
                     this.text
                   },  menuMessageId: ${menuMessageId}`,
@@ -638,7 +639,7 @@ class MenuItem {
    **/
   async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
     const menuMessageId = this.getMessageId(peerId?.userId);
-    logDebug(
+    log.debug(
       `MenuItem.onCommand '${this.command}'| command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(
         MenuItem.CmdPrefix,
       )}`,
@@ -649,25 +650,25 @@ class MenuItem {
         client
           .deleteMessages(peerId, [messageId], {revoke: true})
           .then((res) => {
-            logDebug(`MenuItem.onCommand '${this.command}'| Message from User deleted successfully!`, isBot);
+            log.debug(`MenuItem.onCommand '${this.command}'| Message from User deleted successfully!`, isBot);
           })
           .catch((err) => {
-            logWarning(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`, isBot);
+            log.warn(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`, isBot);
           });
       }
       if (typeof this.onRun === 'function') {
         const reDraw = await this.onRun(client, peerId, isBot, messageId, command);
-        logDebug(`MenuItem.onCommand '${this.command}'| command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
+        log.debug(`MenuItem.onCommand '${this.command}'| command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
         if (reDraw === true && menuMessageId !== 0 && isEvent === true && isBot === true) {
           client
             .deleteMessages(peerId, [menuMessageId], {revoke: true})
             .then((res) => {
-              logDebug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
+              log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
               this.removeMessageId(peerId?.userId);
               this.draw(client, peerId);
             })
             .catch((err) => {
-              logWarning(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
+              log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
             });
         } else {
           await this.draw(client, peerId);
@@ -676,27 +677,27 @@ class MenuItem {
         client
           .deleteMessages(peerId, [menuMessageId], {revoke: true})
           .then((res) => {
-            logDebug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
+            log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
             this.removeMessageId(peerId?.userId);
           })
           .catch((err) => {
-            logWarning(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
+            log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
           });
       } else {
         await this.draw(client, peerId);
       }
     } else {
       const root = this.getRoot();
-      logDebug(
+      log.debug(
         `MenuItem.onCommand '${this.command}'| command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`,
         isBot,
       );
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
-      logDebug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`, isBot);
+      log.debug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`, isBot);
       if (target !== null) {
         await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
       } else {
-        logWarning(`MenuItem.onCommand '${this.command}'| command: ${command} is not allowed! Appropriate item is not found!`, isBot);
+        log.warn(`MenuItem.onCommand '${this.command}'| command: ${command} is not allowed! Appropriate item is not found!`, isBot);
       }
     }
   }

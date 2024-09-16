@@ -9,15 +9,75 @@ const {MenuItemRoot, MenuItemStructured} = require('./modules/menu/MenuItemStruc
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
-const {logLevelInfo, logLevelDebug, setLogLevel, logDebug, logInfo, logWarning, logError} = require('./modules/logging/logging');
+const {securedLogger: log} = require('./modules/logging/logging');
 const {NewMessage, NewMessageEvent} = require('telegram/events');
 const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
+const { isBot } = require('telegram/client/users');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
+
+const options = yargs
+  .usage('Usage: $0 [options]')
+  .option('r', {
+    alias: 'refresh-interval',
+    describe: 'Refresh information from Telegram servers, in seconds',
+    type: 'number',
+    default: refreshIntervalDefault,
+    demandOption: false,
+  })
+  .option('b', {
+    alias: 'no-bot',
+    describe: 'Start without the bot instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('d', {
+    alias: 'debug',
+    describe: 'Debug level of logging',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('debug-client-user', {
+    describe: 'Debug level of logging for the client "user" instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('debug-client-bot', {
+    describe: 'Debug level of logging for the client "bot" instance',
+    type: 'boolean',
+    demandOption: false,
+  })
+  .option('c', {
+    alias: 'command',
+    describe: 'Test menu command from the command line',
+    type: 'string',
+    demandOption: false,
+  })
+  .version(scriptVersion)
+  .help('h')
+  .alias('h', 'help')
+  .epilog(`${scriptName} v${scriptVersion}`).argv;
+
+if (options.debug) {
+  log.setLevel('debug');
+}
+log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
+
+const logAsBot = {isBot: true};
+const logAsUser = {isBot: false};
+
+
+log.info(`${scriptName} v${scriptVersion} started!`);
+log.info(`Refresh interval: ${options.refreshInterval} seconds!`);
+log.info(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
+if (options.noBot === true) log.info('Starting without bot instance!');
+if (options.debug === true) log.info('Verbose logging is enabled!');
+if (options.command !== undefined) log.info(`Command to test: ${options.command}`);
+
 
 const getLanguages = () => {
     return new Map(i18n.getLocales().map((locale) => [locale, locale]));
@@ -217,57 +277,6 @@ if (Object.keys(configuration).length !== Object.keys(configurationStructure.ite
   cache.setItem(configurationId, configuration);
 }
 
-const options = yargs
-  .usage('Usage: $0 [options]')
-  .option('r', {
-    alias: 'refresh-interval',
-    describe: 'Refresh information from Telegram servers, in seconds',
-    type: 'number',
-    default: refreshIntervalDefault,
-    demandOption: false,
-  })
-  .option('b', {
-    alias: 'no-bot',
-    describe: 'Start without the bot instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('d', {
-    alias: 'debug',
-    describe: 'Debug level of logging',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('debug-client-user', {
-    describe: 'Debug level of logging for the client "user" instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('debug-client-bot', {
-    describe: 'Debug level of logging for the client "bot" instance',
-    type: 'boolean',
-    demandOption: false,
-  })
-  .option('c', {
-    alias: 'command',
-    describe: 'Test menu command from the command line',
-    type: 'string',
-    demandOption: false,
-  })
-  .version(scriptVersion)
-  .help('h')
-  .alias('h', 'help')
-  .epilog(`${scriptName} v${scriptVersion}`).argv;
-
-setLogLevel(options.debug ? logLevelDebug : logLevelInfo);
-
-logInfo(`${scriptName} v${scriptVersion} started!`);
-logInfo(`Refresh interval: ${options.refreshInterval} seconds!`);
-logInfo(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
-if (options.noBot === true) logInfo('Starting without bot instance!');
-if (options.debug === true) logInfo('Verbose logging is enabled!');
-if (options.command !== undefined) logInfo(`Command to test: ${options.command}`);
-
 const refreshIntervalSetOnStart = Boolean(process.argv.indexOf('-r') > -1 || process.argv.indexOf('--refresh-interval') > -1);
 if (refreshIntervalSetOnStart === false) {
   refreshInterval = configuration.refreshInterval * 1000;
@@ -366,7 +375,7 @@ const getItemLabel = (data) => data.label,
             resolve(res.topics);
           })
           .catch((err) => {
-            logWarning(err, false);
+            log.warn(err, logAsUser);
             resolve([]);
           });
       } else {
@@ -387,7 +396,7 @@ const getItemLabel = (data) => data.label,
           });
         }
       } else {
-        logWarning(`No topics can be found for ${item.title}!`);
+        log.warn(`No topics can be found for ${item.title}!`);
       }
     }
     return result;
@@ -709,7 +718,7 @@ function updateCommandListeners(force = false) {
           clientAsBot.removeEventHandler(item[1], item[0]);
         });
       }
-      logInfo(`Listen on commands from : ${stringify(allowedUsers)}`, true);
+      log.info(`Listen on commands from : ${stringify(allowedUsers)}`, logAsBot);
       clientAsBot.addEventHandler(onCommand, new CallbackQuery({chats: allowedUsers}));
       clientAsBot.addEventHandler(onCommand, new NewMessage({chats: allowedUsers}));
     }
@@ -737,18 +746,19 @@ function updateForwardListeners(force = false) {
       clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
       fromIds = newFromIds;
       if (fromIds.length > 0) {
-        logInfo(`Starting listen on New Messages in : ${stringify(fromIds)}`, false);
+        log.info(`Starting listen on New Messages in : ${stringify(fromIds)}`, logAsUser);
         clientAsUser.addEventHandler(onMessageToForward, new NewMessage({chats: fromIds}));
       }
       fromIdsWithEdit = newFromIdsWithEdit;
       if (fromIdsWithEdit.length > 0) {
-        logInfo(`Starting listen on Edited Messages in : ${stringify(fromIdsWithEdit)}`, false);
+        log.info(`Starting listen on Edited Messages in : ${stringify(fromIdsWithEdit)}`, logAsUser);
         clientAsUser.addEventHandler((event) => onMessageToForward(event, false, true), new EditedMessage({chats: fromIdsWithEdit}));
       }
     }
   }
 }
 
+// eslint-disable-next-line sonarjs/sonar-max-params
 function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate) {
   const forwardMessageInput = {
     fromPeer: fromPeer,
@@ -772,7 +782,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
       if (rule.antiFastEditDelay > 0 && lastForwardedDelayed[rule.from.id] === undefined) {
         delete lastForwardedDelayed[rule.from.id];
       }
-      logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Message is forwarded successfully!`, false);
+      log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Message is forwarded successfully!`, logAsUser);
       if (messageId > lastProcessedId) {
         lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
         cache.setItem('lastProcessed', lastProcessed);
@@ -781,7 +791,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
       cache.setItem('lastForwarded', lastForwarded);
     })
     .catch((err) => {
-      logWarning(`[${rule.label}, ${sourceId}, ${messageId}]: ${err}`, false);
+      log.warn(`[${rule.label}, ${sourceId}, ${messageId}]: ${err}`, logAsUser);
     });
 }
 
@@ -792,13 +802,13 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
     messageId = event.message.id,
     messageEditDate = event.message.editDate || 0,
     messageIsString = typeof event.message.message === 'string';
-  logDebug(
+  log.debug(
     `[${sourceId}, ${messageId}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
     }, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
       event.message.editDate
     } (${printMessageDate(messageEditDate)}), message: ${message}.`,
-    false,
+    logAsUser,
   );
   if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
     const rule = forwardRules.find((rule) => rule.from.id === `${sourceId}`),
@@ -815,7 +825,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
     ) {
       if (onEdit === false) {
         clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
-          logWarning(`[${rule.label}, ${sourceId}, ${messageId}]: MarkAsRead error: ${stringify(err)}`, false);
+          log.warn(`[${rule.label}, ${sourceId}, ${messageId}]: MarkAsRead error: ${stringify(err)}`, logAsUser);
         });
       }
       const lastForwardedId =
@@ -827,19 +837,22 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
         lastForwardedDelayedId = lastForwardedDelayed[rule.from.id]?.id || 0,
         lastForwardedDelayedTimeout = lastForwardedDelayed[rule.from.id]?.timeout || null;
-      skipProcessing =
+      let skipProcessing =
         onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
       let toForward = false;
       if (onEdit === true) {
         if (lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
           if (message !== lastForwardedMessage) {
             toForward = true;
-            logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`, false);
+            log.debug(
+              `[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`,
+              logAsUser,
+            );
           } else {
             skipProcessing = true;
-            logDebug(
+            log.debug(
               `[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited but content is the same! Processing is skipped!`,
-              false,
+              logAsUser,
             );
           }
         }
@@ -848,9 +861,9 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           delete lastForwardedDelayed[rule.from.id];
           if (skipProcessing === false) {
             toForward = true;
-            logInfo(
+            log.info(
               `[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`,
-              false,
+              logAsUser,
             );
           }
         }
@@ -863,9 +876,9 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
         event.message.replyTo?.replyToMsgId === lastForwardedId
       ) {
         toForward = true;
-        logInfo(
+        log.info(
           `[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`,
-          false,
+          logAsUser,
         );
       } else if (
         toForward === false &&
@@ -882,22 +895,22 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
             let includesFound = false;
             if (keywordsGroup.includeAll === true) {
               includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
-              logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, false);
+              log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, logAsUser);
             } else {
               includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
-              logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, false);
+              log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, logAsUser);
             }
             const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
-            logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, false);
+            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, logAsUser);
             return includesFound && excludesNotFound;
           });
-        logInfo(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, false);
+        log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, logAsUser);
       }
       if (toForward) {
         if (rule.processEditsOnForwarded === true && rule.antiFastEditDelay > 0) {
-          logDebug(
+          log.debug(
             `[${rule.label}, ${sourceId}, ${messageId}]: Message is going to be forwarded in ${rule.antiFastEditDelay} seconds!`,
-            false,
+            logAsUser,
           );
           lastForwardedDelayed[rule.from.id] = {
             id: messageId,
@@ -910,7 +923,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
         }
       } else {
-        logDebug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is not forwarded! See reasons above.`, false);
+        log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is not forwarded! See reasons above.`, logAsUser);
         if (messageId > lastProcessedId || (messageId === lastProcessedId && messageEditDate > lastProcessedEditDate)) {
           lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate || 0};
           cache.setItem('lastProcessed', lastProcessed);
@@ -923,21 +936,24 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
 function onCommand(event) {
   if (event instanceof CallbackQueryEvent) {
     const {userId, peer, msgId: messageId, data} = event.query;
-    logDebug(`onCommand | CallBack | userId: ${userId}, messageId: ${messageId}, data: ${data}`, true);
+    log.debug(`onCommand | CallBack | userId: ${userId}, messageId: ${messageId}, data: ${data}`, logAsBot);
     if (
       data !== undefined &&
       ((userId !== undefined && allowedUsers.includes(Number(userId))) ||
         (peer.userId !== undefined && allowedUsers.includes(Number(peer.userId))))
     ) {
       const command = data.toString();
-      logDebug(`onCommand | command: ${command}`, true);
+      log.debug(`onCommand | command: ${command}`, logAsBot);
       if (command.startsWith(MenuItem.CmdPrefix)) {
         menuRoot.onCommand(clientAsBot, peer, messageId, command, true, true);
       }
     }
   } else if (event instanceof NewMessageEvent) {
     const {peerId, id: messageId, message: command} = event.message;
-    logDebug(`onCommand | userId: ${peerId.userId}, isBot: ${event._client?._bot}, messageId: ${messageId}, command: ${command}`, false);
+    log.debug(
+      `onCommand | userId: ${peerId.userId}, isBot: ${event._client?._bot}, messageId: ${messageId}, command: ${command}`,
+      logAsBot,
+    );
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
       if (event._client?._bot === true) {
         menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
@@ -946,7 +962,7 @@ function onCommand(event) {
       }
     }
   } else {
-    logWarning(`onCommand | Unknown event: ${event.constructor.name}!`, false);
+    log.warn(`onCommand | Unknown event: ${event.constructor.name}!`, logAsBot);
   }
 }
 
@@ -956,53 +972,56 @@ function startBotClient() {
       .start({
         botAuthToken: botAuthToken,
         onError: (err) => {
-          logWarning(err, true);
+          log.warn(err, logAsBot);
         },
       })
       .then(() => {
         clientAsBot
           .isUserAuthorized()
           .then((isAuthorized) => {
-            logInfo(`Is authorized: ${isAuthorized}`, true);
+            log.info(`Is authorized: ${isAuthorized}`, logAsBot);
             cache.setItem('botStartTimeStamp', `${Date.now()}`);
             clientAsBot.getMe().then((user) => {
               meBot = user;
               meBotId = Number(meBot.id);
               updateCommandListeners(true);
               if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
+                // eslint-disable-next-line sonarjs/no-nested-functions
                 const items = clientDialogs.filter((dialog) => dialog.isUser && `${dialog.id}` === `${meBot.id}`);
                 if (items.length === 0 && meUser !== null) {
-                  logInfo(`Chat with bot is not open!`, true);
+                  log.info(`Chat with bot is not open!`, logAsBot);
                   clientAsUser
                     .getInputEntity(meBot.username)
+                    // eslint-disable-next-line sonarjs/no-nested-functions
                     .then((botId) => {
-                      logDebug(`Entity: ${stringify(botId)}`, false);
+                      log.debug(`Entity: ${stringify(botId)}`, logAsUser);
                       clientAsUser
                         .sendMessage(botId, {message: '/start'})
                         .then((msg) => {
-                          logDebug(`Message to the chat with bot sent successfully!`, false);
+                          log.debug(`Message to the chat with bot sent successfully!`, logAsUser);
                         })
                         .catch((err) => {
-                          logWarning(`Can't send message to the bot! Error is ${stringify(err)}`, false);
+                          log.warn(`Can't send message to the bot! Error is ${stringify(err)}`, logAsUser);
                         });
                     })
+                    // eslint-disable-next-line sonarjs/no-nested-functions
                     .catch((err) => {
-                      logWarning(`Can't get bot entity! Error is ${stringify(err)}`, true);
+                      log.warn(`Can't get bot entity! Error is ${stringify(err)}`, logAsBot);
                     });
                 } else if (items.length > 0) {
-                  logDebug(`Chat with bot is already started!`, true);
+                  log.debug(`Chat with bot is already started!`, logAsBot);
                 }
               }
             });
           })
           .catch((err) => {
-            logWarning(`Bot is not authorized! Error is ${stringify(err)}`, true);
+            log.warn(`Bot is not authorized! Error is ${stringify(err)}`, logAsBot);
           });
       })
       .catch((err) => {
-        logWarning(`Bot can't connect! Error is ${stringify(err)}`, true);
+        log.warn(`Bot can't connect! Error is ${stringify(err)}`, logAsBot);
         if (typeof err.seconds === 'number') {
-          logWarning(`Bot will try to connect in ${err.seconds} seconds!`, true);
+          log.warn(`Bot will try to connect in ${err.seconds} seconds!`, logAsBot);
           setTimeout(() => {
             startBotClient();
           }, err.seconds * 1000);
@@ -1018,7 +1037,7 @@ i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
 menuRoot = new MenuItemRoot(menuRootStructure);
 if (options.command !== undefined) {
-  logDebug(`Testing command: ${options.command}`);
+  log.debug(`Testing command: ${options.command}`);
   menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
 } else {
   getAPIAttributes().then(() => {
@@ -1049,7 +1068,7 @@ if (options.command !== undefined) {
           password: async () => rl.question('Enter your password: '),
           phoneCode: async () => rl.question('Enter the code: '),
           onError: (err) => {
-            logWarning(err, false);
+            log.warn(err, logAsUser);
           },
         })
         .then((connect) => {
@@ -1057,7 +1076,7 @@ if (options.command !== undefined) {
           clientAsUser
             .isUserAuthorized()
             .then((isAuthorized) => {
-              logInfo(`User is authorized: ${isAuthorized}`, false);
+              log.info(`User is authorized: ${isAuthorized}`, logAsUser);
               clientAsUser.getMe().then((user) => {
                 meUser = user;
                 if (meUser !== null) {
@@ -1066,9 +1085,8 @@ if (options.command !== undefined) {
                 refreshDialogsStart(true);
                 const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
                 let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
-                logDebug(
-                  `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`,
-                  false,
+                log.debug(
+                  `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`
                 );
                 if (timeOut >= timeOutToPreventBotFlood) {
                   timeOut = 0;
@@ -1076,7 +1094,8 @@ if (options.command !== undefined) {
                   timeOut = timeOutToPreventBotFlood - timeOut;
                 }
                 if (timeOut > 0) {
-                  logDebug(`Bot flood prevention timeout: ${timeOut} ms`);
+                  log.debug(`Bot flood prevention timeout: ${timeOut} ms`);
+                  // eslint-disable-next-line sonarjs/no-nested-functions
                   setTimeout(() => {
                     startBotClient();
                   }, timeOut);
@@ -1086,18 +1105,19 @@ if (options.command !== undefined) {
               });
             })
             .catch((err) => {
-              logWarning(`User is not authorized! Error is ${stringify(err)}`, false);
+              log.warn(`User is not authorized! Error is ${stringify(err)}`, logAsUser);
             });
         })
         .catch((err) => {
           rl.close();
-          logWarning(`User can't connect! Error is ${stringify(err)}`, false);
+          log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
         });
     }
   });
 }
 
 function getRandomId() {
+  // eslint-disable-next-line sonarjs/pseudo-random
   return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
 }
 
@@ -1146,13 +1166,13 @@ function processClientExit(clients) {
     if (client !== null && client.connected === true) {
       client.isBot().then((isBot) => {
         client.disconnect().then(() => {
-          logInfo(`Client is disconnected!`, isBot);
+          log.info(`Client is disconnected!`, isBot ? logAsBot : logAsUser);
           client.destroy().then(() => {
-            logInfo(`Client is destroyed!`, isBot);
+            log.info(`Client is destroyed!`, isBot ? logAsBot : logAsUser);
             if (clients.length > 0) {
               processClientExit(clients);
             } else {
-              logInfo('All clients are disconnected! Exiting ...');
+              log.info('All clients are disconnected! Exiting ...');
               exit(0);
             }
           });
@@ -1162,7 +1182,7 @@ function processClientExit(clients) {
       processClientExit(clients);
     }
   } else {
-    logInfo('All clients are disconnected!');
+    log.info('All clients are disconnected!');
     exit(0);
   }
 }
@@ -1201,15 +1221,15 @@ async function refreshDialogs() {
               );
               if (Array.isArray(forum.topics) && forum.topics.length > 0) {
                 if (forum.topics.find((topic) => topic.id === rule[key].topicId) === undefined) {
-                  logWarning(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
+                  log.warn(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
                   rule.enabled = false;
                 }
               } else {
-                logWarning(`[${rule.label}]: No topics found in ${item.title}!`);
+                log.warn(`[${rule.label}]: No topics found in ${item.title}!`);
                 rule.enabled = false;
               }
             } else {
-              logWarning(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
+              log.warn(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
               rule.enabled = false;
             }
           }
@@ -1222,9 +1242,9 @@ async function refreshDialogs() {
             fromIdsWithEdit.push(Number(rule.from.id));
           }
           const lastProcessedId =
-              (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
-            lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
-          lastSourceId = dialogFrom.dialog?.topMessage;
+              (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0;
+          const lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
+          const lastSourceId = dialogFrom.dialog?.topMessage;
           if (rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
             if (rule.processEditsOnForwarded === true) {
               const lastForwardedId =
@@ -1237,18 +1257,18 @@ async function refreshDialogs() {
                     messageDate = message.date || 0,
                     messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
-                    logDebug(
+                    log.debug(
                       `[${rule.label}]: In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
                         message.message
                       }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
                         messageEditDate,
                       )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
-                      false,
+                      logAsUser,
                     );
                     if (messageEditDate > messageDate && messageEditDate > lastForwardedEditDate) {
-                      logDebug(
+                      log.debug(
                         `[${rule.label}]: In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
-                        false,
+                        logAsUser,
                       );
                       onMessageToForward({message}, true, true);
                     }
@@ -1262,18 +1282,18 @@ async function refreshDialogs() {
                     messageDate = message.date || 0,
                     messageEditDate = message.editDate || 0;
                   if (typeof message === 'object' && message !== null) {
-                    logDebug(
+                    log.debug(
                       `[${rule.label}]: In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
                         message.message
                       }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
                         messageEditDate,
                       )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
-                      false,
+                      logAsUser,
                     );
                     if (messageEditDate > messageDate && messageEditDate > lastProcessedEditDate) {
-                      logDebug(
+                      log.debug(
                         `[${rule.label}]: In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
-                        false,
+                        logAsUser,
                       );
                       onMessageToForward({message}, true, true);
                     }
@@ -1282,10 +1302,10 @@ async function refreshDialogs() {
               }
             }
             if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
-              logDebug(
+              log.debug(
                 `[${rule.label}]: In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` +
                   `last source message id: ${lastSourceId}`,
-                false,
+                logAsUser,
               );
               const messageCount =
                   lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
@@ -1296,10 +1316,10 @@ async function refreshDialogs() {
               if (Array.isArray(messages) && messages.length > 0) {
                 messages.forEach((message, index) => {
                   if (message !== undefined) {
-                    logDebug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, false);
+                    log.debug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, logAsUser);
                     onMessageToForward({message}, true);
                   } else {
-                    logDebug(`[${rule.label}]: Missed message [${index}] is undefined!`, false);
+                    log.debug(`[${rule.label}]: Missed message [${index}] is undefined!`, logAsUser);
                   }
                 });
               }
@@ -1320,17 +1340,17 @@ async function refreshDialogs() {
         }
       }
       cache.setItem(forwardRulesId, forwardRules);
-      logDebug(
+      log.debug(
         `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, IdsToMonitor: ${stringify(
           forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
         )}`,
-        false,
+        logAsUser,
       );
       result = true;
     } else {
       error = `Can't get dialogs!`;
       clientDialogs = [];
-      logWarning(`No dialogs found!`, false);
+      log.warn(`No dialogs found!`, logAsUser);
     }
   }
   return new Promise((resolve, reject) => {
@@ -1345,7 +1365,7 @@ async function refreshDialogs() {
 
 function refreshDialogsOnce() {
   refreshDialogs().catch((err) => {
-    logWarning(`refreshDialogs error: ${stringify(err)}`, false);
+    log.warn(`refreshDialogs error: ${stringify(err)}`, logAsUser);
   });
 }
 

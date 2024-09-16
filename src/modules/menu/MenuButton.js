@@ -1,6 +1,6 @@
+/* eslint-disable sonarjs/public-static-readonly */
 const stringify = require('json-stringify-safe');
-const {logDebug, logInfo, logWarning, logError} = require('../logging/logging');
-const {MenuItem} = require('./MenuItem');
+const {securedLogger: log} = require('../logging/logging');const {MenuItem} = require('./MenuItem');
 const i18n = require('../i18n/i18n.config');
 
 class MenuButton extends MenuItem {
@@ -34,7 +34,7 @@ class MenuButton extends MenuItem {
   get label() {
     let result = super.label;
     const value = this.getData();
-    logDebug(`MenuButton '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
+    log.debug(`MenuButton '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
     result += ` [${this.valueToText(value) || '?'}]`;
     return result;
   }
@@ -42,7 +42,7 @@ class MenuButton extends MenuItem {
   get text() {
     let result = super.text;
     const value = this.getData();
-    logDebug(`MenuButton '${this.command}'| text: ${result}, command: ${this.command}, value: ${stringify(value)}`);
+    log.debug(`MenuButton '${this.command}'| text: ${result}, command: ${this.command}, value: ${stringify(value)}`);
     result += `: "${this.valueToText(value) || '?'}"`;
     return result;
   }
@@ -150,12 +150,12 @@ class MenuButtonInputText extends MenuButton {
       const root = this.getRoot();
       if (root !== null) {
         if (root.processInputForCommand === '') {
-          logInfo(`MenuButtonInputText '${this.command}'| root.processInputForCommand is empty`);
+          log.info(`MenuButtonInputText '${this.command}'| root.processInputForCommand is empty`);
           root.processInputForCommand = this.command;
           this.processInputForCommand = this.command;
           await this.draw(client, peerId, messageId);
         } else if (root.processInputForCommand === this.command) {
-          logInfo(`MenuButtonInputText '${this.command}'| root.processInputForCommand is ${this.command}`);
+          log.info(`MenuButtonInputText '${this.command}'| root.processInputForCommand is ${this.command}`);
           let accepted = true;
           if (this.template !== '') {
             const template = this.template;
@@ -169,7 +169,7 @@ class MenuButtonInputText extends MenuButton {
           try {
             await client.deleteMessages(peerId, [messageId], {revoke: true});
           } catch (error) {
-            logWarning(
+            log.warn(
               `MenuButtonInputText.onCommand '${this.command}'| Input from user delete error: ${stringify(error)}`,
               isBot,
             );
@@ -257,7 +257,7 @@ class MenuButtonNewItem extends MenuButton {
     if (isTarget === false) {
       await super.onCommand(client, peerId, messageId, command, isEvent, isBot, isTarget);
     } else {
-      logDebug(`MenuButtonNewItem.onCommand '${this.command}'| command: ${command}`);
+      log.debug(`MenuButtonNewItem.onCommand '${this.command}'| command: ${command}`);
       let commandNew = this.holderCommand;
       if (typeof this.holder?.newItem === 'function') {
         const index = await this.holder.newItem();
@@ -306,7 +306,7 @@ class MenuButtonListTyped extends MenuButton {
     let result = null;
     if (this.holder !== null) {
       const value = this.holder.getData(this.command);
-      logDebug(`MenuButtonListTyped '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
+      log.debug(`MenuButtonListTyped '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
       if (value !== null && this.list.has(value)) {
         result = this.list.get(value);
       }
@@ -333,7 +333,7 @@ class MenuButtonListTyped extends MenuButton {
     }
     this.updateList();
     for (const [key, value] of this.list) {
-      logDebug(`MenuButtonListTyped.refresh| this.label: ${this.label}, key: ${key}, value: ${value}`);
+      log.debug(`MenuButtonListTyped.refresh| this.label: ${this.label}, key: ${key}, value: ${value}`);
       const command = typeof key === 'string' && key.startsWith(MenuItem.CmdPrefix) ? key : `${this.command}$v=${key}`;
       await this.appendNested(new MenuButtonListItem(value, command, value, key === currentValue, this.group));
     }
@@ -384,7 +384,7 @@ class MenuButtonListTypedAsync extends MenuButtonListTyped {
   async postAppend() {
     await super.postAppend();
     await this.updateList();
-    logDebug(`MenuButtonListTypedAsync.postAppend|this.label: ${this.label}, this.list: ${stringify(this.list)}`);
+    log.debug(`MenuButtonListTypedAsync.postAppend|this.label: ${this.label}, this.list: ${stringify(this.list)}`);
   }
 
   async refresh(force) {
@@ -397,7 +397,7 @@ class MenuButtonListTypedAsync extends MenuButtonListTyped {
       }
       await this.updateList();
       this.list.forEach((value, key) => {
-        logDebug(`MenuButtonListTypedAsync.refresh|this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
+        log.debug(`MenuButtonListTypedAsync.refresh|this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
         this.appendNested(new MenuButtonListItem(value, `${this.command}$v=${key}`, value, key === thisData, this.group));
       });
     }

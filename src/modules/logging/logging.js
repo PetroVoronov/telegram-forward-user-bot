@@ -1,96 +1,130 @@
-/** @module logging **/
-const strftime = require('strftime');
+const {Logger} = require('telegram/extensions/Logger');
+class SecuredLogger extends Logger {
+  maskCharactersVisible = 3;
+  maskWords = [
+    'token',
+    'secret',
+    'key',
+    'pass',
+    'pwd',
+    'auth',
+    'username',
+    'user',
+    'mail',
+    'login',
+    'credential',
+    'session',
+    'cookie',
+    'bearer',
+  ];
 
+  _log(level, message, color) {
+    if (this.canSend(level)) {
+      if (typeof message === 'string') {
+        super._log(level, message, color);
+      } else if (Array.isArray(message)) {
+        let isBot;
+        if (message.length > 1 && typeof message[message.length - 1] === 'object' && typeof message[message.length - 1].isBot === 'boolean') {
+          isBot = message[message.length - 1].isBot;
+          message.pop();
+        }
+        let messageText = message.reduce((acc, item) => {
+          return `${acc}${this.processMessageObject(item)}`;
+        }, '');
+        if (isBot === true) {
+          messageText = `Bot ] [${messageText}`;
+        } else if (isBot === false) {
+          messageText = `User] [${messageText}`;
+        }
+        super._log(level, messageText, color);
+      }
+    }
+  }
 
-const logLevelDebug = 0,
-  logLevelInfo = 1,
-  logLevelWarning = 2,
-  logLevelError = 3;
+  processMessageObject(message) {
+    if (typeof message === 'object') {
+      return Object.keys(message).reduce((acc, key) => {
+        return `${acc ? acc + ', ' : ''}${this.processMessageItem(key, message[key])}`;
+      }, '');
+    }
+    return message;
+  }
 
-let logLevel = logLevelInfo;
-/**
- * To show the source of the logs
- * @param {boolean=} isBot - If the log is from the bot or not
- * @returns {string} - 'Bot' or 'User' or ''
- */
-function workAs(isBot) {
-  if (isBot === undefined) {
-    return '';
-  } else {
-    return `${isBot ? 'Bot ' : 'User'}`;
+  maskString(value) {
+    if (typeof value !== 'string') {
+      return value;
+    } else {
+      let visibleLength = this.maskCharactersVisible;
+      if ((value.startsWith(`"`) && value.endsWith(`"`)) || (value.startsWith(`'`) && value.endsWith(`'`))) {
+        visibleLength += 1;
+      }
+      if (value.length <= visibleLength) {
+        return '*'.repeat(value.length);
+      } else if (value.length <= visibleLength * 3) {
+        return value.substring(0, visibleLength) + '*'.repeat(value.length);
+      } else {
+        return (
+          value.substring(0, visibleLength) + '*'.repeat(value.length - visibleLength * 2) + value.substring(value.length - visibleLength)
+        );
+      }
+    }
+  }
+
+  setMaskCharactersVisible(value) {
+    this.maskCharactersVisible = value;
+  }
+
+  setMaskWords(value) {
+    if (Array.isArray(value)) {
+      this.maskWords = value;
+    }
+  }
+
+  appendMaskWord(...value) {
+    this.maskWords.push(...value.map((item) => item.toLowerCase()));
+  }
+
+  removeMaskWord(...value) {
+    this.maskWords = this.maskWords.filter((word) => !value.map((item) => item.toLowerCase()).includes(word));
+  }
+
+  maskMessageItem(key, value) {
+    if (typeof key === 'string' && typeof value === 'string') {
+      const keyLower = key.toLowerCase();
+      return this.maskWords.some((word) => keyLower.includes(word)) ? this.maskString(value) : value;
+    }
+    return value;
+  }
+
+  processMessageItem(key, value) {
+    let maskedValue = this.maskMessageItem(key, value);
+    if (key.startsWith('-')) {
+      return maskedValue;
+    } else {
+      if (typeof maskedValue === 'string') {
+        maskedValue = `"${maskedValue}"`;
+      }
+      return `${key}: ${maskedValue}`;
+    }
+  }
+
+  error(...message) {
+    super.error(message);
+  }
+
+  warn(...message) {
+    super.warn(message);
+  }
+
+  info(...message) {
+    super.info(message);
+  }
+
+  debug(...message) {
+    super.debug(message);
   }
 }
 
-/**
- * To show the prefix of the logs
- * @param {boolean=} isBot - If the log is from the bot or not
- * @param {string} level - The log level
- * @returns {string} - The prefix of the log
- **/
-function logPrefix(isBot, level) {
-  return `[${strftime('%Y-%m-%dT%H:%M:%S.%L')}] [${level}] - [${workAs(isBot)}] : `;
-}
+const securedLogger = new SecuredLogger('info');
 
-/**
- * Set the log level
- * @param {number} level - The log level
- **/
-function setLogLevel(level) {
-  logLevel = level;
-}
-
-/**
- * Log debug messages
- * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
- */
-function logDebug(message, isBot) {
-  if (logLevel <= logLevelDebug) {
-    console.log(`${logPrefix(isBot, 'DBG ')}${message}`);
-  }
-}
-
-/**
- * Log informational messages
- * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
- */
-function logInfo(message, isBot) {
-  if (logLevel <= logLevelInfo) {
-    console.log(`${logPrefix(isBot, 'INFO')}${message}`);
-  }
-}
-
-/**
- * Log warnings
- * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
- */
-function logWarning(message, isBot) {
-  if (logLevel <= logLevelWarning) {
-    console.warn(`${logPrefix(isBot, 'WARN')}${message}`);
-  }
-}
-
-/**
- * Log errors messages
- * @param {string} message - The message to log
- * @param {boolean=} isBot  - If the log is from the bot or not
- */
-function logError(message, isBot) {
-  if (logLevel <= logLevelError) {
-    console.error(`${logPrefix(isBot, 'ERR ')}${message}`);
-  }
-}
-
-module.exports = {
-  logLevelDebug,
-  logLevelInfo,
-  logLevelWarning,
-  logLevelError,
-  setLogLevel,
-  logDebug,
-  logInfo,
-  logWarning,
-  logError,
-};
+exports.securedLogger = securedLogger;
