@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.4...v1.1.5) (2024-09-16)
+
+
+### Documentation
+
+* Update CHANGELOG.md by previous changes ([bfc597d](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bfc597d9981f8c434c6750f296f56434a1049b5a))
+
+
+### Bug Fixes
+
+* fix some variable declarations ([ebba407](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ebba407f86f0073bdd4d718881510909eddf5a14))
+* **logger:** make it secured, not show the sensitive information in logs ([ebba407](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ebba407f86f0073bdd4d718881510909eddf5a14))
+
+
+### Code Refactoring
+
+* Refactor logging to reuse the logger from the `gramjs` ([ebba407](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ebba407f86f0073bdd4d718881510909eddf5a14))
+
 ## [1.1.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.3...v1.1.4) (2024-09-15)
 
 
