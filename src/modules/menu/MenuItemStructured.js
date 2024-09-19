@@ -12,29 +12,7 @@ const {
   MenuButtonDeleteItem,
 } = require('./MenuButton');
 const i18n = require('../i18n/i18n.config');
-const {options} = require('yargs');
 
-class MenuItemRoot extends MenuItem {
-  /**
-   * @param {string} label - The label of the item
-   * @param {string} command - The command to execute
-   * @param {string} dataId - The variable id to store the data
-   * @param {object} dataStructure - The structure of the data
-   * @param {boolean=} isArray - The flag to indicate if the data is an array of object, not a single object
-   * @param {number=} index - The index of the data item
-   * @param {function=} onSave - The function to execute on save
-   */
-  constructor(menuStructure) {
-    super(menuStructure.label, `/${menuStructure.id}`, menuStructure.id, menuStructure);
-    this.initRoot(
-      menuStructure.options,
-      Object.keys(menuStructure.structure).map((key) => {
-        const item = menuStructure.structure[key];
-        return new MenuItemStructured(item.label, `/${key}`, key, item.structure, item.type === 'array', -1, item.save);
-      }),
-    );
-  }
-}
 class MenuItemStructured extends MenuItem {
   dataId = '';
   onSave = (data) => {};
@@ -547,7 +525,7 @@ class MenuItemStructured extends MenuItem {
       }
     }
     if (item !== null) {
-      return (await super.appendNested(item, indexCurrent)) + 1;
+      return (super.appendNested(item, indexCurrent)) + 1;
     } else if (itemToSkip === true && Array.isArray(path) && path.length > 0 && index >= 0) {
       const command = [this.command, path.join('$')].join('?');
       indexCurrent = this.nested.findIndex((nestedItem) => nestedItem.command === command);
@@ -792,6 +770,5 @@ class MenuItemStructuredSubordinated extends MenuItemStructured {
 }
 
 module.exports = {
-  MenuItemRoot,
   MenuItemStructured,
 };

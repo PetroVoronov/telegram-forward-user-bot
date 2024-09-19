@@ -4,8 +4,14 @@ const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
-const {MenuItem} = require('./modules/menu/MenuItem');
-const {MenuItemRoot, MenuItemStructured} = require('./modules/menu/MenuItemStructured');
+const {
+  MenuItemRoot,
+  menuDefaultColumnsMaxCount,
+  menuDefaultButtonsMaxCount,
+  menuDefaultTextSummaryMaxLength,
+  menuDefaultSpaceBetweenColumns,
+  menuCmdPrefix,
+} = require('./modules/menu/');
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
@@ -165,7 +171,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onMenuColumnsMaxCountChange,
-        default: MenuItem.menuColumnsMaxCountDefault,
+        default: menuDefaultColumnsMaxCount,
         label: 'Max columns in row',
         text: 'Max count of columns in one row of the menu',
       },
@@ -181,7 +187,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onTextSummaryMaxLengthChange,
-        default: MenuItem.textSummaryMaxLengthDefault,
+        default: menuDefaultTextSummaryMaxLength,
         label: 'Text summary max length',
         text: 'Approximated max length of the text in one row of the menu',
       },
@@ -197,7 +203,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onSpaceBetweenColumnsChange,
-        default: MenuItem.spaceBetweenColumnsDefault,
+        default: menuDefaultSpaceBetweenColumns,
         label: 'Space between columns',
         text: 'Space between columns in the menu',
       },
@@ -213,7 +219,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onButtonMaxCountChange,
-        default: MenuItem.buttonsMaxCountDefault,
+        default: menuDefaultButtonsMaxCount,
         label: 'Max buttons on "page"',
         text: 'Max count of buttons on the one "page" of the menu',
       },
@@ -944,7 +950,7 @@ function onCommand(event) {
     ) {
       const command = data.toString();
       log.debug(`onCommand | command: ${command}`, logAsBot);
-      if (command.startsWith(MenuItem.CmdPrefix)) {
+      if (command.startsWith(menuCmdPrefix)) {
         menuRoot.onCommand(clientAsBot, peer, messageId, command, true, true);
       }
     }
@@ -957,7 +963,7 @@ function onCommand(event) {
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
       if (event._client?._bot === true) {
         menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
-      } else if (command.startsWith(MenuItem.CmdPrefix)) {
+      } else if (command.startsWith(menuCmdPrefix)) {
         menuRoot.onCommand(clientAsUser, peerId, messageId, command, false, false);
       }
     }

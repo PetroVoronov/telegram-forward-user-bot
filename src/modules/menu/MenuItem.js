@@ -196,7 +196,7 @@ class MenuItem {
     let result = -1;
     const root = this.getRoot(),
       command = item.command;
-    log.debug(`command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
+    log.debug(`menuItem.appendNested| command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
     root?.updateCommands();
     if (command !== null && Object.keys(root?.commands).includes(command) === false) {
       if (index === -1 || index >= this.nested.length) {
