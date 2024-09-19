@@ -117,7 +117,6 @@ class MenuItemStructured extends MenuItem {
 
   get command() {
     let result = super.command;
-    log.debug(`MenuItemStructured.command| index: ${this.index},  holder.data.length: ${this.holder?.data?.length}`);
     if (this.isDataHolder === false && this.holder?.isArray === true) {
       if (this.index >= 0 && this.index < this.holder.data.length) {
         result = [result, this.index].join('#');
@@ -127,7 +126,6 @@ class MenuItemStructured extends MenuItem {
     } else if (this.data !== null && this.index >= 0) {
       result = [result, this.index].join('#');
     }
-    log.debug(`MenuItemStructured.command| result: ${result}`);
     return result;
   }
 
@@ -525,7 +523,7 @@ class MenuItemStructured extends MenuItem {
       }
     }
     if (item !== null) {
-      return (super.appendNested(item, indexCurrent)) + 1;
+      return (await super.appendNested(item, indexCurrent)) + 1;
     } else if (itemToSkip === true && Array.isArray(path) && path.length > 0 && index >= 0) {
       const command = [this.command, path.join('$')].join('?');
       indexCurrent = this.nested.findIndex((nestedItem) => nestedItem.command === command);
@@ -634,13 +632,12 @@ class MenuItemStructured extends MenuItem {
    * Draw menu item
    * @param {TelegramClient} client - Telegram client
    * @param {string} peerId - Peer Id
-   * @returns {Promise} Promise of the draw operation result
    **/
   async draw(client, peerId) {
     if (this.isDataHolder === true) {
       this.load();
     }
-    return await super.draw(client, peerId);
+    await super.draw(client, peerId);
   }
 
   /**

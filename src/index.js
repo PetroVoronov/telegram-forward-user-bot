@@ -1042,85 +1042,91 @@ process.on('SIGTERM', gracefulExit);
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
 menuRoot = new MenuItemRoot(menuRootStructure);
-if (options.command !== undefined) {
-  log.debug(`Testing command: ${options.command}`);
-  menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
-} else {
-  getAPIAttributes().then(() => {
-    if (apiId !== null && apiHash !== null) {
-      clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
-        connectionRetries: Infinity,
-        autoReconnect: true,
-        appVersion: scriptVersion,
-      });
-      clientAsUser.setParseMode('html');
-      if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
-      if (options.noBot !== true) {
-        clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
+menuRoot.init().then(() => {
+  if (options.command !== undefined) {
+    log.debug(`Testing command: ${options.command}`);
+    menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
+  } else {
+    getAPIAttributes().then(() => {
+      if (apiId !== null && apiHash !== null) {
+        clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
           connectionRetries: Infinity,
           autoReconnect: true,
           appVersion: scriptVersion,
         });
-        clientAsBot.setParseMode('html');
-        if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
-      }
-      const rl = readline.createInterface({
-        input,
-        output,
-      });
-      clientAsUser
-        .start({
-          phoneNumber: async () => await rl.question('Enter your phone number: '),
-          password: async () => rl.question('Enter your password: '),
-          phoneCode: async () => rl.question('Enter the code: '),
-          onError: (err) => {
-            log.warn(err, logAsUser);
-          },
-        })
-        .then((connect) => {
-          rl.close();
-          clientAsUser
-            .isUserAuthorized()
-            .then((isAuthorized) => {
-              log.info(`User is authorized: ${isAuthorized}`, logAsUser);
-              clientAsUser.getMe().then((user) => {
-                meUser = user;
-                if (meUser !== null) {
-                  meUserId = Number(meUser.id);
-                }
-                refreshDialogsStart(true);
-                const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
-                let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
-                log.debug(
-                  `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`
-                );
-                if (timeOut >= timeOutToPreventBotFlood) {
-                  timeOut = 0;
-                } else if (timeOut > 0) {
-                  timeOut = timeOutToPreventBotFlood - timeOut;
-                }
-                if (timeOut > 0) {
-                  log.debug(`Bot flood prevention timeout: ${timeOut} ms`);
-                  // eslint-disable-next-line sonarjs/no-nested-functions
-                  setTimeout(() => {
-                    startBotClient();
-                  }, timeOut);
-                } else {
-                  startBotClient();
-                }
-              });
-            })
-            .catch((err) => {
-              log.warn(`User is not authorized! Error is ${stringify(err)}`, logAsUser);
-            });
-        })
-        .catch((err) => {
-          rl.close();
-          log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+        clientAsUser.setParseMode('html');
+        if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
+        if (options.noBot !== true) {
+          clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
+            connectionRetries: Infinity,
+            autoReconnect: true,
+            appVersion: scriptVersion,
+          });
+          clientAsBot.setParseMode('html');
+          if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
+        }
+        const rl = readline.createInterface({
+          input,
+          output,
         });
-    }
-  });
-}
+        clientAsUser
+          .start({
+            phoneNumber: async () => await rl.question('Enter your phone number: '),
+            password: async () => rl.question('Enter your password: '),
+            phoneCode: async () => rl.question('Enter the code: '),
+            onError: (err) => {
+              log.warn(err, logAsUser);
+            },
+          })
+          .then((connect) => {
+            rl.close();
+            clientAsUser
+              .isUserAuthorized()
+              .then((isAuthorized) => {
+                log.info(`User is authorized: ${isAuthorized}`, logAsUser);
+                // eslint-disable-next-line sonarjs/no-nested-functions
+                clientAsUser.getMe().then((user) => {
+                  meUser = user;
+                  if (meUser !== null) {
+                    meUserId = Number(meUser.id);
+                  }
+                  refreshDialogsStart(true);
+                  const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
+                  let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
+                  log.debug(
+                    `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`
+                  );
+                  if (timeOut >= timeOutToPreventBotFlood) {
+                    timeOut = 0;
+                  } else if (timeOut > 0) {
+                    timeOut = timeOutToPreventBotFlood - timeOut;
+                  }
+                  if (timeOut > 0) {
+                    log.debug(`Bot flood prevention timeout: ${timeOut} ms`);
+                    // eslint-disable-next-line sonarjs/no-nested-functions
+                    setTimeout(() => {
+                      startBotClient();
+                    }, timeOut);
+                  } else {
+                    startBotClient();
+                  }
+                });
+              })
+              .catch((err) => {
+                log.warn(`User is not authorized! Error is ${stringify(err)}`, logAsUser);
+              });
+          })
+          .catch((err) => {
+            rl.close();
+            log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+          });
+      }
+    });
+  }
+})
+.catch((err) => {
+  log.error(`Error on menuRoot.init(): ${stringify(err)}`);
+});
 
 function getRandomId() {
   // eslint-disable-next-line sonarjs/pseudo-random

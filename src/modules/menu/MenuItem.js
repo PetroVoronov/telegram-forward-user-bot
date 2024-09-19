@@ -45,10 +45,10 @@ const i18n = require('../i18n/i18n.config');
  * @property {function} onCommand - Handle command
  **/
 class MenuItem {
-  static CmdPrefix = '/';
-  static CmdExit = `${MenuItem.CmdPrefix}exit`;
+  static cmdPrefix = '/';
+  static cmdExit = `${MenuItem.cmdPrefix}exit`;
 
-  static buttonsOffsetRegex = new RegExp(`^${MenuItem.CmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
+  static buttonsOffsetRegex = new RegExp(`^${MenuItem.cmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
 
   static MenuMessageId = 'menuMessageId';
 
@@ -221,9 +221,8 @@ class MenuItem {
     this.updateCommands();
   }
 
-  async initRoot(configuration, nested = []) {
-    if (configuration) {
-      this.isRoot = true;
+  config(configuration) {
+    if (this.isRoot && configuration) {
       if (typeof configuration.getValue === 'function') {
         this.#getValue = configuration.getValue;
       }
@@ -244,9 +243,6 @@ class MenuItem {
       }
       if (typeof configuration.buttonsMaxCount === 'number') {
         this.buttonsMaxCount = configuration.buttonsMaxCount;
-      }
-      for (const item of nested) {
-        await this.appendNested(item);
       }
     }
   }
@@ -415,7 +411,7 @@ class MenuItem {
       commandToCheck = command.replace(`$bo=${buttonsOffset}`, '');
       this.setValue('buttonsOffset', buttonsOffset, chatId);
     }
-    if (this.command === commandToCheck || (this.isRoot && commandToCheck === MenuItem.CmdExit)) {
+    if (this.command === commandToCheck || (this.isRoot && commandToCheck === MenuItem.cmdExit)) {
       if (commandToCheck !== commandToCheck) {
         this.removeValue('lastCommand', chatId);
       }
@@ -523,7 +519,7 @@ class MenuItem {
         row = [];
       }
     }
-    row.push(MenuItem.createButton(i18n.__('Exit'), MenuItem.CmdExit));
+    row.push(MenuItem.createButton(i18n.__('Exit'), MenuItem.cmdExit));
     if (this.holder !== null) {
       if (this.getRoot().command !== this.holder.command) {
         row.unshift(MenuItem.createButton(i18n.__('Home'), this.getRoot().command));
@@ -546,7 +542,6 @@ class MenuItem {
    * Draw menu item
    * @param {TelegramClient} client - Telegram client
    * @param {string} peerId - Peer Id
-   * @returns {Promise} Promise of the draw operation result
    **/
   async draw(client, peerId) {
     log.debug(`MenuItem.draw '${this.command}'| label: ${this.label}, text: ${this.text}`);
@@ -641,7 +636,7 @@ class MenuItem {
     const menuMessageId = this.getMessageId(peerId?.userId);
     log.debug(
       `MenuItem.onCommand '${this.command}'| command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(
-        MenuItem.CmdPrefix,
+        MenuItem.cmdPrefix,
       )}`,
       isBot,
     );
@@ -673,7 +668,7 @@ class MenuItem {
         } else {
           await this.draw(client, peerId);
         }
-      } else if (command === MenuItem.CmdExit && isBot === true) {
+      } else if (command === MenuItem.cmdExit && isBot === true) {
         client
           .deleteMessages(peerId, [menuMessageId], {revoke: true})
           .then((res) => {

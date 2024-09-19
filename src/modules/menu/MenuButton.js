@@ -306,8 +306,10 @@ class MenuButtonListTyped extends MenuButton {
     let result = null;
     if (this.holder !== null) {
       const value = this.holder.getData(this.command);
-      log.debug(`MenuButtonListTyped '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
-      if (value !== null && this.list.has(value)) {
+      log.debug(
+        `MenuButtonListTyped.valueToText| '${this.command}'| label: ${result}, command: ${this.command}, value: ${stringify(value)}`,
+      );
+      if (value !== null && this.list !== null && this.list.has(value)) {
         result = this.list.get(value);
       }
     }
@@ -334,7 +336,7 @@ class MenuButtonListTyped extends MenuButton {
     this.updateList();
     for (const [key, value] of this.list) {
       log.debug(`MenuButtonListTyped.refresh| this.label: ${this.label}, key: ${key}, value: ${value}`);
-      const command = typeof key === 'string' && key.startsWith(MenuItem.CmdPrefix) ? key : `${this.command}$v=${key}`;
+      const command = typeof key === 'string' && key.startsWith(MenuItem.cmdPrefix) ? key : `${this.command}$v=${key}`;
       await this.appendNested(new MenuButtonListItem(value, command, value, key === currentValue, this.group));
     }
     return true;
@@ -396,14 +398,13 @@ class MenuButtonListTypedAsync extends MenuButtonListTyped {
         root.updateCommands();
       }
       await this.updateList();
-      this.list.forEach((value, key) => {
+      for (const [key, value] of this.list) {
         log.debug(`MenuButtonListTypedAsync.refresh|this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
-        this.appendNested(new MenuButtonListItem(value, `${this.command}$v=${key}`, value, key === thisData, this.group));
-      });
+        await this.appendNested(new MenuButtonListItem(value, `${this.command}$v=${key}`, value, key === thisData, this.group));
+      };
     }
     return true;
   }
-
 }
 class MenuButtonListItem extends MenuButton {
   constructor(label, command, text, current = false, group = '') {

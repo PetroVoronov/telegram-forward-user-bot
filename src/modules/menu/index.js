@@ -15,19 +15,23 @@ class MenuItemRoot extends MenuItem {
    */
   constructor(menuStructure) {
     super(menuStructure.label, `/${menuStructure.id}`, menuStructure.text || menuStructure.label);
-    this.initRoot(
-      menuStructure.options,
-      Object.keys(menuStructure.structure).map((key) => {
-        const item = menuStructure.structure[key];
-        return new MenuItemStructured(item.label, `/${key}`, key, item.structure, item.type === 'array', -1, item.save);
-      }),
-    );
+    this.isRoot = true;
+    this.rootStructure = menuStructure;
   }
+
+  async init() {
+    this.config(this.rootStructure.options);
+    for (const key of Object.keys(this.rootStructure.structure)) {
+      const item = this.rootStructure.structure[key];
+      await this.appendNested(new MenuItemStructured(item.label, `/${key}`, key, item.structure, item.type === 'array', -1, item.save));
+    }
+  }
+
 }
 
 module.exports = {
   MenuItemRoot,
-  menuDefaultColumnsMaxCount: MenuItem.menuColumnsMaxCountDefault,
+  menuDefaultColumnsMaxCount: MenuItem.columnsMaxCountDefault,
   menuDefaultButtonsMaxCount: MenuItem.buttonsMaxCountDefault,
   menuDefaultTextSummaryMaxLength: MenuItem.textSummaryMaxLengthDefault,
   menuDefaultSpaceBetweenColumns: MenuItem.spaceBetweenColumnsDefault,
