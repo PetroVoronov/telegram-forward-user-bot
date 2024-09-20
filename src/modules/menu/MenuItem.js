@@ -2,10 +2,18 @@
 /** @module menu/menu-item  **/
 
 const stringify = require('json-stringify-safe');
-const {Button} = require('telegram/tl/custom/button');
 const {securedLogger: log} = require('../logging/logging');
 const emojiRegex = require('emoji-regex');
 const i18n = require('../i18n/i18n.config');
+
+
+let makeButton = (label, command) => `Button: ${label} - ${command}`;
+
+function setFunctionMakeButton(func) {
+  if (typeof func === 'function') {
+    makeButton = func;
+  }
+}
 
 /**
  * Class representing menu item
@@ -72,16 +80,6 @@ class MenuItem {
       }
     }
     return count;
-  }
-
-  /**
-   * Create button
-   * @param {string} label - Label of the button
-   * @param {string} command - Command of the button
-   * @returns {Button} - Button
-   **/
-  static createButton(label, command) {
-    return Button.inline(label || '?', Buffer.from(command));
   }
 
   /**
@@ -446,7 +444,7 @@ class MenuItem {
    * @returns {Button} - Button
    **/
   createButton() {
-    return MenuItem.createButton(this.label, this.command);
+    return makeButton(this.label, this.command);
   }
 
   /**
@@ -501,30 +499,30 @@ class MenuItem {
         const pageCurrent = Math.trunc(buttonsOffset / buttonsMaxCount) + 1;
         if (buttonsOffset >= buttonsMaxCount) {
           if (Math.trunc(buttonsOffset / buttonsMaxCount) > 1) {
-            row.push(MenuItem.createButton('#1 <<', `${this.command}`));
+            row.push(makeButton('#1 <<', `${this.command}`));
           }
-          row.push(MenuItem.createButton(`#${pageCurrent - 1} <`, `${this.command}$bo=${buttonsOffset - buttonsMaxCount}`));
+          row.push(makeButton(`#${pageCurrent - 1} <`, `${this.command}$bo=${buttonsOffset - buttonsMaxCount}`));
         }
         if (buttonsOffset + buttonsMaxCount < nestedCount) {
-          row.push(MenuItem.createButton(`> #${pageCurrent + 1}`, `${this.command}$bo=${buttonsOffset + buttonsMaxCount}`));
+          row.push(makeButton(`> #${pageCurrent + 1}`, `${this.command}$bo=${buttonsOffset + buttonsMaxCount}`));
           if (Math.trunc((nestedCount - buttonsOffset) / buttonsMaxCount) > 1) {
             const lastOffset =
               nestedCount % buttonsMaxCount === 0
                 ? nestedCount - buttonsMaxCount
                 : Math.trunc(nestedCount / buttonsMaxCount) * buttonsMaxCount;
-            row.push(MenuItem.createButton(`>> #${lastOffset / buttonsMaxCount + 1}`, `${this.command}$bo=${lastOffset}`));
+            row.push(makeButton(`>> #${lastOffset / buttonsMaxCount + 1}`, `${this.command}$bo=${lastOffset}`));
           }
         }
         buttons.push(row);
         row = [];
       }
     }
-    row.push(MenuItem.createButton(i18n.__('Exit'), MenuItem.cmdExit));
+    row.push(makeButton(i18n.__('Exit'), MenuItem.cmdExit));
     if (this.holder !== null) {
       if (this.getRoot().command !== this.holder.command) {
-        row.unshift(MenuItem.createButton(i18n.__('Home'), this.getRoot().command));
+        row.unshift(makeButton(i18n.__('Home'), this.getRoot().command));
       }
-      row.unshift(MenuItem.createButton(i18n.__('Back'), this.holder.command));
+      row.unshift(makeButton(i18n.__('Back'), this.holder.command));
     }
     buttons.push(row);
     return buttons;
@@ -716,5 +714,6 @@ function stringifyButtons(value, space = 0) {
  * @typedef {MenuItem} MenuItem
  **/
 module.exports = {
-  MenuItem
+  MenuItem,
+  setFunctionMakeButton,
 };

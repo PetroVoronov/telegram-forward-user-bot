@@ -1,6 +1,6 @@
 
 
-const {MenuItem} = require('./MenuItem');
+const {MenuItem, setFunctionMakeButton} = require('./MenuItem');
 const {MenuItemStructured} = require('./MenuItemStructured');
 
 class MenuItemRoot extends MenuItem {
@@ -36,4 +36,5 @@ module.exports = {
   menuDefaultTextSummaryMaxLength: MenuItem.textSummaryMaxLengthDefault,
   menuDefaultSpaceBetweenColumns: MenuItem.spaceBetweenColumnsDefault,
   menuCmdPrefix: MenuItem.cmdPrefix,
+  setFunctionMakeButton
 };

@@ -1,5 +1,6 @@
 const {Api, TelegramClient} = require('telegram');
 const {StringSession, StoreSession} = require('telegram/sessions');
+const {Button} = require('telegram/tl/custom/button');
 const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
@@ -11,6 +12,7 @@ const {
   menuDefaultTextSummaryMaxLength,
   menuDefaultSpaceBetweenColumns,
   menuCmdPrefix,
+  setFunctionMakeButton
 } = require('./modules/menu/');
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
@@ -1041,6 +1043,9 @@ process.on('SIGTERM', gracefulExit);
 
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
+
+
+setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot.init().then(() => {
   if (options.command !== undefined) {
