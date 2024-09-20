@@ -1,7 +1,7 @@
 /* eslint-disable sonarjs/public-static-readonly */
 const stringify = require('json-stringify-safe');
 const {MenuItem, menuDefaults} = require('./MenuItem');
-const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
+const {SimpleLogger, setLogger, setLogLevel} = require('./MenuLogger');
 const i18n = require('../i18n/i18n.config');
 
 let log = new SimpleLogger('info');

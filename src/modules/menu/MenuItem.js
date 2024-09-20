@@ -3,7 +3,7 @@
 
 const stringify = require('json-stringify-safe');
 const emojiRegex = require('emoji-regex');
-const {setLogger, setLogLevel, SimpleLogger} = require('./menuLogger');
+const {setLogger, setLogLevel, SimpleLogger} = require('./MenuLogger');
 const i18n = require('../i18n/i18n.config');
 
 const menuDefaults = {

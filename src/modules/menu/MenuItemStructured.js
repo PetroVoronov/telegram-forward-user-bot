@@ -1,6 +1,6 @@
 const stringify = require('json-stringify-safe');;
 const {MenuItem} = require('./MenuItem');
-const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
+const {SimpleLogger, setLogger, setLogLevel} = require('./MenuLogger');
 const {
   MenuButton,
   MenuButtonBoolean,

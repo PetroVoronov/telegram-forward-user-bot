@@ -3,7 +3,7 @@
 const {MenuItem, menuDefaults, setFunctionMakeButton, setMenuItemLogLevel, setMenuItemLogger} = require('./MenuItem');
 const {MenuItemStructured, setMenuStructuredLogLevel, setMenuStructuredLogger} = require('./MenuItemStructured');
 const {setMenuButtonLogLevel, setMenuButtonLogger} = require('./MenuButton');
-const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
+const {SimpleLogger, setLogger, setLogLevel} = require('./MenuLogger');
 
 let log = new SimpleLogger('info');
 class MenuItemRoot extends MenuItem {
