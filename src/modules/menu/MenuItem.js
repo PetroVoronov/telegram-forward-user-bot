@@ -6,6 +6,13 @@ const {securedLogger: log} = require('../logging/logging');
 const emojiRegex = require('emoji-regex');
 const i18n = require('../i18n/i18n.config');
 
+const menuDefaults = {
+  columnsMaxCount: 0,
+  buttonsMaxCount: 24,
+  textSummaryMaxLength: 0,
+  spaceBetweenColumns: 1,
+  cmdPrefix: '/'
+}
 
 let makeButton = (label, command) => `Button: ${label} - ${command}`;
 
@@ -53,17 +60,12 @@ function setFunctionMakeButton(func) {
  * @property {function} onCommand - Handle command
  **/
 class MenuItem {
-  static cmdPrefix = '/';
-  static cmdExit = `${MenuItem.cmdPrefix}exit`;
 
-  static buttonsOffsetRegex = new RegExp(`^${MenuItem.cmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
+  static cmdExit = `${menuDefaults.cmdPrefix}exit`;
+
+  static buttonsOffsetRegex = new RegExp(`^${menuDefaults.cmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
 
   static MenuMessageId = 'menuMessageId';
-
-  static columnsMaxCountDefault = 0;
-  static textSummaryMaxLengthDefault = 0;
-  static spaceBetweenColumnsDefault = 1;
-  static buttonsMaxCountDefault = 24;
 
   /**
    * This method trying to calculate "real" length, taking in account the Emoji's specifics.
@@ -108,10 +110,10 @@ class MenuItem {
   nested = new Array();
   commands = {};
 
-  columnsMaxCount = MenuItem.columnsMaxCountDefault;
-  textSummaryMaxLength = MenuItem.textSummaryMaxLengthDefault;
-  spaceBetweenColumns = MenuItem.spaceBetweenColumnsDefault;
-  buttonsMaxCount = MenuItem.buttonsMaxCountDefault;
+  columnsMaxCount = menuDefaults.columnsMaxCount;
+  textSummaryMaxLength = menuDefaults.textSummaryMaxLength;
+  spaceBetweenColumns = menuDefaults.spaceBetweenColumns;
+  buttonsMaxCount = menuDefaults.buttonsMaxCount;
 
   /**
    * @param {string|function} label - Label of the menu item
@@ -458,10 +460,10 @@ class MenuItem {
       row = [];
     if (nestedCount > 0) {
       const root = this.getRoot(),
-        maxColumns = root.columnsMaxCount || MenuItem.columnsMaxCountDefault,
-        maxTextLength = root.textSummaryMaxLength || MenuItem.textSummaryMaxLengthDefault,
-        spaceBetweenColumns = root.spaceBetweenColumns || MenuItem.spaceBetweenColumnsDefault,
-        buttonsMaxCount = root.buttonsMaxCount || MenuItem.buttonsMaxCountDefault,
+        maxColumns = root.columnsMaxCount || menuDefaults.columnsMaxCount,
+        maxTextLength = root.textSummaryMaxLength || menuDefaults.textSummaryMaxLength,
+        spaceBetweenColumns = root.spaceBetweenColumns || menuDefaults.spaceBetweenColumns,
+        buttonsMaxCount = root.buttonsMaxCount || menuDefaults.buttonsMaxCount,
         buttonsOffset = root.getValue('buttonsOffset', 'number', chatId) || 0;
       let groupCurrent = '',
         itemLabelMaxLength = 0,
@@ -634,7 +636,7 @@ class MenuItem {
     const menuMessageId = this.getMessageId(peerId?.userId);
     log.debug(
       `MenuItem.onCommand '${this.command}'| command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(
-        MenuItem.cmdPrefix,
+        menuDefaults.cmdPrefix,
       )}`,
       isBot,
     );
@@ -715,5 +717,6 @@ function stringifyButtons(value, space = 0) {
  **/
 module.exports = {
   MenuItem,
+  menuDefaults,
   setFunctionMakeButton,
 };

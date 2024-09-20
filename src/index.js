@@ -6,12 +6,8 @@ const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
 const {
+  menuDefaults,
   MenuItemRoot,
-  menuDefaultColumnsMaxCount,
-  menuDefaultButtonsMaxCount,
-  menuDefaultTextSummaryMaxLength,
-  menuDefaultSpaceBetweenColumns,
-  menuCmdPrefix,
   setFunctionMakeButton
 } = require('./modules/menu/');
 const {Cache} = require('./modules/cache/Cache');
@@ -173,7 +169,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onMenuColumnsMaxCountChange,
-        default: menuDefaultColumnsMaxCount,
+        default: menuDefaults.columnsMaxCount,
         label: 'Max columns in row',
         text: 'Max count of columns in one row of the menu',
       },
@@ -189,7 +185,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onTextSummaryMaxLengthChange,
-        default: menuDefaultTextSummaryMaxLength,
+        default: menuDefaults.textSummaryMaxLength,
         label: 'Text summary max length',
         text: 'Approximated max length of the text in one row of the menu',
       },
@@ -205,7 +201,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onSpaceBetweenColumnsChange,
-        default: menuDefaultSpaceBetweenColumns,
+        default: menuDefaults.spaceBetweenColumns,
         label: 'Space between columns',
         text: 'Space between columns in the menu',
       },
@@ -221,7 +217,7 @@ const getLanguages = () => {
         presence: 'mandatory',
         editable: true,
         onSetAfter: onButtonMaxCountChange,
-        default: menuDefaultButtonsMaxCount,
+        default: menuDefaults.buttonsMaxCount,
         label: 'Max buttons on "page"',
         text: 'Max count of buttons on the one "page" of the menu',
       },
@@ -952,7 +948,7 @@ function onCommand(event) {
     ) {
       const command = data.toString();
       log.debug(`onCommand | command: ${command}`, logAsBot);
-      if (command.startsWith(menuCmdPrefix)) {
+      if (command.startsWith(menuDefaults.cmdPrefix)) {
         menuRoot.onCommand(clientAsBot, peer, messageId, command, true, true);
       }
     }
@@ -965,7 +961,7 @@ function onCommand(event) {
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
       if (event._client?._bot === true) {
         menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
-      } else if (command.startsWith(menuCmdPrefix)) {
+      } else if (command.startsWith(menuDefaults.cmdPrefix)) {
         menuRoot.onCommand(clientAsUser, peerId, messageId, command, false, false);
       }
     }

@@ -1,6 +1,7 @@
 /* eslint-disable sonarjs/public-static-readonly */
 const stringify = require('json-stringify-safe');
-const {securedLogger: log} = require('../logging/logging');const {MenuItem} = require('./MenuItem');
+const {securedLogger: log} = require('../logging/logging');
+const {MenuItem, menuDefaults} = require('./MenuItem');
 const i18n = require('../i18n/i18n.config');
 
 class MenuButton extends MenuItem {
@@ -336,7 +337,7 @@ class MenuButtonListTyped extends MenuButton {
     this.updateList();
     for (const [key, value] of this.list) {
       log.debug(`MenuButtonListTyped.refresh| this.label: ${this.label}, key: ${key}, value: ${value}`);
-      const command = typeof key === 'string' && key.startsWith(MenuItem.cmdPrefix) ? key : `${this.command}$v=${key}`;
+      const command = typeof key === 'string' && key.startsWith(menuDefaults.cmdPrefix) ? key : `${this.command}$v=${key}`;
       await this.appendNested(new MenuButtonListItem(value, command, value, key === currentValue, this.group));
     }
     return true;
