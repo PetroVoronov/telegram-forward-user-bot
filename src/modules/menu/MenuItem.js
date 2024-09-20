@@ -3,7 +3,6 @@
 
 const stringify = require('json-stringify-safe');
 const emojiRegex = require('emoji-regex');
-const {setLogger, setLogLevel, SimpleLogger} = require('./MenuLogger');
 const i18n = require('../i18n/i18n.config');
 
 const menuDefaults = {
@@ -20,19 +19,6 @@ function setFunctionMakeButton(func) {
   if (typeof func === 'function') {
     makeButton = func;
   }
-}
-
-let log = new SimpleLogger('info');
-
-function setMenuItemLogger(logger) {
-  const newLogger = setLogger(logger);
-  if (newLogger) {
-    log = newLogger;
-  }
-}
-
-function setMenuItemLogLevel(level) {
-  setLogLevel(log, level);
 }
 
 /**
@@ -119,6 +105,7 @@ class MenuItem {
   group = '';
   processInputForCommand = '';
   holder = null;
+  logger = null;
   nested = new Array();
   commands = {};
 
@@ -199,6 +186,39 @@ class MenuItem {
     this.holder = holder;
   }
 
+  getCurrentMethodName() {
+    const error = new Error();
+    const stack = error.stack.split('\n');
+    if (stack.length < 4) {
+      return '';
+    }
+    const methodNames = stack[3].trim().split(' ');
+    if (methodNames.length < 3) {
+      return '';
+    }
+    if (methodNames[1].startsWith(`${this.constructor.name}.`) && methodNames[2].includes('(')) {
+      return methodNames[1].split('.')[1];
+    } else if (
+      (methodNames[1] === 'get' || methodNames[1] === 'set') &&
+      !methodNames[2].includes('(') &&
+      methodNames.length > 3 &&
+      methodNames[3].includes('(')
+    ) {
+      return methodNames.slice(1, 3).join('.');
+    } else {
+      return '';
+    }
+  }
+
+  log(level = 'info', ...message) {
+    if (typeof this.logger === 'object' && typeof this.logger[level] === 'function') {
+      if (message.length < 2 || typeof message[0] !== 'string' || !message[0].startsWith(`${this.constructor.name}`)) {
+        message.unshift(`${this.constructor.name}.${this.getCurrentMethodName()}{'${this.command}'}| `);
+      }
+      this.logger[level](message.join(''));
+    }
+  }
+
   /**
    * Append nested item to the menu item
    * @param {MenuItem} item - Nested item to append
@@ -208,7 +228,7 @@ class MenuItem {
     let result = -1;
     const root = this.getRoot(),
       command = item.command;
-    log.debug(`menuItem.appendNested| command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
+    this.log('debug', `command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
     root?.updateCommands();
     if (command !== null && Object.keys(root?.commands).includes(command) === false) {
       if (index === -1 || index >= this.nested.length) {
@@ -221,7 +241,7 @@ class MenuItem {
       item.setHolder(this);
       await item.postAppend();
     } else {
-      log.warn(`Command '${command}' is already exists! Item can't be added to the menu!`);
+      this.log('warn', `Command '${command}' is already exists! Item can't be added to the menu!`);
     }
     return result;
   }
@@ -230,6 +250,12 @@ class MenuItem {
    * Post append operation
    **/
   async postAppend() {
+    if (this.holder?.logger) {
+      this.logger = this.holder.logger;
+      this.nested.forEach((item) => {
+        item.logger = this.logger;
+      });
+    }
     this.updateCommands();
   }
 
@@ -432,18 +458,12 @@ class MenuItem {
       if (this.isRoot === false) await this.refresh();
       for (const item of this.nested) {
         result = await item.getByCommand(commandToCheck);
-        log.debug(
-          `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${commandToCheck}, item.label: ${stringify(
-            item.label,
-          )}`,
-        );
+        this.log('debug', `command: ${command}, commandToCheck: ${commandToCheck}, item.label: ${stringify(item.label)}`);
         if (result !== null) {
           break;
         }
       }
-      log.debug(
-        `MenuItemRoot.getByCommand '${this.command}'| command: ${command}, commandToCheck: ${command}, label: ${stringify(result?.label)}`,
-      );
+      this.log('debug', `command: ${command}, commandToCheck: ${command}, label: ${stringify(result?.label)}`);
     }
     if (result !== null && result !== undefined) {
       if (this.isRoot === true) this.setLastCommand(command, chatId);
@@ -482,33 +502,33 @@ class MenuItem {
         nested = this.nested.slice(buttonsOffset, buttonsOffset + buttonsMaxCount),
         nestedCountCurrent = nested.length;
       nestedCountCurrent--;
-      nested.forEach((item, index) => {
-        const itemLabelLength = MenuItem.getStringLength(item.label);
-        log.debug(
-          `MenuItem.getButtons '${this.command}'| index: ${index}, label: ${item.label},` +
-            ` command: ${item.command}, group: ${item.group}`,
-        );
-        if (item.group !== groupCurrent) {
-          if (row.length > 0) {
+      for (let index = 0; index < nested.length; index++) {
+        const item = nested[index];
+        if (item !== null && item !== undefined) {
+          const itemLabelLength = MenuItem.getStringLength(item.label);
+          this.log('debug', `index: ${index}, label: ${item.label},` + ` command: ${item.command}, group: ${item.group}`);
+          if (item.group !== groupCurrent) {
+            if (row.length > 0) {
+              buttons.push(row);
+              row = [];
+            }
+            groupCurrent = item.group;
+          }
+          if (itemLabelMaxLength < itemLabelLength) {
+            itemLabelMaxLength = itemLabelLength;
+          }
+          if (maxTextLength > 0 && (row.length + 1) * itemLabelMaxLength + row.length * spaceBetweenColumns > maxTextLength) {
+            buttons.push(row);
+            row = [];
+            itemLabelMaxLength = 0;
+          }
+          row.push(item.createButton());
+          if ((maxColumns > 0 && row.length === maxColumns) || index === nestedCountCurrent) {
             buttons.push(row);
             row = [];
           }
-          groupCurrent = item.group;
         }
-        if (itemLabelMaxLength < itemLabelLength) {
-          itemLabelMaxLength = itemLabelLength;
-        }
-        if (maxTextLength > 0 && (row.length + 1) * itemLabelMaxLength + row.length * spaceBetweenColumns > maxTextLength) {
-          buttons.push(row);
-          row = [];
-          itemLabelMaxLength = 0;
-        }
-        row.push(item.createButton());
-        if ((maxColumns > 0 && row.length === maxColumns) || index === nestedCountCurrent) {
-          buttons.push(row);
-          row = [];
-        }
-      });
+      }
       if (nestedCount > buttonsMaxCount) {
         const pageCurrent = Math.trunc(buttonsOffset / buttonsMaxCount) + 1;
         if (buttonsOffset >= buttonsMaxCount) {
@@ -556,13 +576,13 @@ class MenuItem {
    * @param {string} peerId - Peer Id
    **/
   async draw(client, peerId) {
-    log.debug(`MenuItem.draw '${this.command}'| label: ${this.label}, text: ${this.text}`);
+    this.log('debug', `label: ${this.label}, text: ${this.text}`);
     const refreshed = await this.refresh();
-    log.debug(`MenuItem.draw '${this.command}'| Refreshed with result: ${refreshed}!`);
+    this.log('debug', `Refreshed with result: ${refreshed}!`);
     if (refreshed === true) {
       const menuMessageId = this.getMessageId(peerId?.userId),
         buttons = this.getButtons(peerId?.userId);
-      log.debug(`MenuItem.draw '${this.command}'| menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
+      this.log('debug', `menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
       if (client !== null && peerId !== null) {
         client.isBot().then((isBot) => {
           const messageParams = {};
@@ -572,16 +592,15 @@ class MenuItem {
           if (isBot && menuMessageId !== 0) {
             messageParams.message = menuMessageId;
             messageParams.text = this.text;
-            log.debug(
-              `MenuItem.draw '${this.command}'| Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(
-                messageParams,
-              )}`,
-              true,
+            this.log(
+              'debug',
+              `${this.constructor.name}.draw{'${this.command}'}| `,
+              `Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(messageParams)}`,
             );
             client
               .editMessage(peerId, messageParams)
               .then((res) => {
-                log.debug(`MenuItem.draw '${this.command}'| Message edited successfully!`, true);
+                this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message edited successfully!`);
                 client.isBot().then((isBot) => {
                   if (isBot) {
                     this.setMessageId(peerId?.userId, res.id);
@@ -590,28 +609,32 @@ class MenuItem {
               })
               .catch((err) => {
                 if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
-                  log.debug(`MenuItem.draw '${this.command}'| Message Id is invalid! Going to send new message!`, true);
+                  this.log(
+                    'debug',
+                    `${this.constructor.name}.draw{'${this.command}'}| `,
+                    `Message Id is invalid! Going to send new message!`,
+                  );
                   this.removeMessageId(peerId?.userId);
                   this.draw(client, peerId);
                 } else {
-                  log.warn(
-                    `MenuItem.draw '${this.command}'| Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${
-                      this.text
-                    }`,
-                    true,
+                  this.log(
+                    'warn',
+                    `${this.constructor.name}.draw{'${this.command}'}| `,
+                    `Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${this.text}`,
                   );
                 }
               });
           } else {
             messageParams.message = this.text;
-            log.debug(
-              `MenuItem.draw '${this.command}'| Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
-              true,
+            this.log(
+              'debug',
+              `${this.constructor.name}.draw{'${this.command}'}| `,
+              `Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
             );
             client
               .sendMessage(peerId, messageParams)
               .then((res) => {
-                log.debug(`MenuItem.draw '${this.command}'| Message sent successfully!`, true);
+                this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message sent successfully!`);
                 client.isBot().then((isBot) => {
                   if (isBot) {
                     this.setMessageId(peerId?.userId, res.id);
@@ -619,11 +642,10 @@ class MenuItem {
                 });
               })
               .catch((err) => {
-                log.warn(
-                  `MenuItem.draw '${this.command}'| Message send error: ${stringify(err)}, text: ${
-                    this.text
-                  },  menuMessageId: ${menuMessageId}`,
-                  true,
+                this.log(
+                  'warn',
+                  `${this.constructor.name}.draw{'${this.command}'}| `,
+                  `Message send error: ${stringify(err)}, text: ${this.text},  menuMessageId: ${menuMessageId}`,
                 );
               });
           }
@@ -646,35 +668,31 @@ class MenuItem {
    **/
   async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
     const menuMessageId = this.getMessageId(peerId?.userId);
-    log.debug(
-      `MenuItem.onCommand '${this.command}'| command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(
-        menuDefaults.cmdPrefix,
-      )}`,
-    );
+    this.log('debug', `command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(menuDefaults.cmdPrefix)}`);
     if (isTarget === true) {
       if (isBot === true && isEvent === false && messageId !== 0) {
         client
           .deleteMessages(peerId, [messageId], {revoke: true})
           .then((res) => {
-            log.debug(`MenuItem.onCommand '${this.command}'| Message from User deleted successfully!`);
+            this.log('debug', `Message from User deleted successfully!`);
           })
           .catch((err) => {
-            log.warn(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`);
+            this.log('warn', `Message from User delete error: ${stringify(err)}`);
           });
       }
       if (typeof this.onRun === 'function') {
         const reDraw = await this.onRun(client, peerId, isBot, messageId, command);
-        log.debug(`MenuItem.onCommand '${this.command}'| command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
+        this.log('debug', `command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
         if (reDraw === true && menuMessageId !== 0 && isEvent === true && isBot === true) {
           client
             .deleteMessages(peerId, [menuMessageId], {revoke: true})
             .then((res) => {
-              log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`);
+              this.log('debug', `Message deleted successfully!`);
               this.removeMessageId(peerId?.userId);
               this.draw(client, peerId);
             })
             .catch((err) => {
-              log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`);
+              this.log('warn', `Message delete error: ${stringify(err)}`);
             });
         } else {
           await this.draw(client, peerId);
@@ -683,26 +701,24 @@ class MenuItem {
         client
           .deleteMessages(peerId, [menuMessageId], {revoke: true})
           .then((res) => {
-            log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`);
+            this.log('debug', `Message deleted successfully!`);
             this.removeMessageId(peerId?.userId);
           })
           .catch((err) => {
-            log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`);
+            this.log('warn', `Message delete error: ${stringify(err)}`);
           });
       } else {
         await this.draw(client, peerId);
       }
     } else {
       const root = this.getRoot();
-      log.debug(
-        `MenuItem.onCommand '${this.command}'| command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`,
-      );
+      this.log('debug', `command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`);
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
-      log.debug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`);
+      this.log('debug', `target: ${stringify(target?.command)}`);
       if (target !== null) {
         await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
       } else {
-        log.warn(`MenuItem.onCommand '${this.command}'| command: ${command} is not allowed! Appropriate item is not found!`);
+        this.log('warn', `command: ${command} is not allowed! Appropriate item is not found!`);
       }
     }
   }
@@ -729,6 +745,4 @@ module.exports = {
   MenuItem,
   menuDefaults,
   setFunctionMakeButton,
-  setMenuItemLogger,
-  setMenuItemLogLevel,
 };

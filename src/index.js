@@ -63,13 +63,10 @@ const options = yargs
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
 
-setMenuLogger(log);
 if (options.debug) {
   log.setLevel('debug');
-  setMenuLogLevel('debug');
-} else {
-  setMenuLogLevel('info');
 }
+
 log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
 
 const logAsBot = {isBot: true};
@@ -1044,7 +1041,7 @@ cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListener
 
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
-menuRoot.init().then(() => {
+menuRoot.init(options.debug ? 'debug' : 'info', log).then(() => {
   if (options.command !== undefined) {
     log.debug(`Testing command: ${options.command}`);
     menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);

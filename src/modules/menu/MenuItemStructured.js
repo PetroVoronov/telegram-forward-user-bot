@@ -1,6 +1,5 @@
 const stringify = require('json-stringify-safe');;
 const {MenuItem} = require('./MenuItem');
-const {SimpleLogger, setLogger, setLogLevel} = require('./MenuLogger');
 const {
   MenuButton,
   MenuButtonBoolean,
@@ -12,19 +11,6 @@ const {
   MenuButtonDeleteItem,
 } = require('./MenuButton');
 const i18n = require('../i18n/i18n.config');
-
-let log = new SimpleLogger('info');
-
-function setMenuStructuredLogger(logger) {
-  const newLogger = setLogger(logger);
-  if (newLogger) {
-    log = newLogger;
-  }
-}
-
-function setMenuStructuredLogLevel(level) {
-  setLogLevel(log, level);
-}
 
 class MenuItemStructured extends MenuItem {
   dataId = '';
@@ -147,6 +133,7 @@ class MenuItemStructured extends MenuItem {
   }
 
   async postAppend() {
+    await super.postAppend();
     if (this.isDataHolder === true) {
       await this.refresh();
     } else {
@@ -295,8 +282,8 @@ class MenuItemStructured extends MenuItem {
         commandSplitted = command.split(splitter),
         baseCommand = commandSplitted.length > 1 ? commandSplitted.slice(0, -1).join(splitter) : command,
         indexAndParams = commandSplitted.length > 1 ? commandSplitted.pop() : ''; //work only with the last index
-      log.debug(
-        `MenuItemStructured.getData '${this.command}'| command: ${command}, baseCommand: ${baseCommand},` +
+      this.log('debug',
+        `command: ${command}, baseCommand: ${baseCommand},` +
           ` indexAndParams: ${indexAndParams}`,
       );
       if (baseCommand === this.command) {
@@ -309,18 +296,18 @@ class MenuItemStructured extends MenuItem {
             index = indexAndParamsArray[0] ? Number(indexAndParamsArray[0]) : -1;
             params = indexAndParamsArray[1];
           }
-          log.debug(`MenuItemStructured.getData '${this.command}'| index: ${index}, params: ${params}`);
+          this.log('debug', `index: ${index}, params: ${params}`);
           if ((index >= 0 && this.isArray === true && index < this.data.length) || (index === -1 && this.isArray === false)) {
             const dataItem = this.isArray ? this.data[index] : this.data;
             if (params.length === 0 || (this.structure.plain === true && params === 'value')) {
-              log.debug(
-                `MenuItemStructured.getData '${this.command}'| ` +
+              this.log('debug',
+                `` +
                   `params.length: ${params.length}, plain: ${this.structure.plain}, dataItem: ${stringify(dataItem)}`,
               );
               result = dataItem;
             } else {
               const path = params.split('$');
-              log.debug(`MenuItemStructured.getData '${this.command}'| path: ${stringify(path)}, dataItem: ${stringify(dataItem)}`);
+              this.log('debug', `path: ${stringify(path)}, dataItem: ${stringify(dataItem)}`);
               if (path.length > 0) {
                 result = path.reduce((acc, key) => {
                   if (acc !== undefined && acc !== null) {
@@ -363,7 +350,7 @@ class MenuItemStructured extends MenuItem {
             currentStructure = this.structure.itemContent;
           if (params.startsWith('@') === true) {
             if (index >= 0 && this.isArray === true && index < this.data.length) {
-              log.debug(`MenuItemStructured.setData '${this.command}'| index: ${index}, params: ${params}`);
+              this.log('debug', `index: ${index}, params: ${params}`);
               const command = path.shift();
               // eslint-disable-next-line sonarjs/no-small-switch
               switch (command) {
@@ -466,8 +453,8 @@ class MenuItemStructured extends MenuItem {
     if (item === null && Array.isArray(path) && path.length > 0) {
       const structureItem = this.getItemFromStructure(path);
       itemToSkip = this.getItemPresence(path, structureItem) !== 'mandatory' && value === undefined;
-      log.debug(
-        `MenuItemStructured.appendNested '${this.command}'| path: ${path.join('.')}, value: ${stringify(value)},` +
+      this.log('debug',
+        `path: ${path.join('.')}, value: ${stringify(value)},` +
           ` item: ${stringify(structureItem)}`,
       );
       if (structureItem !== undefined && structureItem !== null && structureItem.editable === true && itemToSkip === false) {
@@ -554,7 +541,7 @@ class MenuItemStructured extends MenuItem {
   async refresh(force = false) {
     let result = true,
       buttonAdd = null;
-    log.debug(`MenuItemStructured.refresh '${this.command}'| isRulesHolder: ${this.isDataHolder}`);
+    this.log('debug', `isRulesHolder: ${this.isDataHolder}`);
     if (this.isDataHolder === true && this.isArray === true) {
       const isNewRules = this.load(),
         root = this.getRoot();
@@ -568,7 +555,7 @@ class MenuItemStructured extends MenuItem {
             if (this.structure.plain === true && dataItem === null) {
               dataItem = undefined;
             }
-            log.debug(`MenuItemStructured.refresh| index: ${index}, dataItem: ${stringify(dataItem)}`);
+            this.log('debug', `index: ${index}, dataItem: ${stringify(dataItem)}`);
             if (this.nested[index] instanceof MenuItemStructured || this.nested[index] instanceof MenuItemStructuredSubordinated) {
               this.nested[index].data = dataItem;
             } else {
@@ -597,7 +584,7 @@ class MenuItemStructured extends MenuItem {
       (this.isDataHolder === true && this.isArray === false) ||
       (this.holder !== null && this.holder.isDataHolder === true && this.holder.isArray === true)
     ) {
-      log.debug(`MenuItemStructured.refresh '${this.command}'| index: ${this.index}, holder.data.length: ${this.holder?.data?.length}`);
+      this.log('debug', `index: ${this.index}, holder.data.length: ${this.holder?.data?.length}`);
       if (this.isArray === false || (this.index >= 0 && this.index < this.holder?.data?.length)) {
         let dataItem = this.isDataHolder === true ? this.data : this.holder.data[this.index];
         if (dataItem === null || dataItem === undefined) {
@@ -781,6 +768,4 @@ class MenuItemStructuredSubordinated extends MenuItemStructured {
 
 module.exports = {
   MenuItemStructured,
-  setMenuStructuredLogger,
-  setMenuStructuredLogLevel,
 };

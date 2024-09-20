@@ -1,9 +1,8 @@
 
 
-const {MenuItem, menuDefaults, setFunctionMakeButton, setMenuItemLogLevel, setMenuItemLogger} = require('./MenuItem');
-const {MenuItemStructured, setMenuStructuredLogLevel, setMenuStructuredLogger} = require('./MenuItemStructured');
-const {setMenuButtonLogLevel, setMenuButtonLogger} = require('./MenuButton');
-const {SimpleLogger, setLogger, setLogLevel} = require('./MenuLogger');
+const {MenuItem, menuDefaults, setFunctionMakeButton} = require('./MenuItem');
+const {MenuItemStructured} = require('./MenuItemStructured');
+const {SimpleLogger, setLogLevel} = require('./MenuLogger');
 
 let log = new SimpleLogger('info');
 class MenuItemRoot extends MenuItem {
@@ -22,7 +21,21 @@ class MenuItemRoot extends MenuItem {
     this.rootStructure = menuStructure;
   }
 
-  async init() {
+  async init(level = 'info', logger = null) {
+    if (
+      logger &&
+      typeof logger === 'object' &&
+      typeof logger.debug === 'function' &&
+      typeof logger.warn === 'function' &&
+      typeof logger.error === 'function' &&
+      typeof logger.info === 'function'
+    ) {
+      this.logger = logger;
+      this.log('debug', 'Logger is set to external logger');
+    } else {
+      this.logger = new SimpleLogger(level);
+      this.log('debug', 'Logger is set to SimpleLogger');
+  }
     this.config(this.rootStructure.options);
     for (const key of Object.keys(this.rootStructure.structure)) {
       const item = this.rootStructure.structure[key];
@@ -32,25 +45,8 @@ class MenuItemRoot extends MenuItem {
 
 }
 
-function setMenuLogger(logger) {
-  log = setLogger(logger);
-  setMenuItemLogger(logger);
-  setMenuStructuredLogger(logger);
-  setMenuButtonLogger(logger);
-}
-
-function setMenuLogLevel(level) {
-  setLogLevel(log, level);
-  setMenuItemLogLevel(level);
-  setMenuStructuredLogLevel(level);
-  setMenuButtonLogLevel(level);
-}
-
-
 module.exports = {
   MenuItemRoot,
   menuDefaults,
   setFunctionMakeButton,
-  setMenuLogger,
-  setMenuLogLevel,
 };
