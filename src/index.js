@@ -15,7 +15,7 @@ const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
-const { isBot } = require('telegram/client/users');
+const {isBot} = require('telegram/client/users');
 
 const refreshIntervalDefault = 300;
 let refreshInterval = refreshIntervalDefault * 1000;
@@ -62,7 +62,6 @@ const options = yargs
   .alias('h', 'help')
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
-
 if (options.debug) {
   log.setLevel('debug');
 }
@@ -72,14 +71,12 @@ log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
 const logAsBot = {isBot: true};
 const logAsUser = {isBot: false};
 
-
 log.info(`${scriptName} v${scriptVersion} started!`);
 log.info(`Refresh interval: ${options.refreshInterval} seconds!`);
 log.info(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
 if (options.noBot === true) log.info('Starting without bot instance!');
 if (options.debug === true) log.info('Verbose logging is enabled!');
 if (options.command !== undefined) log.info(`Command to test: ${options.command}`);
-
 
 const getLanguages = () => {
     return new Map(i18n.getLocales().map((locale) => [locale, locale]));
@@ -291,7 +288,8 @@ const timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
   lastProcessed = cache.getItem('lastProcessed') || {},
   lastForwarded = cache.getItem('lastForwarded') || {},
   lastForwardedDelayed = {},
-  forwardRulesId = 'forwardRules';
+  forwardRulesId = 'forwardRules',
+  topicsCache = {};
 let apiId = cache.getItem('apiId', 'number'),
   apiHash = cache.getItem('apiHash'),
   botAuthToken = cache.getItem('botAuthToken'),
@@ -363,23 +361,32 @@ const getItemLabel = (data) => data.label,
   getForumTopics = async (entity) => {
     return new Promise((resolve, reject) => {
       if (entity !== null && entity !== undefined && entity.forum === true && clientAsUser !== null && clientAsUser.connected === true) {
-        clientAsUser
-          .invoke(
-            new Api.channels.GetForumTopics({
-              channel: entity,
-              limit: 100,
-              offsetId: 0,
-              offsetDate: 0,
-              addOffset: 0,
-            }),
-          )
-          .then((res) => {
-            resolve(res.topics);
-          })
-          .catch((err) => {
-            log.warn(err, logAsUser);
-            resolve([]);
-          });
+        if (
+          topicsCache[`${entity.id}`] !== undefined &&
+          topicsCache[`${entity.id}`].timeStamp > 0 &&
+          Date.now() - topicsCache[`${entity.id}`].timeStamp < refreshInterval
+        ) {
+          resolve(topicsCache[`${entity.id}`].topics);
+        } else {
+          clientAsUser
+            .invoke(
+              new Api.channels.GetForumTopics({
+                channel: entity,
+                limit: 100,
+                offsetId: 0,
+                offsetDate: 0,
+                addOffset: 0,
+              }),
+            )
+            .then((result) => {
+              topicsCache[`${entity.id}`] = {topics: result.topics, timeStamp: Date.now()};
+              resolve(result.topics);
+            })
+            .catch((err) => {
+              log.warn(err, logAsUser);
+              resolve([]);
+            });
+        }
       } else {
         resolve([]);
       }
@@ -1038,94 +1045,96 @@ process.on('SIGTERM', gracefulExit);
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
 
-
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
-menuRoot.init(options.debug ? 'debug' : 'info', log).then(() => {
-  if (options.command !== undefined) {
-    log.debug(`Testing command: ${options.command}`);
-    menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
-  } else {
-    getAPIAttributes().then(() => {
-      if (apiId !== null && apiHash !== null) {
-        clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
-          connectionRetries: Infinity,
-          autoReconnect: true,
-          appVersion: scriptVersion,
-        });
-        clientAsUser.setParseMode('html');
-        if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
-        if (options.noBot !== true) {
-          clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
+menuRoot
+  .init(options.debug ? 'debug' : 'info', log)
+  .then(() => {
+    if (options.command !== undefined) {
+      log.debug(`Testing command: ${options.command}`);
+      menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
+    } else {
+      getAPIAttributes().then(() => {
+        if (apiId !== null && apiHash !== null) {
+          clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
             connectionRetries: Infinity,
             autoReconnect: true,
             appVersion: scriptVersion,
           });
-          clientAsBot.setParseMode('html');
-          if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
-        }
-        const rl = readline.createInterface({
-          input,
-          output,
-        });
-        clientAsUser
-          .start({
-            phoneNumber: async () => await rl.question('Enter your phone number: '),
-            password: async () => rl.question('Enter your password: '),
-            phoneCode: async () => rl.question('Enter the code: '),
-            onError: (err) => {
-              log.warn(err, logAsUser);
-            },
-          })
-          .then((connect) => {
-            rl.close();
-            clientAsUser
-              .isUserAuthorized()
-              .then((isAuthorized) => {
-                log.info(`User is authorized: ${isAuthorized}`, logAsUser);
-                // eslint-disable-next-line sonarjs/no-nested-functions
-                clientAsUser.getMe().then((user) => {
-                  meUser = user;
-                  if (meUser !== null) {
-                    meUserId = Number(meUser.id);
-                  }
-                  refreshDialogsStart(true);
-                  const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
-                  let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
-                  log.debug(
-                    `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` + ` now: ${Date.now()}`
-                  );
-                  if (timeOut >= timeOutToPreventBotFlood) {
-                    timeOut = 0;
-                  } else if (timeOut > 0) {
-                    timeOut = timeOutToPreventBotFlood - timeOut;
-                  }
-                  if (timeOut > 0) {
-                    log.debug(`Bot flood prevention timeout: ${timeOut} ms`);
-                    // eslint-disable-next-line sonarjs/no-nested-functions
-                    setTimeout(() => {
-                      startBotClient();
-                    }, timeOut);
-                  } else {
-                    startBotClient();
-                  }
-                });
-              })
-              .catch((err) => {
-                log.warn(`User is not authorized! Error is ${stringify(err)}`, logAsUser);
-              });
-          })
-          .catch((err) => {
-            rl.close();
-            log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+          clientAsUser.setParseMode('html');
+          if (options.debugClientUser === true) clientAsUser.setLogLevel('debug');
+          if (options.noBot !== true) {
+            clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
+              connectionRetries: Infinity,
+              autoReconnect: true,
+              appVersion: scriptVersion,
+            });
+            clientAsBot.setParseMode('html');
+            if (options.debugClientBot === true) clientAsBot.setLogLevel('debug');
+          }
+          const rl = readline.createInterface({
+            input,
+            output,
           });
-      }
-    });
-  }
-})
-.catch((err) => {
-  log.error(`Error on menuRoot.init(): ${stringify(err)}`);
-});
+          clientAsUser
+            .start({
+              phoneNumber: async () => await rl.question('Enter your phone number: '),
+              password: async () => rl.question('Enter your password: '),
+              phoneCode: async () => rl.question('Enter the code: '),
+              onError: (err) => {
+                log.warn(err, logAsUser);
+              },
+            })
+            .then((connect) => {
+              rl.close();
+              clientAsUser
+                .isUserAuthorized()
+                .then((isAuthorized) => {
+                  log.info(`User is authorized: ${isAuthorized}`, logAsUser);
+                  // eslint-disable-next-line sonarjs/no-nested-functions
+                  clientAsUser.getMe().then((user) => {
+                    meUser = user;
+                    if (meUser !== null) {
+                      meUserId = Number(meUser.id);
+                    }
+                    refreshDialogsStart(true);
+                    const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
+                    let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
+                    log.debug(
+                      `Bot flood prevention timeout: ${timeOut} ms, lastBotStartTimeStamp: ${lastBotStartTimeStamp},` +
+                        ` now: ${Date.now()}`,
+                    );
+                    if (timeOut >= timeOutToPreventBotFlood) {
+                      timeOut = 0;
+                    } else if (timeOut > 0) {
+                      timeOut = timeOutToPreventBotFlood - timeOut;
+                    }
+                    if (timeOut > 0) {
+                      log.debug(`Bot flood prevention timeout: ${timeOut} ms`);
+                      // eslint-disable-next-line sonarjs/no-nested-functions
+                      setTimeout(() => {
+                        startBotClient();
+                      }, timeOut);
+                    } else {
+                      startBotClient();
+                    }
+                  });
+                })
+                .catch((err) => {
+                  log.warn(`User is not authorized! Error is ${stringify(err)}`, logAsUser);
+                });
+            })
+            .catch((err) => {
+              rl.close();
+              log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+            });
+        }
+      });
+    }
+  })
+  .catch((err) => {
+    log.error(`Error on menuRoot.init(): ${stringify(err)}`);
+  });
 
 function getRandomId() {
   // eslint-disable-next-line sonarjs/pseudo-random
@@ -1253,7 +1262,7 @@ async function refreshDialogs() {
             fromIdsWithEdit.push(Number(rule.from.id));
           }
           const lastProcessedId =
-              (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0;
+            (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0;
           const lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
           const lastSourceId = dialogFrom.dialog?.topMessage;
           if (rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
