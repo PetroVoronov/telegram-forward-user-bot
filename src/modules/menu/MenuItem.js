@@ -178,13 +178,6 @@ class MenuItem {
     }
   }
 
-  /**
-   * Set holder of the menu item
-   * @param {MenuItem} holder - Holder of the menu item
-   **/
-  setHolder(holder) {
-    this.holder = holder;
-  }
 
   getCurrentMethodName() {
     const error = new Error();
@@ -229,7 +222,6 @@ class MenuItem {
     const root = this.getRoot(),
       command = item.command;
     this.log('debug', `command: ${command}, commands: ${stringify(Object.keys(root.commands))}`);
-    root?.updateCommands();
     if (command !== null && Object.keys(root?.commands).includes(command) === false) {
       if (index === -1 || index >= this.nested.length) {
         this.nested.push(item);
@@ -238,26 +230,56 @@ class MenuItem {
         this.nested.splice(index, 0, item);
         result = index;
       }
-      item.setHolder(this);
-      await item.postAppend();
+      await item.postAppend(this);
     } else {
       this.log('warn', `Command '${command}' is already exists! Item can't be added to the menu!`);
     }
     return result;
   }
 
+  removeNested(item = null, index = -1) {
+    let itemIndex = index;
+    if (item === null && itemIndex !== -1) {
+      item = this.nested[index];
+    } else if (item !== null && index === -1) {
+      itemIndex = this.nested.indexOf(item);
+    }
+    if (itemIndex !== -1 && itemIndex < this.nested.length) {
+      this.nested.splice(itemIndex, 1);
+      this.removeCommand(item.command);
+    }
+  }
+
+  removeCommand(command) {
+    const item = this.commands[command];
+    if (item) {
+      this.removeNested(item);
+      delete this.commands[command];
+    }
+    if (this.holder) {
+      this.holder.removeCommand(command);
+    }
+  }
+
+  appendCommand(command = this.#command, item = this) {
+    this.commands[command] = item;
+    if (this.holder) {
+      this.holder.appendCommand(command, item);
+    }
+  }
 
   /**
    * Post append operation
    **/
-  async postAppend() {
+  async postAppend(holder) {
+    this.holder = holder;
     if (this.holder?.logger) {
       this.logger = this.holder.logger;
       this.nested.forEach((item) => {
         item.logger = this.logger;
       });
     }
-    this.updateCommands();
+    this.appendCommand();
   }
 
   config(configuration) {
@@ -387,26 +409,7 @@ class MenuItem {
     }
   }
 
-  /**
-   * Update commands of the menu item and it's subordinates to root item
-   **/
-  updateCommands(root = null) {
-    if (root !== null) {
-      root.commands[this.command] = this;
-      this.nested.forEach((item) => {
-        item.updateCommands(root);
-      });
-    } else if (this.isRoot === true) {
-      this.updateCommands(this);
-    } else {
-      const root = this.getRoot();
-      if (root !== null) {
-        root.updateCommands();
-      }
-    }
-  }
-
-  /**
+   /**
    * Get root of the menu item
    * @returns {MenuItem} - Root of the menu item
    **/

@@ -290,12 +290,17 @@ class MenuButtonListTyped extends MenuButton {
       this.list = list;
     }
     this.type = type;
+    this.isAsync = false;
   }
 
-  updateList() {
+  async updateList() {
     if (typeof this.getList === 'function') {
       const data = this.getData(`${this.command.split('?')[0]}?`);
-      this.list = this.getList(data);
+      if (this.isAsync === true) {
+        this.list = await this.getList(data);
+      } else {
+        this.list = this.getList(data);
+      }
     }
   }
 
@@ -311,28 +316,46 @@ class MenuButtonListTyped extends MenuButton {
     return result;
   }
 
-  async postAppend() {
-    await super.postAppend();
-    this.updateList();
+  async postAppend(holder) {
+    await super.postAppend(holder);
+    await this.updateList();
   }
 
-  // draw(client, peerId, messageId) {
-  //   this.refresh();
-  //   super.draw(client, peerId, messageId);
-  // }
-
   async refresh(force = false) {
-    const root = this.getRoot(),
-      currentValue = this.getData();
-    this.nested = [];
-    if (root !== null) {
-      root.updateCommands();
+    const thisData = this.getData();
+    let nestedCount = this.nestedCount();
+
+    await this.updateList();
+
+    const list = Array.from(this.list);
+    const listLength = list.length;
+
+    if (force === true || nestedCount !== listLength) {
+      while (nestedCount > 0) {
+        this.removeNested(null, 0);
+        nestedCount--;
+      }
     }
-    this.updateList();
-    for (const [key, value] of this.list) {
-      this.log('debug', `this.label: ${this.label}, key: ${key}, value: ${value}`);
-      const command = typeof key === 'string' && key.startsWith(menuDefaults.cmdPrefix) ? key : `${this.command}$v=${key}`;
-      await this.appendNested(new MenuButtonListItem(value, command, value, key === currentValue, this.group));
+
+    for (const [index, [key, value]] of list.entries()) {
+      const current = key === thisData;
+      const command = `${this.command}$v=${key}`;
+      if (index < nestedCount) {
+        const item = this.nested[index];
+        if (item.key !== key || item.value !== value) {
+          this.removeNested(null, index);
+          this.log('debug', `replace ${index} by this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
+          await this.appendNested(new MenuButtonListItem(key, value, command, current, this.group), index);
+        } else {
+          this.log('debug', `keep ${index} this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
+          if (typeof this.nested[index]?.current === 'boolean') {
+            this.nested[index].current = current;
+          }
+        }
+      } else {
+        this.log('debug', `append new this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
+        await this.appendNested(new MenuButtonListItem(key, value, command, current, this.group));
+      }
     }
     return true;
   }
@@ -357,8 +380,6 @@ class MenuButtonListTyped extends MenuButton {
 }
 
 class MenuButtonListTypedAsync extends MenuButtonListTyped {
-  #refreshed = false;
-
   /**
    * @param {string|function} label - The label of the item
    * @param {string|function} command - The command to execute
@@ -370,41 +391,15 @@ class MenuButtonListTypedAsync extends MenuButtonListTyped {
    */
   constructor(label, command, text, list, type = 'string', group = '') {
     super(label, command, text, list, type, group);
-  }
-
-  async updateList() {
-    if (typeof this.getList === 'function') {
-      this.list = await this.getList(this.getData(`${this.command.split('?')[0]}?`));
-    }
-  }
-
-  async postAppend() {
-    await super.postAppend();
-    await this.updateList();
-    this.log('debug', `${this.label}, this.list: ${stringify(this.list)}`);
-  }
-
-  async refresh(force) {
-    if (this.#refreshed === false) {
-      const root = this.getRoot(),
-        thisData = this.getData();
-      this.nested = [];
-      if (root !== null) {
-        root.updateCommands();
-      }
-      await this.updateList();
-      for (const [key, value] of this.list) {
-        this.log('debug', `this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
-        await this.appendNested(new MenuButtonListItem(value, `${this.command}$v=${key}`, value, key === thisData, this.group));
-      }
-    }
-    return true;
+    this.isAsync = true;
   }
 }
 class MenuButtonListItem extends MenuButton {
-  constructor(label, command, text, current = false, group = '') {
-    super(label, command, text, group);
+  constructor(key, value, command, current = false, group = '') {
+    super(value, command, value, group);
     this.current = current;
+    this.key = key;
+    this.value = value;
   }
 
   get label() {
