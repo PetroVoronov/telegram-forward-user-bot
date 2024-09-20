@@ -2,8 +2,8 @@
 /** @module menu/menu-item  **/
 
 const stringify = require('json-stringify-safe');
-const {securedLogger: log} = require('../logging/logging');
 const emojiRegex = require('emoji-regex');
+const {setLogger, setLogLevel, SimpleLogger} = require('./menuLogger');
 const i18n = require('../i18n/i18n.config');
 
 const menuDefaults = {
@@ -11,8 +11,8 @@ const menuDefaults = {
   buttonsMaxCount: 24,
   textSummaryMaxLength: 0,
   spaceBetweenColumns: 1,
-  cmdPrefix: '/'
-}
+  cmdPrefix: '/',
+};
 
 let makeButton = (label, command) => `Button: ${label} - ${command}`;
 
@@ -20,6 +20,19 @@ function setFunctionMakeButton(func) {
   if (typeof func === 'function') {
     makeButton = func;
   }
+}
+
+let log = new SimpleLogger('info');
+
+function setMenuItemLogger(logger) {
+  const newLogger = setLogger(logger);
+  if (newLogger) {
+    log = newLogger;
+  }
+}
+
+function setMenuItemLogLevel(level) {
+  setLogLevel(log, level);
 }
 
 /**
@@ -60,7 +73,6 @@ function setFunctionMakeButton(func) {
  * @property {function} onCommand - Handle command
  **/
 class MenuItem {
-
   static cmdExit = `${menuDefaults.cmdPrefix}exit`;
 
   static buttonsOffsetRegex = new RegExp(`^${menuDefaults.cmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
@@ -638,17 +650,16 @@ class MenuItem {
       `MenuItem.onCommand '${this.command}'| command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(
         menuDefaults.cmdPrefix,
       )}`,
-      isBot,
     );
     if (isTarget === true) {
       if (isBot === true && isEvent === false && messageId !== 0) {
         client
           .deleteMessages(peerId, [messageId], {revoke: true})
           .then((res) => {
-            log.debug(`MenuItem.onCommand '${this.command}'| Message from User deleted successfully!`, isBot);
+            log.debug(`MenuItem.onCommand '${this.command}'| Message from User deleted successfully!`);
           })
           .catch((err) => {
-            log.warn(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`, isBot);
+            log.warn(`MenuItem.onCommand '${this.command}'| Message from User delete error: ${stringify(err)}`);
           });
       }
       if (typeof this.onRun === 'function') {
@@ -658,12 +669,12 @@ class MenuItem {
           client
             .deleteMessages(peerId, [menuMessageId], {revoke: true})
             .then((res) => {
-              log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
+              log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`);
               this.removeMessageId(peerId?.userId);
               this.draw(client, peerId);
             })
             .catch((err) => {
-              log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
+              log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`);
             });
         } else {
           await this.draw(client, peerId);
@@ -672,11 +683,11 @@ class MenuItem {
         client
           .deleteMessages(peerId, [menuMessageId], {revoke: true})
           .then((res) => {
-            log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`, isBot);
+            log.debug(`MenuItem.onCommand '${this.command}'| Message deleted successfully!`);
             this.removeMessageId(peerId?.userId);
           })
           .catch((err) => {
-            log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`, isBot);
+            log.warn(`MenuItem.onCommand '${this.command}'| Message delete error: ${stringify(err)}`);
           });
       } else {
         await this.draw(client, peerId);
@@ -685,14 +696,13 @@ class MenuItem {
       const root = this.getRoot();
       log.debug(
         `MenuItem.onCommand '${this.command}'| command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`,
-        isBot,
       );
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
-      log.debug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`, isBot);
+      log.debug(`MenuItem.onCommand '${this.command}'| target: ${stringify(target?.command)}`);
       if (target !== null) {
         await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
       } else {
-        log.warn(`MenuItem.onCommand '${this.command}'| command: ${command} is not allowed! Appropriate item is not found!`, isBot);
+        log.warn(`MenuItem.onCommand '${this.command}'| command: ${command} is not allowed! Appropriate item is not found!`);
       }
     }
   }
@@ -719,4 +729,6 @@ module.exports = {
   MenuItem,
   menuDefaults,
   setFunctionMakeButton,
+  setMenuItemLogger,
+  setMenuItemLogLevel,
 };

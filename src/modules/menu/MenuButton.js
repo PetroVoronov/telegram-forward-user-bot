@@ -1,8 +1,21 @@
 /* eslint-disable sonarjs/public-static-readonly */
 const stringify = require('json-stringify-safe');
-const {securedLogger: log} = require('../logging/logging');
 const {MenuItem, menuDefaults} = require('./MenuItem');
+const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
 const i18n = require('../i18n/i18n.config');
+
+let log = new SimpleLogger('info');
+
+function setMenuButtonLogger(logger) {
+  const newLogger = setLogger(logger);
+  if (newLogger) {
+    log = newLogger;
+  }
+}
+
+function setMenuButtonLogLevel(level) {
+  setLogLevel(log, level);
+}
 
 class MenuButton extends MenuItem {
   /**
@@ -469,4 +482,6 @@ module.exports = {
   MenuButtonListTyped,
   MenuButtonListTypedAsync,
   MenuButtonDeleteItem,
+  setMenuButtonLogger,
+  setMenuButtonLogLevel,
 };

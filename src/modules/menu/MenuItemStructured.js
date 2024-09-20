@@ -1,6 +1,6 @@
-const stringify = require('json-stringify-safe');
-const {securedLogger: log} = require('../logging/logging');
+const stringify = require('json-stringify-safe');;
 const {MenuItem} = require('./MenuItem');
+const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
 const {
   MenuButton,
   MenuButtonBoolean,
@@ -12,6 +12,19 @@ const {
   MenuButtonDeleteItem,
 } = require('./MenuButton');
 const i18n = require('../i18n/i18n.config');
+
+let log = new SimpleLogger('info');
+
+function setMenuStructuredLogger(logger) {
+  const newLogger = setLogger(logger);
+  if (newLogger) {
+    log = newLogger;
+  }
+}
+
+function setMenuStructuredLogLevel(level) {
+  setLogLevel(log, level);
+}
 
 class MenuItemStructured extends MenuItem {
   dataId = '';
@@ -768,4 +781,6 @@ class MenuItemStructuredSubordinated extends MenuItemStructured {
 
 module.exports = {
   MenuItemStructured,
+  setMenuStructuredLogger,
+  setMenuStructuredLogLevel,
 };

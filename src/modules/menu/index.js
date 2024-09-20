@@ -1,8 +1,11 @@
 
 
-const {MenuItem, menuDefaults, setFunctionMakeButton} = require('./MenuItem');
-const {MenuItemStructured} = require('./MenuItemStructured');
+const {MenuItem, menuDefaults, setFunctionMakeButton, setMenuItemLogLevel, setMenuItemLogger} = require('./MenuItem');
+const {MenuItemStructured, setMenuStructuredLogLevel, setMenuStructuredLogger} = require('./MenuItemStructured');
+const {setMenuButtonLogLevel, setMenuButtonLogger} = require('./MenuButton');
+const {SimpleLogger, setLogger, setLogLevel} = require('./menuLogger');
 
+let log = new SimpleLogger('info');
 class MenuItemRoot extends MenuItem {
   /**
    * @param {string} label - The label of the item
@@ -29,8 +32,25 @@ class MenuItemRoot extends MenuItem {
 
 }
 
+function setMenuLogger(logger) {
+  log = setLogger(logger);
+  setMenuItemLogger(logger);
+  setMenuStructuredLogger(logger);
+  setMenuButtonLogger(logger);
+}
+
+function setMenuLogLevel(level) {
+  setLogLevel(log, level);
+  setMenuItemLogLevel(level);
+  setMenuStructuredLogLevel(level);
+  setMenuButtonLogLevel(level);
+}
+
+
 module.exports = {
   MenuItemRoot,
   menuDefaults,
   setFunctionMakeButton,
+  setMenuLogger,
+  setMenuLogLevel,
 };

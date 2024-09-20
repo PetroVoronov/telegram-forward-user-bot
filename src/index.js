@@ -5,11 +5,7 @@ const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
-const {
-  menuDefaults,
-  MenuItemRoot,
-  setFunctionMakeButton
-} = require('./modules/menu/');
+const {menuDefaults, MenuItemRoot, setFunctionMakeButton, setMenuLogger, setMenuLogLevel} = require('./modules/menu/');
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
@@ -66,8 +62,13 @@ const options = yargs
   .alias('h', 'help')
   .epilog(`${scriptName} v${scriptVersion}`).argv;
 
+
+setMenuLogger(log);
 if (options.debug) {
   log.setLevel('debug');
+  setMenuLogLevel('debug');
+} else {
+  setMenuLogLevel('info');
 }
 log.appendMaskWord('apiId', 'apiHash', 'DeviceSN', 'ClientId', 'phone');
 
