@@ -3,6 +3,11 @@
 ## [1.2.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.5...v1.2.0) (2024-09-21)
 
 
+### Features
+
+* Added a new command line option `-s, --resubscribe-interval <number>` to specify the interval for resubscribing on changes in source chats, in minutes. The default interval is 60 minutes. Appropriate code is implemented [5a2d59a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5a2d59ac53a6210901cf3afc0c7fd9f2d69c1402))
+
+
 ### Miscellaneous Chores
 
 * **deps:** Bump telegram from 2.24.11 to 2.25.4 ([4e9b729](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e9b7291e0d22b6801bc27e54e55e7fdb66c99d6))
