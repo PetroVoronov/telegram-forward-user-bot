@@ -36,29 +36,6 @@ class SimpleLogger {
   }
 }
 
-function setLogger(logger) {
-  if (
-    typeof logger === 'object' &&
-    typeof logger.debug === 'function' &&
-    typeof logger.warn === 'function' &&
-    typeof logger.error === 'function' &&
-    typeof logger.info === 'function'
-  ) {
-    return logger;
-  } {
-    return null;
-  }
-
-}
-
-function setLogLevel(log, level) {
-  if (log instanceof SimpleLogger && SimpleLogger.levels.includes(level)) {
-    log.setLogLevel(level);
-  }
-}
-
 module.exports = {
   SimpleLogger,
-  setLogger,
-  setLogLevel,
 };

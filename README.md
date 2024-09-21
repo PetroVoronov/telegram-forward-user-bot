@@ -106,6 +106,7 @@ The bot can be used to configure:
 The Telegram Forward User Bot supports several command line options to customize its behavior. Below are the available options:
 
 - `-r, --refresh-interval <number>`: Refresh information from Telegram servers, in seconds. Default is 300 seconds.
+- `-s, --resubscribe-interval <number>`: Resubscribe on changes in sources chats, in minutes. Default is 60 minutes.
 - `-b, --no-bot`: Start without the bot instance.
 - `-d, --debug`: Enable debug level logging.
 - `--debug-client-user`: Enable debug level logging for the client "user" instance.

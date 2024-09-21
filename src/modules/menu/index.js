@@ -1,8 +1,6 @@
-
-
 const {MenuItem, menuDefaults, setFunctionMakeButton} = require('./MenuItem');
 const {MenuItemStructured} = require('./MenuItemStructured');
-const {SimpleLogger, setLogLevel} = require('./MenuLogger');
+const {SimpleLogger} = require('./MenuLogger');
 
 let log = new SimpleLogger('info');
 class MenuItemRoot extends MenuItem {
@@ -35,14 +33,13 @@ class MenuItemRoot extends MenuItem {
     } else {
       this.logger = new SimpleLogger(level);
       this.log('debug', 'Logger is set to SimpleLogger');
-  }
+    }
     this.config(this.rootStructure.options);
     for (const key of Object.keys(this.rootStructure.structure)) {
       const item = this.rootStructure.structure[key];
       await this.appendNested(new MenuItemStructured(item.label, `/${key}`, key, item.structure, item.type === 'array', -1, item.save));
     }
   }
-
 }
 
 module.exports = {

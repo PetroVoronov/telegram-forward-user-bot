@@ -18,7 +18,9 @@ const i18n = require('./modules/i18n/i18n.config');
 const {isBot} = require('telegram/client/users');
 
 const refreshIntervalDefault = 300;
+const resubscribeIntervalDefault = 60;
 let refreshInterval = refreshIntervalDefault * 1000;
+let resubscribeInterval = resubscribeIntervalDefault * 60 * 1000;
 
 const options = yargs
   .usage('Usage: $0 [options]')
@@ -27,6 +29,13 @@ const options = yargs
     describe: 'Refresh information from Telegram servers, in seconds',
     type: 'number',
     default: refreshIntervalDefault,
+    demandOption: false,
+  })
+  .option('s', {
+    alias: 'resubscribe-interval',
+    describe: 'Resubscribe on changes in sources chats, in minutes',
+    type: 'number',
+    default: resubscribeIntervalDefault,
     demandOption: false,
   })
   .option('b', {
@@ -73,6 +82,7 @@ const logAsUser = {isBot: false};
 
 log.info(`${scriptName} v${scriptVersion} started!`);
 log.info(`Refresh interval: ${options.refreshInterval} seconds!`);
+log.info(`Resubscribe interval: ${options.resubscribeInterval} minutes!`);
 log.info(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
 if (options.noBot === true) log.info('Starting without bot instance!');
 if (options.debug === true) log.info('Verbose logging is enabled!');
@@ -88,7 +98,14 @@ const getLanguages = () => {
   onRefreshIntervalChange = (currentItem, key, data, path) => {
     if (refreshIntervalSetOnStart === false) {
       refreshInterval = (data?.refreshInterval || 300) * 1000;
-      refreshDialogsStart();
+      refreshDialogsInit();
+    }
+  },
+  onResubscribeIntervalChange = (currentItem, key, data, path) => {
+    const newResubscribeInterval = (data?.resubscribeInterval || 60) * 60 * 1000;
+    if (newResubscribeInterval !== resubscribeInterval) {
+      resubscribeInterval = newResubscribeInterval;
+      resubscribeInit();
     }
   },
   onMenuColumnsMaxCountChange = (currentItem, key, data, path) => {
@@ -151,6 +168,22 @@ const getLanguages = () => {
         default: refreshIntervalDefault,
         label: 'Refresh interval',
         text: 'Interval to refresh data from Telegram servers in seconds',
+      },
+      resubscribeInterval: {
+        type: 'number',
+        subType: 'integer',
+        options: {
+          min: 30,
+          max: 180,
+          step: 10,
+        },
+        sourceType: 'input',
+        presence: 'mandatory',
+        editable: true,
+        onSetAfter: onRefreshIntervalChange,
+        default: resubscribeIntervalDefault,
+        label: 'Resubscribe interval',
+        text: 'Interval to resubscribe on chats in minutes',
       },
       menuColumnsMaxCount: {
         type: 'number',
@@ -305,6 +338,7 @@ let apiId = cache.getItem('apiId', 'number'),
   allowedUsers = [],
   clientDialogs = [],
   refreshIntervalId = null,
+  resubscribeIntervalId = null,
   menuRoot = null;
 const getItemLabel = (data) => data.label,
   fromToTypes = new Map([
@@ -1043,7 +1077,7 @@ process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
 i18n.setLocale(configuration.language);
-cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => (updateForwardListeners()));
+cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardListeners());
 
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
@@ -1097,7 +1131,8 @@ menuRoot
                     if (meUser !== null) {
                       meUserId = Number(meUser.id);
                     }
-                    refreshDialogsStart(true);
+                    refreshDialogsInit(true);
+                    resubscribeInit();
                     const lastBotStartTimeStamp = cache.getItem('botStartTimeStamp', 'number');
                     let timeOut = typeof lastBotStartTimeStamp === 'number' ? Date.now() - lastBotStartTimeStamp : 0;
                     log.debug(
@@ -1389,8 +1424,17 @@ function refreshDialogsOnce() {
   });
 }
 
-function refreshDialogsStart(isInitial = false) {
+function refreshDialogsInit(isInitial = false) {
   if (isInitial) refreshDialogsOnce();
   if (refreshIntervalId !== undefined && refreshIntervalId !== null) clearInterval(refreshIntervalId);
   refreshIntervalId = setInterval(refreshDialogsOnce, refreshInterval);
+}
+
+function resubscribe() {
+  updateForwardListeners(true);
+}
+
+function resubscribeInit() {
+  if (resubscribeIntervalId !== undefined && resubscribeIntervalId !== null) clearInterval(resubscribeIntervalId);
+  resubscribeIntervalId = setInterval(resubscribe, resubscribeInterval);
 }

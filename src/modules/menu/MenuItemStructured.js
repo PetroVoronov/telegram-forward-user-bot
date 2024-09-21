@@ -1,4 +1,4 @@
-const stringify = require('json-stringify-safe');;
+const stringify = require('json-stringify-safe');
 const {MenuItem} = require('./MenuItem');
 const {
   MenuButton,

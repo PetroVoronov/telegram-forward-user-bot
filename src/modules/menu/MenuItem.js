@@ -424,7 +424,7 @@ class MenuItem {
     }
   }
 
-   /**
+  /**
    * Get root of the menu item
    * @returns {MenuItem} - Root of the menu item
    **/
