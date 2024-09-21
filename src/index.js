@@ -1043,7 +1043,7 @@ process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
 
 i18n.setLocale(configuration.language);
-cache.registerEventForItem(forwardRulesId, Cache.eventSet, updateForwardListeners);
+cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => (updateForwardListeners()));
 
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
@@ -1255,10 +1255,10 @@ async function refreshDialogs() {
           }
         }
         if (rule.enabled) {
-          if (fromIds.includes(rule.from.id) === false) {
+          if (fromIds.includes(Number(rule.from.id)) === false) {
             fromIds.push(Number(rule.from.id));
           }
-          if (fromIdsWithEdit.includes(rule.from.id) === false && rule.processEditsOnForwarded === true) {
+          if (fromIdsWithEdit.includes(Number(rule.from.id)) === false && rule.processEditsOnForwarded === true) {
             fromIdsWithEdit.push(Number(rule.from.id));
           }
           const lastProcessedId =

@@ -1,7 +1,7 @@
 {
   "name": "telegram-menu-structured",
   "version": "1.0.0",
-  "description": "There is a Telegram menu generation and proccessing module based on structured data",
+  "description": "There is a Telegram menu generation and processing module based on structured data",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

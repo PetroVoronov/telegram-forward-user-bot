@@ -316,8 +316,8 @@ class MenuButtonListTyped extends MenuButton {
     return result;
   }
 
-  async postAppend(holder) {
-    await super.postAppend(holder);
+  async postAppend() {
+    await super.postAppend();
     await this.updateList();
   }
 
@@ -339,13 +339,12 @@ class MenuButtonListTyped extends MenuButton {
 
     for (const [index, [key, value]] of list.entries()) {
       const current = key === thisData;
-      const command = `${this.command}$v=${key}`;
       if (index < nestedCount) {
         const item = this.nested[index];
         if (item.key !== key || item.value !== value) {
           this.removeNested(null, index);
           this.log('debug', `replace ${index} by this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
-          await this.appendNested(new MenuButtonListItem(key, value, command, current, this.group), index);
+          await this.appendNested(new MenuButtonListItem(key, value, current, this.group), index);
         } else {
           this.log('debug', `keep ${index} this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
           if (typeof this.nested[index]?.current === 'boolean') {
@@ -354,7 +353,7 @@ class MenuButtonListTyped extends MenuButton {
         }
       } else {
         this.log('debug', `append new this.label: ${this.label}, key: ${key}, value: ${value}, thisData: ${thisData}`);
-        await this.appendNested(new MenuButtonListItem(key, value, command, current, this.group));
+        await this.appendNested(new MenuButtonListItem(key, value, current, this.group));
       }
     }
     return true;
@@ -395,8 +394,8 @@ class MenuButtonListTypedAsync extends MenuButtonListTyped {
   }
 }
 class MenuButtonListItem extends MenuButton {
-  constructor(key, value, command, current = false, group = '') {
-    super(value, command, value, group);
+  constructor(key, value, current = false, group = '') {
+    super(value, '', value, group);
     this.current = current;
     this.key = key;
     this.value = value;
@@ -404,6 +403,11 @@ class MenuButtonListItem extends MenuButton {
 
   get label() {
     return (this.current ? '[X] ' : '') + this.labelShort;
+  }
+
+  postAppend() {
+    this.command = `${this.holder.command}$v=${this.key}`;
+    super.postAppend();
   }
 
   /**

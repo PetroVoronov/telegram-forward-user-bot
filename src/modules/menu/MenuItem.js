@@ -167,6 +167,14 @@ class MenuItem {
   }
 
   /**
+   * Set command of the menu item
+   * @param {string|function} value - Command of the menu item
+   **/
+  set command(value) {
+    this.#command = value;
+  }
+
+  /**
    * Get text of the menu item
    * @returns {string} - Text of the menu item
    **/
@@ -178,6 +186,13 @@ class MenuItem {
     }
   }
 
+  /**
+   * Set holder of the menu item
+   * @param {MenuItem} holder - Holder of the menu item
+   **/
+  setHolder(holder) {
+    this.holder = holder;
+  }
 
   getCurrentMethodName() {
     const error = new Error();
@@ -230,7 +245,8 @@ class MenuItem {
         this.nested.splice(index, 0, item);
         result = index;
       }
-      await item.postAppend(this);
+      item.setHolder(this);
+      await item.postAppend();
     } else {
       this.log('warn', `Command '${command}' is already exists! Item can't be added to the menu!`);
     }
@@ -271,8 +287,7 @@ class MenuItem {
   /**
    * Post append operation
    **/
-  async postAppend(holder) {
-    this.holder = holder;
+  async postAppend() {
     if (this.holder?.logger) {
       this.logger = this.holder.logger;
       this.nested.forEach((item) => {

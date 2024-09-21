@@ -132,8 +132,8 @@ class MenuItemStructured extends MenuItem {
     return this.#structure;
   }
 
-  async postAppend(holder) {
-    await super.postAppend(holder);
+  async postAppend() {
+    await super.postAppend();
     if (this.isDataHolder === true) {
       await this.refresh();
     } else {
