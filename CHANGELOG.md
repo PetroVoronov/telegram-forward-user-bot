@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.5...v1.2.0) (2024-09-21)
+
+
+### Miscellaneous Chores
+
+* **deps:** Bump telegram from 2.24.11 to 2.25.4 ([4e9b729](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e9b7291e0d22b6801bc27e54e55e7fdb66c99d6))
+
+
+### Code Refactoring
+
+* Change logic to set logger to the `menu` code ([b61bec4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b61bec4e8f88064283bb7924ce6bddfb64598042))
+* Make forum topics data cached, to prevent overloading Telegram API by such requests. ([fce75cd](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/fce75cdb6478115e25d206b0ffab6417b31d4d43))
+* menu initialization and drawing logic ([e4d7ac4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/e4d7ac463e6020120f0c3ce42b95fc1261659e83))
+* **menuStructured:** first step to make separate module ([85720d0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/85720d08e853ef24c703c82dd98e97d1c70a04bb))
+* **menuStructured:** Now the defaults was moved out from `MenuItem` class to a separate new `menuDefaults` object in the `MenuItem` file. ([b971ba3](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b971ba3dafc620bd406fa9fe642371100c842c0d))
+* Refactor `telegram-menu-structured`. ([07e03e5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/07e03e5ece5b7060be6175d8483064ef5cfb4176))
+* Refactor cache event registration in index.js and fix type conversion issue in refreshDialogs() ([c9a6dba](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c9a6dbadfab41ea244a69b20082ce1dc15bdeb18))
+* Refactor logging statements in Cache.js ([dfc6aa4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/dfc6aa46b227f85564f2774ee724d6c66fcc7f49))
+* Refactor menu logger import to use correct casing ([bfd8508](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bfd8508e29a1d8da8b3d33e48b6b8cdfe3da8e7f))
+* **telegram-menu-structured:** Updated the menu module to remove unused code and fix a typo in the comments. ([5a2d59a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5a2d59ac53a6210901cf3afc0c7fd9f2d69c1402))
+* Update logic of representation and working with the menu defaults ([b971ba3](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b971ba3dafc620bd406fa9fe642371100c842c0d))
+* Update menu button creation logic. ([75d0632](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/75d063251b08fcecdb83cac4317b806bdbad7d73))
+* Update menu initialization and drawing logic ([d8bdbbd](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d8bdbbdcf9b8d330395f3a1a39a550a932fba617))
+
 ## [1.1.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.4...v1.1.5) (2024-09-16)
 
 
