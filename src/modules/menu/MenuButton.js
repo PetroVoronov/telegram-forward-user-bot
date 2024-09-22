@@ -1,7 +1,6 @@
 /* eslint-disable sonarjs/public-static-readonly */
 const stringify = require('json-stringify-safe');
 const {MenuItem, menuDefaults} = require('./MenuItem');
-const i18n = require('../i18n/i18n.config');
 
 class MenuButton extends MenuItem {
   /**
@@ -31,12 +30,20 @@ class MenuButton extends MenuItem {
     return value !== null && value !== undefined ? `${value}` : '';
   }
 
+  set label(value) {
+    super.label = value;
+  }
+
   get label() {
     let result = super.label;
     const value = this.getData();
     this.log('debug', `label: ${result}, command: ${this.command}, value: ${stringify(value)}`);
     result += ` [${this.valueToText(value) || '?'}]`;
     return result;
+  }
+
+  set text(value) {
+    super.text = value;
   }
 
   get text() {
@@ -102,12 +109,15 @@ class MenuButtonInputText extends MenuButton {
    * @param {object} options - The options of item
    * @param {string} group - The group to add the item to
    */
-  constructor(label, command, prompt, template = '', group = '') {
-    let templateText = typeof template === 'function' ? template() : template;
-    if (templateText !== '') {
-      templateText = `(${i18n.__('template')}: "${templateText}")`;
+  constructor(label, command, prompt = '', template = '', group = '') {
+    super(label, command, prompt, group);
+    if (prompt === '') {
+      let templateText = typeof template === 'function' ? template() : template;
+      if (templateText !== '') {
+        templateText = `(${this.i18nTranslate('template')}: "${templateText}")`;
+      }
+      this.prompt = this.i18nTranslate(MenuButtonInputText.prompt, {label: label, template: templateText});
     }
-    super(label, command, prompt || i18n.__(MenuButtonInputText.prompt, {label: label, template: templateText}), group);
     if (template !== '') {
       this.template = template;
     }
@@ -116,7 +126,7 @@ class MenuButtonInputText extends MenuButton {
   get text() {
     let result = super.text;
     if (this.lastInput !== '') {
-      result = `${i18n.__('Wrong input')}: "${this.lastInput}\n${result}"!`;
+      result = `${this.i18nTranslate('Wrong input')}: "${this.lastInput}\n${result}"!`;
     }
     return result;
   }
@@ -194,18 +204,19 @@ class MenuButtonInputInteger extends MenuButtonInputText {
 
   options = {};
   constructor(label, command, prompt = '', options = {}, group = '') {
+    super(label, command, prompt, '', group);
     let promptInteger = prompt;
     if (prompt === '') {
       let optionsArray = [];
       ['min', 'max', 'step'].forEach((key) => {
         if (typeof options[key] === 'number') {
-          optionsArray.push(`${i18n.__(key)}: ${options[key]}`);
+          optionsArray.push(`${this.i18nTranslate(key)}: ${options[key]}`);
         }
       });
       const optionsText = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : '';
-      promptInteger = i18n.__(MenuButtonInputInteger.prompt, {label: label, options: optionsText});
+      promptInteger = this.i18nTranslate(MenuButtonInputInteger.prompt, {label: label, options: optionsText});
+      this.prompt = promptInteger;
     }
-    super(label, command, promptInteger, '', group);
     this.template = (input) => {
       //NOSONAR This function is intended to return two different types of values
       if (input === undefined || input === null) {
@@ -440,16 +451,11 @@ class MenuButtonDeleteItem extends MenuButtonListTyped {
   static deleteConfirm = 'Confirm';
   static commandSuffix = '@delete';
   constructor(command) {
-    const commandDelete = `${command}?${MenuButtonDeleteItem.commandSuffix}`,
-      listDelete = new Map([['confirm', i18n.__(MenuButtonDeleteItem.deleteConfirm)]]);
-    super(
-      i18n.__(MenuButtonDeleteItem.deleteDelete),
-      commandDelete,
-      i18n.__(MenuButtonDeleteItem.deleteDelete),
-      listDelete,
-      'string',
-      'delete',
-    );
+    const commandDelete = `${command}?${MenuButtonDeleteItem.commandSuffix}`;
+    super('', commandDelete, '', null, 'string', 'delete');
+    this.list = new Map([['confirm', this.i18nTranslate(MenuButtonDeleteItem.deleteConfirm)]]);
+    this.label = this.i18nTranslate(MenuButtonDeleteItem.deleteDelete);
+    this.text = this.i18nTranslate(MenuButtonDeleteItem.deleteDelete);
   }
 }
 

@@ -10,7 +10,6 @@ const {
   MenuButtonListTypedAsync,
   MenuButtonDeleteItem,
 } = require('./MenuButton');
-const i18n = require('../i18n/i18n.config');
 
 class MenuItemStructured extends MenuItem {
   dataId = '';
@@ -450,8 +449,8 @@ class MenuItemStructured extends MenuItem {
       this.log('debug', `path: ${path.join('.')}, value: ${stringify(value)},` + ` item: ${stringify(structureItem)}`);
       if (structureItem !== undefined && structureItem !== null && structureItem.editable === true && itemToSkip === false) {
         const command = [this.command, path.join('$')].join('?'),
-          label = structureItem.label ? i18n.__(structureItem.label) : i18n.__(path.join('.')),
-          text = structureItem.text ? i18n.__(structureItem.text) : i18n.__(path.slice(-1).pop()),
+          label = structureItem.label ? this.i18nTranslate(structureItem.label) : this.i18nTranslate(path.join('.')),
+          text = structureItem.text ? this.i18nTranslate(structureItem.text) : this.i18nTranslate(path.slice(-1).pop()),
           group = path.length > 1 ? path.slice(0, -1).join('.') : path.slice(0).pop(),
           template = structureItem.template,
           options = structureItem.options;
@@ -564,7 +563,7 @@ class MenuItemStructured extends MenuItem {
       if (buttonAdd instanceof MenuButtonNewItem) {
         this.nested.push(buttonAdd);
       } else {
-        await this.appendNested(new MenuButtonNewItem(i18n.__('Add'), this.command));
+        await this.appendNested(new MenuButtonNewItem(this.i18nTranslate('Add'), this.command));
       }
     } else if (
       (this.isDataHolder === true && this.isArray === false) ||

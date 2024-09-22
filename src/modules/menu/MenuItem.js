@@ -3,7 +3,6 @@
 
 const stringify = require('json-stringify-safe');
 const emojiRegex = require('emoji-regex');
-const i18n = require('../i18n/i18n.config');
 
 const menuDefaults = {
   columnsMaxCount: 0,
@@ -100,12 +99,15 @@ class MenuItem {
   #setValue = (key, value) => {};
   #removeValue = (key) => {};
 
+  #logger = null;
+
+  #i18n = null;
+
   isRoot = false;
   onRun;
   group = '';
   processInputForCommand = '';
   holder = null;
-  logger = null;
   nested = new Array();
   commands = {};
 
@@ -128,6 +130,14 @@ class MenuItem {
     this.#text = text;
     this.onRun = onRun;
     this.group = group;
+  }
+
+  /**
+   * Set label of the menu item
+   * @param {string|function} value - Label of the menu item
+   **/
+  set label(value) {
+    this.#label = value;
   }
 
   /**
@@ -175,6 +185,14 @@ class MenuItem {
   }
 
   /**
+   * Set text of the menu item
+   * @param {string|function} value - Text of the menu item
+   **/
+  set text(value) {
+    this.#text = value;
+  }
+
+  /**
    * Get text of the menu item
    * @returns {string} - Text of the menu item
    **/
@@ -192,6 +210,45 @@ class MenuItem {
    **/
   setHolder(holder) {
     this.holder = holder;
+  }
+
+  /**
+   * Set logger
+   * @param {object} logger - Logger
+   * @returns {boolean} - True if logger is set, false otherwise
+   **/
+  setLogger(logger) {
+    if (
+      logger &&
+      typeof logger === 'object' &&
+      typeof logger.debug === 'function' &&
+      typeof logger.warn === 'function' &&
+      typeof logger.error === 'function' &&
+      typeof logger.info === 'function'
+    ) {
+      this.#logger = logger;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  get logger() {
+    return this.#logger;
+  }
+
+  set i18n(value) {
+    if (value && typeof value === 'object' && typeof value.__ === 'function') {
+      this.#i18n = value;
+    }
+  }
+
+  get i18n() {
+    return this.#i18n;
+  }
+
+  i18nTranslate(key) {
+    return this.#i18n ? this.#i18n.__(key) : key;
   }
 
   getCurrentMethodName() {
@@ -219,11 +276,11 @@ class MenuItem {
   }
 
   log(level = 'info', ...message) {
-    if (typeof this.logger === 'object' && typeof this.logger[level] === 'function') {
+    if (typeof this.#logger === 'object' && typeof this.#logger[level] === 'function') {
       if (message.length < 2 || typeof message[0] !== 'string' || !message[0].startsWith(`${this.constructor.name}`)) {
         message.unshift(`${this.constructor.name}.${this.getCurrentMethodName()}{'${this.command}'}| `);
       }
-      this.logger[level](message.join(''));
+      this.#logger[level](message.join(''));
     }
   }
 
@@ -288,10 +345,15 @@ class MenuItem {
    * Post append operation
    **/
   async postAppend() {
-    if (this.holder?.logger) {
-      this.logger = this.holder.logger;
+    if (this.setLogger(this.holder.logger)) {
       this.nested.forEach((item) => {
-        item.logger = this.logger;
+        item.setLogger(this.logger);
+      });
+    }
+    if (this.holder.i18n !== null) {
+      this.i18n = this.holder.i18n;
+      this.nested.forEach((item) => {
+        item.i18n = this.holder.i18n;
       });
     }
     this.appendCommand();
@@ -570,12 +632,12 @@ class MenuItem {
         row = [];
       }
     }
-    row.push(makeButton(i18n.__('Exit'), MenuItem.cmdExit));
+    row.push(makeButton(this.i18nTranslate('Exit'), MenuItem.cmdExit));
     if (this.holder !== null) {
       if (this.getRoot().command !== this.holder.command) {
-        row.unshift(makeButton(i18n.__('Home'), this.getRoot().command));
+        row.unshift(makeButton(this.i18nTranslate('Home'), this.getRoot().command));
       }
-      row.unshift(makeButton(i18n.__('Back'), this.holder.command));
+      row.unshift(makeButton(this.i18nTranslate('Back'), this.holder.command));
     }
     buttons.push(row);
     return buttons;

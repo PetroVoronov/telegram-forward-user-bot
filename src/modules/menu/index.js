@@ -19,21 +19,15 @@ class MenuItemRoot extends MenuItem {
     this.rootStructure = menuStructure;
   }
 
-  async init(level = 'info', logger = null) {
-    if (
-      logger &&
-      typeof logger === 'object' &&
-      typeof logger.debug === 'function' &&
-      typeof logger.warn === 'function' &&
-      typeof logger.error === 'function' &&
-      typeof logger.info === 'function'
-    ) {
-      this.logger = logger;
+  async init(level = 'info', logger = null, i18n = null) {
+    if (this.setLogger(logger)) {
       this.log('debug', 'Logger is set to external logger');
-    } else {
-      this.logger = new SimpleLogger(level);
+    } else if (this.setLogger(new SimpleLogger(level))) {
       this.log('debug', 'Logger is set to SimpleLogger');
+    } else {
+      this.log('error', 'Logger is not set');
     }
+    this.i18n = i18n;
     this.config(this.rootStructure.options);
     for (const key of Object.keys(this.rootStructure.structure)) {
       const item = this.rootStructure.structure[key];

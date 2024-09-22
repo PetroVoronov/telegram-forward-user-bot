@@ -1082,7 +1082,7 @@ cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardLi
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot
-  .init(options.debug ? 'debug' : 'info', log)
+  .init(options.debug ? 'debug' : 'info', log, i18n)
   .then(() => {
     if (options.command !== undefined) {
       log.debug(`Testing command: ${options.command}`);
