@@ -1435,6 +1435,7 @@ function resubscribe() {
 }
 
 function resubscribeInit() {
+  resubscribe();
   if (resubscribeIntervalId !== undefined && resubscribeIntervalId !== null) clearInterval(resubscribeIntervalId);
   resubscribeIntervalId = setInterval(resubscribe, resubscribeInterval);
 }
