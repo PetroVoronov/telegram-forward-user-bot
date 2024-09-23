@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.0...v1.3.1) (2024-09-23)
+
+
+### Bug Fixes
+
+* **telegram-menu-structured:** Fix call with text parameters of i18n conversion after #eb13300 - i18n decoupling ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
+* **telegram-menu-structured:** Fix issue with prompts in inputs after #eb13300 - i18n decoupling ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
+
+
+### Code Refactoring
+
+* Refactor code to use external `makeButton` function. ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
+* **telegram-menu-structured:** Implemented `Cancel` button for the Inputs. ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
+
 ## [1.3.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.2...v1.3.0) (2024-09-23)
 
 
