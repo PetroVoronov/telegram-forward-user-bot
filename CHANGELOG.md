@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.1...v1.4.0) (2024-09-23)
+
+
+### Features
+
+* Switch to use `telegram-menu-from-structure` package instead of local ([56262e9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/56262e99b21cc614eff991350d0b05a4bd2ce78c))
+
 ## [1.3.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.0...v1.3.1) (2024-09-23)
 
 
