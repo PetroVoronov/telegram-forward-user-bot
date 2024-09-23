@@ -32,14 +32,6 @@ const menuDefaults = {
   cmdPrefix: '/',
 };
 
-let makeButton = (label, command) => `Button: ${label} - ${command}`;
-
-function setFunctionMakeButton(func) {
-  if (typeof func === 'function') {
-    makeButton = func;
-  }
-}
-
 /**
  * Class representing menu item
  * @class
@@ -79,6 +71,7 @@ function setFunctionMakeButton(func) {
  **/
 class MenuItem {
   static cmdExit = `${menuDefaults.cmdPrefix}exit`;
+  static cmdCancel = `${menuDefaults.cmdPrefix}cancel`;
 
   static buttonsOffsetRegex = new RegExp(`^${menuDefaults.cmdPrefix}.+?\\$bo=(?<offset>\\d+)$`);
 
@@ -267,8 +260,8 @@ class MenuItem {
     return this.#i18n;
   }
 
-  i18nTranslate(key) {
-    return this.#i18n ? this.#i18n.__(key) : key;
+  i18nTranslate(...data) {
+    return this.#i18n ? this.#i18n.__(...data) : stringify(data);
   }
 
   getCurrentMethodName() {
@@ -576,10 +569,25 @@ class MenuItem {
 
   /**
    * Create button
+   * @param {string} label - Label of the button
+   * @param {string} command - Command of the button
+   * @returns {Button} - Button
+   **/
+  makeButton(label, command) {
+    const root = this.getRoot();
+    if (typeof root?.makeButton === 'function') {
+      return root.makeButton(label, command);
+    } else {
+      throw new Error('makeButton is not set');
+    }
+  }
+
+  /**
+   * Create button
    * @returns {Button} - Button
    **/
   createButton() {
-    return makeButton(this.label, this.command);
+    return this.makeButton(this.label, this.command);
   }
 
   /**
@@ -634,30 +642,30 @@ class MenuItem {
         const pageCurrent = Math.trunc(buttonsOffset / buttonsMaxCount) + 1;
         if (buttonsOffset >= buttonsMaxCount) {
           if (Math.trunc(buttonsOffset / buttonsMaxCount) > 1) {
-            row.push(makeButton('#1 <<', `${this.command}`));
+            row.push(this.makeButton('#1 <<', `${this.command}`));
           }
-          row.push(makeButton(`#${pageCurrent - 1} <`, `${this.command}$bo=${buttonsOffset - buttonsMaxCount}`));
+          row.push(this.makeButton(`#${pageCurrent - 1} <`, `${this.command}$bo=${buttonsOffset - buttonsMaxCount}`));
         }
         if (buttonsOffset + buttonsMaxCount < nestedCount) {
-          row.push(makeButton(`> #${pageCurrent + 1}`, `${this.command}$bo=${buttonsOffset + buttonsMaxCount}`));
+          row.push(this.makeButton(`> #${pageCurrent + 1}`, `${this.command}$bo=${buttonsOffset + buttonsMaxCount}`));
           if (Math.trunc((nestedCount - buttonsOffset) / buttonsMaxCount) > 1) {
             const lastOffset =
               nestedCount % buttonsMaxCount === 0
                 ? nestedCount - buttonsMaxCount
                 : Math.trunc(nestedCount / buttonsMaxCount) * buttonsMaxCount;
-            row.push(makeButton(`>> #${lastOffset / buttonsMaxCount + 1}`, `${this.command}$bo=${lastOffset}`));
+            row.push(this.makeButton(`>> #${lastOffset / buttonsMaxCount + 1}`, `${this.command}$bo=${lastOffset}`));
           }
         }
         buttons.push(row);
         row = [];
       }
     }
-    row.push(makeButton(this.i18nTranslate('Exit'), MenuItem.cmdExit));
+    row.push(this.makeButton(this.i18nTranslate('Exit'), MenuItem.cmdExit));
     if (this.holder !== null) {
       if (this.getRoot().command !== this.holder.command) {
-        row.unshift(makeButton(this.i18nTranslate('Home'), this.getRoot().command));
+        row.unshift(this.makeButton(this.i18nTranslate('Home'), this.getRoot().command));
       }
-      row.unshift(makeButton(this.i18nTranslate('Back'), this.holder.command));
+      row.unshift(this.makeButton(this.i18nTranslate('Back'), this.holder.command));
     }
     buttons.push(row);
     return buttons;
@@ -834,7 +842,14 @@ class MenuItem {
     } else {
       const root = this.getRoot();
       this.log('debug', `command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`);
-      const target = await root.getByCommand(root.processInputForCommand || command, userId);
+      let targetCommand = command;
+      if (command.startsWith(MenuItem.cmdCancel)) {
+        targetCommand =  targetCommand.replace(MenuItem.cmdCancel, '');
+        root.processInputForCommand= '';
+      } else if (root.processInputForCommand) {
+        targetCommand =  root.processInputForCommand;
+      }
+      const target = await root.getByCommand(targetCommand, userId);
       this.log('debug', `target: ${stringify(target?.command)}`);
       if (target !== null) {
         await target.onCommand(peerId, userId, messageId, command, isEvent, true);
@@ -865,5 +880,4 @@ function stringifyButtons(value, space = 0) {
 module.exports = {
   MenuItem,
   menuDefaults,
-  setFunctionMakeButton,
 };

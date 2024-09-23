@@ -5,7 +5,7 @@ const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
-const {menuDefaults, MenuItemRoot, setFunctionMakeButton, setMenuLogger, setMenuLogLevel} = require('./modules/menu/');
+const {menuDefaults, MenuItemRoot} = require('./modules/menu/');
 const {Cache} = require('./modules/cache/Cache');
 const yargs = require('yargs');
 const {setTimeout} = require('node:timers');
@@ -1074,11 +1074,11 @@ process.on('SIGTERM', gracefulExit);
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardListeners());
 
-setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot
   .init(
     {
+      makeButton: (label, command) => Button.inline(label || '?', Buffer.from(command)),
       sendMessageAsync: async (peer, messageObject) => {
         if (clientAsBot !== null && clientAsBot.connected === true) {
           return await clientAsBot.sendMessage(peer, messageObject);

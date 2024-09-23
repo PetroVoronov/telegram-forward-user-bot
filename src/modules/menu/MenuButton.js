@@ -110,29 +110,49 @@ class MenuButtonInputText extends MenuButton {
    */
   constructor(label, command, prompt = '', template = '', group = '') {
     super(label, command, prompt, group);
-    if (prompt === '') {
-      let templateText = typeof template === 'function' ? template() : template;
-      if (templateText !== '') {
-        templateText = `(${this.i18nTranslate('template')}: "${templateText}")`;
-      }
-      this.prompt = this.i18nTranslate(MenuButtonInputText.prompt, {label: label, template: templateText});
-    }
+    this.prompt = prompt;
+    this.promptParams = {label: label};
     if (template !== '') {
       this.template = template;
     }
   }
 
   get text() {
-    let result = super.text;
+    let result = '';
     if (this.lastInput !== '') {
-      result = `${this.i18nTranslate('Wrong input')}: "${this.lastInput}\n${result}"!`;
+      result = `${this.i18nTranslate('Wrong input')}: "${this.lastInput}!\n`;
+    }
+    result += this.getPrompt();
+    return result;
+  }
+
+  getPrompt() {
+    let result = '';
+    if (this.prompt === '') {
+      let templateText = typeof this.template === 'function' ? this.template()?.text : this.template;
+      if (templateText !== '' && templateText !== undefined) {
+        templateText = `(${this.i18nTranslate('template')}: "${templateText}")`;
+      }
+      result = this.i18nTranslate(MenuButtonInputText.prompt, {...this.promptParams, template: templateText});
+    } else {
+      result = this.prompt;
     }
     return result;
   }
 
+
+  /**
+   * Get buttons of the menu item build from the nested items
+   * @param {string} chatId - Chat Id
+   * @returns {Array<Array<Button>>} - Buttons of the menu item
+   **/
   getButtons() {
     if (this.processInputForCommand === this.command) {
-      return [];
+      const buttons = [];
+      const row = [];
+      row.push(this.makeButton(this.i18nTranslate('Cancel'), `${MenuItem.cmdCancel}${this.holder?.command}`));
+      buttons.push(row);
+      return buttons;
     } else {
       return super.getButtons();
     }
@@ -167,12 +187,11 @@ class MenuButtonInputText extends MenuButton {
           if (this.template !== '') {
             const template = this.template;
             if (typeof template === 'function') {
-              accepted = template(command);
+              accepted = template(command).result;
             } else if (typeof template === 'string') {
               accepted = RegExp(template).exec(command) !== null;
             }
           }
-
           try {
             await this.deleteMessage(peerId, messageId);
           } catch (error) {
@@ -202,34 +221,41 @@ class MenuButtonInputInteger extends MenuButtonInputText {
   options = {};
   constructor(label, command, prompt = '', options = {}, group = '') {
     super(label, command, prompt, '', group);
-    let promptInteger = prompt;
-    if (prompt === '') {
-      let optionsArray = [];
-      ['min', 'max', 'step'].forEach((key) => {
-        if (typeof options[key] === 'number') {
-          optionsArray.push(`${this.i18nTranslate(key)}: ${options[key]}`);
-        }
-      });
-      const optionsText = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : '';
-      promptInteger = this.i18nTranslate(MenuButtonInputInteger.prompt, {label: label, options: optionsText});
-      this.prompt = promptInteger;
-    }
+    this.options = options;
     this.template = (input) => {
-      //NOSONAR This function is intended to return two different types of values
       if (input === undefined || input === null) {
-        return MenuButtonInputInteger.templateInteger;
+        return {result: false, text: this.getPrompt()};
       } else {
         let result = RegExp(MenuButtonInputInteger.templateInteger).exec(input) !== null;
         if (result === true) {
           const value = this.convertInput(input);
           result =
-            (typeof options.min !== 'number' || value >= options.min) &&
-            (typeof options.max !== 'number' || value <= options.max) &&
-            (typeof options.step !== 'number' || value % options.step === 0);
+            (typeof this.options.min !== 'number' || value >= this.options.min) &&
+            (typeof this.options.max !== 'number' || value <= this.options.max) &&
+            (typeof this.options.step !== 'number' || value % this.options.step === 0);
         }
-        return result;
+        if (result === false) {
+          return {result: result, text: this.getPrompt()};
+        } else {
+          return {result: result};
+        }
       }
     };
+  }
+
+  getPrompt() {
+    let result = this.prompt;
+    if (result === '') {
+      let optionsArray = [];
+      ['min', 'max', 'step'].forEach((key) => {
+        if (typeof this.options[key] === 'number') {
+          optionsArray.push(`${this.i18nTranslate(key)}: ${this.options[key]}`);
+        }
+      });
+      const optionsText = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : '';
+      result = this.i18nTranslate(MenuButtonInputInteger.prompt, {...this.promptParams, options: optionsText});
+    }
+    return result;
   }
 
   convertInput(input) {

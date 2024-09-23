@@ -1,4 +1,4 @@
-const {MenuItem, menuDefaults, setFunctionMakeButton} = require('./MenuItem');
+const {MenuItem, menuDefaults} = require('./MenuItem');
 const {MenuItemStructured} = require('./MenuItemStructured');
 const {SimpleLogger} = require('./MenuLogger');
 
@@ -14,9 +14,12 @@ class MenuItemRoot extends MenuItem {
    * @param {function=} onSave - The function to execute on save
    */
 
+  #makeButton = null;
+
   #sendMessage = null;
   #editMessage = null;
   #deleteMessage = null;
+
   #sendMessageAsync = null;
   #editMessageAsync = null;
   #deleteMessageAsync = null;
@@ -25,6 +28,14 @@ class MenuItemRoot extends MenuItem {
     super(menuStructure.label, `/${menuStructure.id}`, menuStructure.text || menuStructure.label);
     this.isRoot = true;
     this.rootStructure = menuStructure;
+  }
+
+  makeButton(label, command) {
+    if (typeof this.#makeButton === 'function') {
+      return this.#makeButton(label, command);
+    } else {
+      throw new Error('makeButton is not set');
+    }
   }
 
   async sendMessage(peerId, messageObject) {
@@ -58,7 +69,7 @@ class MenuItemRoot extends MenuItem {
   }
 
   async init(
-    {sendMessage, editMessage, deleteMessage, sendMessageAsync, editMessageAsync, deleteMessageAsync},
+    {makeButton, sendMessage, editMessage, deleteMessage, makeButtonAsync, sendMessageAsync, editMessageAsync, deleteMessageAsync},
     level = 'info',
     logger = null,
     i18n = null,
@@ -72,6 +83,9 @@ class MenuItemRoot extends MenuItem {
     }
     this.i18n = i18n;
     this.config(this.rootStructure.options);
+    if (typeof makeButton === 'function') {
+      this.#makeButton = makeButton;
+    }
     if (typeof sendMessage === 'function') {
       this.#sendMessage = sendMessage;
     }
@@ -100,5 +114,4 @@ class MenuItemRoot extends MenuItem {
 module.exports = {
   MenuItemRoot,
   menuDefaults,
-  setFunctionMakeButton,
 };
