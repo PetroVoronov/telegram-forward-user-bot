@@ -82,12 +82,11 @@ class MenuButtonBoolean extends MenuButton {
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
-   * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
+  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isBot, isTarget);
+      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
     } else {
       const value = this.getData();
       if ((await this.setData(!value)) === true) {
@@ -149,13 +148,11 @@ class MenuButtonInputText extends MenuButton {
    * @param {any} peerId - Peer Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
-   *
-   * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
+  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isBot, isTarget);
+      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
     } else {
       const root = this.getRoot();
       if (root !== null) {
@@ -179,7 +176,7 @@ class MenuButtonInputText extends MenuButton {
           try {
             await client.deleteMessages(peerId, [messageId], {revoke: true});
           } catch (error) {
-            this.log('warn', `Input from user delete error: ${stringify(error)}`, isBot);
+            this.log('warn', `Input from user delete error: ${stringify(error)}`);
           }
           if (accepted === true) {
             root.processInputForCommand = '';
@@ -259,12 +256,11 @@ class MenuButtonNewItem extends MenuButton {
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
-   * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
+  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isBot, isTarget);
+      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
     } else {
       this.log('debug', `command: ${command}`);
       let commandNew = this.holderCommand;
@@ -274,7 +270,7 @@ class MenuButtonNewItem extends MenuButton {
           commandNew = `${this.holderCommand}#${index}`;
         }
       }
-      await super.onCommand(client, peerId, messageId, commandNew, isEvent, isBot, false);
+      await super.onCommand(client, peerId, messageId, commandNew, isEvent, false);
     }
   }
 }
@@ -428,12 +424,11 @@ class MenuButtonListItem extends MenuButton {
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
-   * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
+  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false || this.holder === null) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isBot, isTarget);
+      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
     } else {
       const value = this.command.split('$').pop();
       if (value.includes('v=')) {

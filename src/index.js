@@ -786,7 +786,6 @@ function updateForwardListeners(force = false) {
           clientAsUser.removeEventHandler(item[1], item[0]);
         });
       }
-      clientAsUser.addEventHandler(onCommand, new NewMessage({chats: [meUserId]}));
       fromIds = newFromIds;
       if (fromIds.length > 0) {
         log.info(`Starting listen on New Messages in : ${stringify(fromIds)}`, logAsUser);
@@ -988,7 +987,7 @@ function onCommand(event) {
       const command = data.toString();
       log.debug(`onCommand | command: ${command}`, logAsBot);
       if (command.startsWith(menuDefaults.cmdPrefix)) {
-        menuRoot.onCommand(clientAsBot, peer, messageId, command, true, true);
+        menuRoot.onCommand(clientAsBot, peer, messageId, command, true);
       }
     }
   } else if (event instanceof NewMessageEvent) {
@@ -998,11 +997,7 @@ function onCommand(event) {
       logAsBot,
     );
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
-      if (event._client?._bot === true) {
-        menuRoot.onCommand(clientAsBot, peerId, messageId, command, false, true);
-      } else if (command.startsWith(menuDefaults.cmdPrefix)) {
-        menuRoot.onCommand(clientAsUser, peerId, messageId, command, false, false);
-      }
+      menuRoot.onCommand(clientAsBot, peerId, messageId, command, false);
     }
   } else {
     log.warn(`onCommand | Unknown event: ${event.constructor.name}!`, logAsBot);
@@ -1086,7 +1081,7 @@ menuRoot
   .then(() => {
     if (options.command !== undefined) {
       log.debug(`Testing command: ${options.command}`);
-      menuRoot.onCommand(null, null, null, options.command, options.noBot !== true);
+      menuRoot.onCommand(null, null, null, options.command);
     } else {
       getAPIAttributes().then(() => {
         if (apiId !== null && apiHash !== null) {

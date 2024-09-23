@@ -665,72 +665,62 @@ class MenuItem {
         buttons = this.getButtons(peerId?.userId);
       this.log('debug', `menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
       if (client !== null && peerId !== null) {
-        client.isBot().then((isBot) => {
-          const messageParams = {};
-          if (Array.isArray(buttons) && buttons.length > 0) {
-            messageParams.buttons = buttons;
-          }
-          if (isBot && menuMessageId !== 0) {
-            messageParams.message = menuMessageId;
-            messageParams.text = this.text;
-            this.log(
-              'debug',
-              `${this.constructor.name}.draw{'${this.command}'}| `,
-              `Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(messageParams)}`,
-            );
-            client
-              .editMessage(peerId, messageParams)
-              .then((res) => {
-                this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message edited successfully!`);
-                client.isBot().then((isBot) => {
-                  if (isBot) {
-                    this.setMessageId(peerId?.userId, res.id);
-                  }
-                });
-              })
-              .catch((err) => {
-                if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
-                  this.log(
-                    'debug',
-                    `${this.constructor.name}.draw{'${this.command}'}| `,
-                    `Message Id is invalid! Going to send new message!`,
-                  );
-                  this.removeMessageId(peerId?.userId);
-                  this.draw(client, peerId);
-                } else {
-                  this.log(
-                    'warn',
-                    `${this.constructor.name}.draw{'${this.command}'}| `,
-                    `Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${this.text}`,
-                  );
-                }
-              });
-          } else {
-            messageParams.message = this.text;
-            this.log(
-              'debug',
-              `${this.constructor.name}.draw{'${this.command}'}| `,
-              `Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
-            );
-            client
-              .sendMessage(peerId, messageParams)
-              .then((res) => {
-                this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message sent successfully!`);
-                client.isBot().then((isBot) => {
-                  if (isBot) {
-                    this.setMessageId(peerId?.userId, res.id);
-                  }
-                });
-              })
-              .catch((err) => {
+        const messageParams = {};
+        if (Array.isArray(buttons) && buttons.length > 0) {
+          messageParams.buttons = buttons;
+        }
+        if (menuMessageId !== 0) {
+          messageParams.message = menuMessageId;
+          messageParams.text = this.text;
+          this.log(
+            'debug',
+            `${this.constructor.name}.draw{'${this.command}'}| `,
+            `Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(messageParams)}`,
+          );
+          client
+            .editMessage(peerId, messageParams)
+            .then((res) => {
+              this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message edited successfully!`);
+              this.setMessageId(peerId?.userId, res.id);
+            })
+            .catch((err) => {
+              if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
+                this.log(
+                  'debug',
+                  `${this.constructor.name}.draw{'${this.command}'}| `,
+                  `Message Id is invalid! Going to send new message!`,
+                );
+                this.removeMessageId(peerId?.userId);
+                this.draw(client, peerId);
+              } else {
                 this.log(
                   'warn',
                   `${this.constructor.name}.draw{'${this.command}'}| `,
-                  `Message send error: ${stringify(err)}, text: ${this.text},  menuMessageId: ${menuMessageId}`,
+                  `Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${this.text}`,
                 );
-              });
-          }
-        });
+              }
+            });
+        } else {
+          messageParams.message = this.text;
+          this.log(
+            'debug',
+            `${this.constructor.name}.draw{'${this.command}'}| `,
+            `Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
+          );
+          client
+            .sendMessage(peerId, messageParams)
+            .then((res) => {
+              this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message sent successfully!`);
+              this.setMessageId(peerId?.userId, res.id);
+            })
+            .catch((err) => {
+              this.log(
+                'warn',
+                `${this.constructor.name}.draw{'${this.command}'}| `,
+                `Message send error: ${stringify(err)}, text: ${this.text},  menuMessageId: ${menuMessageId}`,
+              );
+            });
+        }
       }
     } else if (this.holder !== null) {
       this.holder.draw(client, peerId);
@@ -747,11 +737,11 @@ class MenuItem {
    * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isBot = false, isTarget = false) {
+  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
     const menuMessageId = this.getMessageId(peerId?.userId);
     this.log('debug', `command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(menuDefaults.cmdPrefix)}`);
     if (isTarget === true) {
-      if (isBot === true && isEvent === false && messageId !== 0) {
+      if (isEvent === false && messageId !== 0) {
         client
           .deleteMessages(peerId, [messageId], {revoke: true})
           .then((res) => {
@@ -762,9 +752,9 @@ class MenuItem {
           });
       }
       if (typeof this.onRun === 'function') {
-        const reDraw = await this.onRun(client, peerId, isBot, messageId, command);
-        this.log('debug', `command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`, isBot);
-        if (reDraw === true && menuMessageId !== 0 && isEvent === true && isBot === true) {
+        const reDraw = await this.onRun(client, peerId, messageId, command);
+        this.log('debug', `command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`);
+        if (reDraw === true && menuMessageId !== 0 && isEvent === true) {
           client
             .deleteMessages(peerId, [menuMessageId], {revoke: true})
             .then((res) => {
@@ -778,7 +768,7 @@ class MenuItem {
         } else {
           await this.draw(client, peerId);
         }
-      } else if (command === MenuItem.cmdExit && isBot === true) {
+      } else if (command === MenuItem.cmdExit) {
         client
           .deleteMessages(peerId, [menuMessageId], {revoke: true})
           .then((res) => {
@@ -797,7 +787,7 @@ class MenuItem {
       const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
       this.log('debug', `target: ${stringify(target?.command)}`);
       if (target !== null) {
-        await target.onCommand(client, peerId, messageId, command, isEvent, isBot, true);
+        await target.onCommand(client, peerId, messageId, command, isEvent, true);
       } else {
         this.log('warn', `command: ${command} is not allowed! Appropriate item is not found!`);
       }
