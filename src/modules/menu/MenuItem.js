@@ -5,10 +5,30 @@ const stringify = require('json-stringify-safe');
 const emojiRegex = require('emoji-regex');
 
 const menuDefaults = {
-  columnsMaxCount: 0,
-  buttonsMaxCount: 24,
-  textSummaryMaxLength: 0,
-  spaceBetweenColumns: 1,
+  columnsMaxCount: {
+    default: 0,
+    min: 0,
+    max: 10,
+    step: 1,
+  },
+  buttonsMaxCount: {
+    default: 24,
+    min: 1,
+    max: 100,
+    step: 1,
+  },
+  textSummaryMaxLength: {
+    default: 0,
+    min: 0,
+    max: 100,
+    step: 1,
+  },
+  spaceBetweenColumns: {
+    default: 1,
+    min: 1,
+    max: 10,
+    step: 1,
+  },
   cmdPrefix: '/',
 };
 
@@ -111,10 +131,10 @@ class MenuItem {
   nested = new Array();
   commands = {};
 
-  columnsMaxCount = menuDefaults.columnsMaxCount;
-  textSummaryMaxLength = menuDefaults.textSummaryMaxLength;
-  spaceBetweenColumns = menuDefaults.spaceBetweenColumns;
-  buttonsMaxCount = menuDefaults.buttonsMaxCount;
+  columnsMaxCount = menuDefaults.columnsMaxCount.default;
+  textSummaryMaxLength = menuDefaults.textSummaryMaxLength.default;
+  spaceBetweenColumns = menuDefaults.spaceBetweenColumns.default;
+  buttonsMaxCount = menuDefaults.buttonsMaxCount.default;
 
   /**
    * @param {string|function} label - Label of the menu item
@@ -573,10 +593,10 @@ class MenuItem {
       row = [];
     if (nestedCount > 0) {
       const root = this.getRoot(),
-        maxColumns = root.columnsMaxCount || menuDefaults.columnsMaxCount,
-        maxTextLength = root.textSummaryMaxLength || menuDefaults.textSummaryMaxLength,
-        spaceBetweenColumns = root.spaceBetweenColumns || menuDefaults.spaceBetweenColumns,
-        buttonsMaxCount = root.buttonsMaxCount || menuDefaults.buttonsMaxCount,
+        maxColumns = root.columnsMaxCount || menuDefaults.columnsMaxCount.default,
+        maxTextLength = root.textSummaryMaxLength || menuDefaults.textSummaryMaxLength.default,
+        spaceBetweenColumns = root.spaceBetweenColumns || menuDefaults.spaceBetweenColumns.default,
+        buttonsMaxCount = root.buttonsMaxCount || menuDefaults.buttonsMaxCount.default,
         buttonsOffset = root.getValue('buttonsOffset', 'number', chatId) || 0;
       let groupCurrent = '',
         itemLabelMaxLength = 0,
@@ -652,19 +672,64 @@ class MenuItem {
   }
 
   /**
-   * Draw menu item
-   * @param {TelegramClient} client - Telegram client
+   * Send message
    * @param {string} peerId - Peer Id
+   * @param {object} messageObject - Message object
+   * @returns {object} - Result object
    **/
-  async draw(client, peerId) {
+  async sendMessage(peerId, messageObject) {
+    const root = this.getRoot();
+    if (root) {
+      return await root.sendMessage(peerId, messageObject);
+    } else {
+      throw new Error('Root is not found!');
+    }
+  }
+
+  /**
+   * Edit message
+   * @param {string} peerId - Peer Id
+   * @param {object} messageObject - Message object
+   * @returns {object} - Result object
+   **/
+  async editMessage(peerId, messageObject) {
+    const root = this.getRoot();
+    if (root) {
+      return await root.editMessage(peerId, messageObject);
+    } else {
+      throw new Error('Root is not found!');
+    }
+  }
+
+  /**
+   * Delete message
+   * @param {string} peerId - Peer Id
+   * @param {number} messageId - Message Id
+   * @returns {boolean} - True if message is deleted, false otherwise
+   **/
+  async deleteMessage(peerId, messageId) {
+    const root = this.getRoot();
+    if (root) {
+      return root.deleteMessage(peerId, messageId);
+    } else {
+      throw new Error('Root is not found!');
+    }
+  }
+
+  /**
+   * Draw menu item
+   * @param {any} peerId - Peer Id
+   * @param {number} userId - User Id
+   **/
+  async draw(peerId, userId) {
     this.log('debug', `label: ${this.label}, text: ${this.text}`);
     const refreshed = await this.refresh();
     this.log('debug', `Refreshed with result: ${refreshed}!`);
     if (refreshed === true) {
-      const menuMessageId = this.getMessageId(peerId?.userId),
-        buttons = this.getButtons(peerId?.userId);
+      const menuMessageId = this.getMessageId(userId),
+        buttons = this.getButtons(userId);
       this.log('debug', `menuMessageId: ${menuMessageId}, buttons: ${stringifyButtons(buttons)}`);
-      if (client !== null && peerId !== null) {
+      if (peerId !== null && peerId !== undefined) {
         const messageParams = {};
         if (Array.isArray(buttons) && buttons.length > 0) {
           messageParams.buttons = buttons;
@@ -678,17 +743,13 @@ class MenuItem {
             `Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(messageParams)}`,
           );
           try {
-            await client.editMessage(peerId, messageParams);
+            await this.editMessage(peerId, messageParams);
             this.log('debug', `Message edited successfully!`);
           } catch (err) {
             if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
-              this.log(
-                'debug',
-                `${this.constructor.name}.draw{'${this.command}'}| `,
-                `Message Id is invalid! Going to send new message!`,
-              );
-              this.removeMessageId(peerId?.userId);
-              this.draw(client, peerId);
+              this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message Id is invalid! Going to send new message!`);
+              this.removeMessageId(userId);
+              this.draw(peerId, userId);
             } else {
               this.log(
                 'warn',
@@ -705,9 +766,9 @@ class MenuItem {
             `Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
           );
           try {
-            const res = await client.sendMessage(peerId, messageParams);
+            const res = await this.sendMessage(peerId, messageParams);
             this.log('debug', `Message sent successfully!`);
-            this.setMessageId(peerId?.userId, res.id);
+            this.setMessageId(userId, res.id);
           } catch (err) {
             this.log(
               'warn',
@@ -718,65 +779,65 @@ class MenuItem {
         }
       }
     } else if (this.holder !== null) {
-      this.holder.draw(client, peerId);
+      this.holder.draw(peerId, userId);
     }
   }
 
   /**
    * Handle command
-   * @param {TelegramClient} client - Telegram client
    * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
    * @param {boolean=} isBot - True if the command is from bot, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
-    const menuMessageId = this.getMessageId(peerId?.userId);
+  async onCommand(peerId, userId, messageId, command, isEvent = true, isTarget = false) {
+    const menuMessageId = this.getMessageId(userId);
     this.log('debug', `command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(menuDefaults.cmdPrefix)}`);
     if (isTarget === true) {
       if (isEvent === false && messageId !== 0) {
         try {
-          await client.deleteMessages(peerId, [messageId], {revoke: true});
+          await this.deleteMessage(peerId, messageId);
           this.log('debug', `Message from User deleted successfully!`);
         } catch (err) {
           this.log('warn', `Message from User delete error: ${stringify(err)}`);
         }
       }
       if (typeof this.onRun === 'function') {
-        const reDraw = await this.onRun(client, peerId, messageId, command);
+        const reDraw = await this.onRun(peerId, userId, messageId, command);
         this.log('debug', `command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`);
         if (reDraw === true && menuMessageId !== 0 && isEvent === true) {
           try {
-            await client.deleteMessages(peerId, [menuMessageId], {revoke: true});
+            await this.deleteMessage(peerId, menuMessageId);
             this.log('debug', `Message deleted successfully!`);
-            this.removeMessageId(peerId?.userId);
-            await this.draw(client, peerId);
+            this.removeMessageId(userId);
+            await this.draw(peerId, userId);
           } catch (err) {
             this.log('warn', `Message delete error: ${stringify(err)}`);
           }
         } else {
-          await this.draw(client, peerId);
+          await this.draw(peerId, userId);
         }
       } else if (command === MenuItem.cmdExit) {
         try {
-          await client.deleteMessages(peerId, [menuMessageId], {revoke: true});
+          await this.deleteMessage(peerId, messageId);
           this.log('debug', `Message deleted successfully!`);
-          this.removeMessageId(peerId?.userId);
+          this.removeMessageId(userId);
         } catch (err) {
           this.log('warn', `Message delete error: ${stringify(err)}`);
         }
       } else {
-        await this.draw(client, peerId);
+        await this.draw(peerId, userId);
       }
     } else {
       const root = this.getRoot();
       this.log('debug', `command: ${command} is not target! Commands: ${stringify(Object.keys(root?.commands))}`);
-      const target = await root.getByCommand(root.processInputForCommand || command, peerId?.userId);
+      const target = await root.getByCommand(root.processInputForCommand || command, userId);
       this.log('debug', `target: ${stringify(target?.command)}`);
       if (target !== null) {
-        await target.onCommand(client, peerId, messageId, command, isEvent, true);
+        await target.onCommand(peerId, userId, messageId, command, isEvent, true);
       } else {
         this.log('warn', `command: ${command} is not allowed! Appropriate item is not found!`);
       }

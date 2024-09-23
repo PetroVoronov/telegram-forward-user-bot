@@ -189,15 +189,15 @@ const getLanguages = () => {
         type: 'number',
         subType: 'integer',
         options: {
-          min: 0,
-          max: 10,
-          step: 1,
+          min: menuDefaults.columnsMaxCount.min,
+          max: menuDefaults.columnsMaxCount.max,
+          step: menuDefaults.columnsMaxCount.step,
         },
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
         onSetAfter: onMenuColumnsMaxCountChange,
-        default: menuDefaults.columnsMaxCount,
+        default: menuDefaults.columnsMaxCount.default,
         label: 'Max columns in row',
         text: 'Max count of columns in one row of the menu',
       },
@@ -205,15 +205,15 @@ const getLanguages = () => {
         type: 'number',
         subType: 'integer',
         options: {
-          min: 0,
-          max: 100,
-          step: 1,
+          min: menuDefaults.textSummaryMaxLength.min,
+          max: menuDefaults.textSummaryMaxLength.max,
+          step: menuDefaults.textSummaryMaxLength.step,
         },
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
         onSetAfter: onTextSummaryMaxLengthChange,
-        default: menuDefaults.textSummaryMaxLength,
+        default: menuDefaults.textSummaryMaxLength.default,
         label: 'Text summary max length',
         text: 'Approximated max length of the text in one row of the menu',
       },
@@ -221,15 +221,15 @@ const getLanguages = () => {
         type: 'number',
         subType: 'integer',
         options: {
-          min: 1,
-          max: 5,
-          step: 1,
+          min: menuDefaults.spaceBetweenColumns.min,
+          max: menuDefaults.spaceBetweenColumns.max,
+          step: menuDefaults.spaceBetweenColumns.step,
         },
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
         onSetAfter: onSpaceBetweenColumnsChange,
-        default: menuDefaults.spaceBetweenColumns,
+        default: menuDefaults.spaceBetweenColumns.default,
         label: 'Space between columns',
         text: 'Space between columns in the menu',
       },
@@ -237,15 +237,15 @@ const getLanguages = () => {
         type: 'number',
         subType: 'integer',
         options: {
-          min: 10,
-          max: 50,
-          step: 1,
+          min: menuDefaults.buttonsMaxCount.min,
+          max: menuDefaults.buttonsMaxCount.max,
+          step: menuDefaults.buttonsMaxCount.step,
         },
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
         onSetAfter: onButtonMaxCountChange,
-        default: menuDefaults.buttonsMaxCount,
+        default: menuDefaults.buttonsMaxCount.default,
         label: 'Max buttons on "page"',
         text: 'Max count of buttons on the one "page" of the menu',
       },
@@ -987,7 +987,7 @@ function onCommand(event) {
       const command = data.toString();
       log.debug(`onCommand | command: ${command}`, logAsBot);
       if (command.startsWith(menuDefaults.cmdPrefix)) {
-        menuRoot.onCommand(clientAsBot, peer, messageId, command, true);
+        menuRoot.onCommand(peer, peer.userId, messageId, command, true);
       }
     }
   } else if (event instanceof NewMessageEvent) {
@@ -997,7 +997,7 @@ function onCommand(event) {
       logAsBot,
     );
     if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
-      menuRoot.onCommand(clientAsBot, peerId, messageId, command, false);
+      menuRoot.onCommand(peerId, peerId.userId, messageId, command, false);
     }
   } else {
     log.warn(`onCommand | Unknown event: ${event.constructor.name}!`, logAsBot);
@@ -1077,11 +1077,35 @@ cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardLi
 setFunctionMakeButton((label, command) => Button.inline(label || '?', Buffer.from(command)));
 menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot
-  .init(options.debug ? 'debug' : 'info', log, i18n)
+  .init(
+    {
+      sendMessageAsync: async (peer, messageObject) => {
+        if (clientAsBot !== null && clientAsBot.connected === true) {
+          return await clientAsBot.sendMessage(peer, messageObject);
+        }
+        return null;
+      },
+      editMessageAsync: async (peer, messageObject) => {
+        if (clientAsBot !== null && clientAsBot.connected === true) {
+          return await clientAsBot.editMessage(peer, messageObject);
+        }
+        return null;
+      },
+      deleteMessageAsync: async (peer, menuMessageId) => {
+        if (clientAsBot !== null && clientAsBot.connected === true) {
+          return await clientAsBot.deleteMessages(peer, [menuMessageId], {revoke: true});
+        }
+        return null;
+      },
+    },
+    options.debug ? 'debug' : 'info',
+    log,
+    i18n,
+  )
   .then(() => {
     if (options.command !== undefined) {
       log.debug(`Testing command: ${options.command}`);
-      menuRoot.onCommand(null, null, null, options.command);
+      menuRoot.onCommand(null, 0, 0, options.command);
     } else {
       getAPIAttributes().then(() => {
         if (apiId !== null && apiHash !== null) {

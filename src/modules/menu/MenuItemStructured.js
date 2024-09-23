@@ -615,14 +615,14 @@ class MenuItemStructured extends MenuItem {
 
   /**
    * Draw menu item
-   * @param {TelegramClient} client - Telegram client
-   * @param {string} peerId - Peer Id
+   * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    **/
-  async draw(client, peerId) {
+  async draw(peerId, userId) {
     if (this.isDataHolder === true) {
       this.load();
     }
-    await super.draw(client, peerId);
+    await super.draw(peerId, userId);
   }
 
   /**

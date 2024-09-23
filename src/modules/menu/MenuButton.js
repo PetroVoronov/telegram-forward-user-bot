@@ -77,20 +77,20 @@ class MenuButtonBoolean extends MenuButton {
 
   /**
    * Handle command
-   * @param {TelegramClient} client - Telegram client
    * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
+  async onCommand(peerId, userId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
+      await super.onCommand(peerId, userId, messageId, command, isEvent, isTarget);
     } else {
       const value = this.getData();
       if ((await this.setData(!value)) === true) {
-        await this.holder.draw(client, peerId, messageId);
+        await this.holder.draw(peerId, userId);
       }
     }
   }
@@ -144,15 +144,15 @@ class MenuButtonInputText extends MenuButton {
 
   /**
    * Handle command
-   * @param {TelegramClient} client - Telegram client
    * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
+  async onCommand(peerId, userId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
+      await super.onCommand(peerId, userId, messageId, command, isEvent, isTarget);
     } else {
       const root = this.getRoot();
       if (root !== null) {
@@ -160,7 +160,7 @@ class MenuButtonInputText extends MenuButton {
           this.log('info', `root.processInputForCommand is empty`);
           root.processInputForCommand = this.command;
           this.processInputForCommand = this.command;
-          await this.draw(client, peerId, messageId);
+          await this.draw(peerId, userId);
         } else if (root.processInputForCommand === this.command) {
           this.log('info', `root.processInputForCommand is ${this.command}`);
           let accepted = true;
@@ -174,7 +174,7 @@ class MenuButtonInputText extends MenuButton {
           }
 
           try {
-            await client.deleteMessages(peerId, [messageId], {revoke: true});
+            await this.deleteMessage(peerId, messageId);
           } catch (error) {
             this.log('warn', `Input from user delete error: ${stringify(error)}`);
           }
@@ -184,10 +184,10 @@ class MenuButtonInputText extends MenuButton {
             if ((await this.setData(this.convertInput(command))) === true) {
               await this.holder.refresh();
             }
-            await this.holder.draw(client, peerId, messageId);
+            await this.holder.draw(peerId, userId);
           } else {
             this.lastInput = command;
-            await this.draw(client, peerId, messageId);
+            await this.draw(peerId, userId);
           }
         }
       }
@@ -251,16 +251,16 @@ class MenuButtonNewItem extends MenuButton {
   }
   /**
    * Handle command
-   * @param {TelegramClient} client - Telegram client
    * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
+  async onCommand(peerId, userId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
+      await super.onCommand(peerId, userId, messageId, command, isEvent, isTarget);
     } else {
       this.log('debug', `command: ${command}`);
       let commandNew = this.holderCommand;
@@ -270,7 +270,7 @@ class MenuButtonNewItem extends MenuButton {
           commandNew = `${this.holderCommand}#${index}`;
         }
       }
-      await super.onCommand(client, peerId, messageId, commandNew, isEvent, false);
+      await super.onCommand(peerId, userId, messageId, commandNew, isEvent, false);
     }
   }
 }
@@ -419,23 +419,23 @@ class MenuButtonListItem extends MenuButton {
 
   /**
    * Handle command
-   * @param {TelegramClient} client - Telegram client
    * @param {any} peerId - Peer Id
+   * @param {number} userId - Message Id
    * @param {number} messageId - Message Id
    * @param {string} command - Command to handle
    * @param {boolean=} isEvent - True if the command is event, false otherwise
    * @param {boolean=} isTarget - True if the command is target, false otherwise
    **/
-  async onCommand(client, peerId, messageId, command, isEvent = true, isTarget = false) {
+  async onCommand(peerId, userId, messageId, command, isEvent = true, isTarget = false) {
     if (isTarget === false || this.holder === null) {
-      await super.onCommand(client, peerId, messageId, command, isEvent, isTarget);
+      await super.onCommand(peerId, userId, messageId, command, isEvent, isTarget);
     } else {
       const value = this.command.split('$').pop();
       if (value.includes('v=')) {
         this.holder.setData(value.replace('v=', ''));
       }
       if (this.holder.holder !== null) {
-        await this.holder.holder.draw(client, peerId, messageId);
+        await this.holder.holder.draw(peerId, userId);
       }
     }
   }

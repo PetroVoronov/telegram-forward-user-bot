@@ -80,5 +80,6 @@
 	"Anti fast edit delay": "Anti fast edit delay",
 	"Delay to prevent multiple forwards of the same message due to fast edits on source side": "Delay to prevent multiple forwards of the same message due to fast edits on source side",
 	"Resubscribe interval": "Resubscribe interval",
-	"Interval to resubscribe on chats in minutes": "Interval to resubscribe on chats in minutes"
+	"Interval to resubscribe on chats in minutes": "Interval to resubscribe on chats in minutes",
+	"Wrong input": "Wrong input"
 }
