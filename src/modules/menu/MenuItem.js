@@ -677,29 +677,26 @@ class MenuItem {
             `${this.constructor.name}.draw{'${this.command}'}| `,
             `Going to edit message: ${menuMessageId} with messageParams: ${stringifyButtons(messageParams)}`,
           );
-          client
-            .editMessage(peerId, messageParams)
-            .then((res) => {
-              this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message edited successfully!`);
-              this.setMessageId(peerId?.userId, res.id);
-            })
-            .catch((err) => {
-              if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
-                this.log(
-                  'debug',
-                  `${this.constructor.name}.draw{'${this.command}'}| `,
-                  `Message Id is invalid! Going to send new message!`,
-                );
-                this.removeMessageId(peerId?.userId);
-                this.draw(client, peerId);
-              } else {
-                this.log(
-                  'warn',
-                  `${this.constructor.name}.draw{'${this.command}'}| `,
-                  `Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${this.text}`,
-                );
-              }
-            });
+          try {
+            await client.editMessage(peerId, messageParams);
+            this.log('debug', `Message edited successfully!`);
+          } catch (err) {
+            if (err.code === 400 && err.errorMessage === 'MESSAGE_ID_INVALID') {
+              this.log(
+                'debug',
+                `${this.constructor.name}.draw{'${this.command}'}| `,
+                `Message Id is invalid! Going to send new message!`,
+              );
+              this.removeMessageId(peerId?.userId);
+              this.draw(client, peerId);
+            } else {
+              this.log(
+                'warn',
+                `${this.constructor.name}.draw{'${this.command}'}| `,
+                `Message edit error: ${stringify(err)},  menuMessageId: ${menuMessageId}, text: ${this.text}`,
+              );
+            }
+          }
         } else {
           messageParams.message = this.text;
           this.log(
@@ -707,19 +704,17 @@ class MenuItem {
             `${this.constructor.name}.draw{'${this.command}'}| `,
             `Going to send new message ` + `with messageParams: ${stringifyButtons(messageParams)}!`,
           );
-          client
-            .sendMessage(peerId, messageParams)
-            .then((res) => {
-              this.log('debug', `${this.constructor.name}.draw{'${this.command}'}| `, `Message sent successfully!`);
-              this.setMessageId(peerId?.userId, res.id);
-            })
-            .catch((err) => {
-              this.log(
-                'warn',
-                `${this.constructor.name}.draw{'${this.command}'}| `,
-                `Message send error: ${stringify(err)}, text: ${this.text},  menuMessageId: ${menuMessageId}`,
-              );
-            });
+          try {
+            const res = await client.sendMessage(peerId, messageParams);
+            this.log('debug', `Message sent successfully!`);
+            this.setMessageId(peerId?.userId, res.id);
+          } catch (err) {
+            this.log(
+              'warn',
+              `${this.constructor.name}.draw{'${this.command}'}| `,
+              `Message send error: ${stringify(err)}, text: ${this.text},  menuMessageId: ${menuMessageId}`,
+            );
+          }
         }
       }
     } else if (this.holder !== null) {
@@ -742,42 +737,36 @@ class MenuItem {
     this.log('debug', `command: ${command}, peerId = ${stringify(peerId)}, startsWith: ${command?.startsWith(menuDefaults.cmdPrefix)}`);
     if (isTarget === true) {
       if (isEvent === false && messageId !== 0) {
-        client
-          .deleteMessages(peerId, [messageId], {revoke: true})
-          .then((res) => {
-            this.log('debug', `Message from User deleted successfully!`);
-          })
-          .catch((err) => {
-            this.log('warn', `Message from User delete error: ${stringify(err)}`);
-          });
+        try {
+          await client.deleteMessages(peerId, [messageId], {revoke: true});
+          this.log('debug', `Message from User deleted successfully!`);
+        } catch (err) {
+          this.log('warn', `Message from User delete error: ${stringify(err)}`);
+        }
       }
       if (typeof this.onRun === 'function') {
         const reDraw = await this.onRun(client, peerId, messageId, command);
         this.log('debug', `command: ${command} is executed successfully with reDraw:` + ` ${reDraw}!`);
         if (reDraw === true && menuMessageId !== 0 && isEvent === true) {
-          client
-            .deleteMessages(peerId, [menuMessageId], {revoke: true})
-            .then((res) => {
-              this.log('debug', `Message deleted successfully!`);
-              this.removeMessageId(peerId?.userId);
-              this.draw(client, peerId);
-            })
-            .catch((err) => {
-              this.log('warn', `Message delete error: ${stringify(err)}`);
-            });
+          try {
+            await client.deleteMessages(peerId, [menuMessageId], {revoke: true});
+            this.log('debug', `Message deleted successfully!`);
+            this.removeMessageId(peerId?.userId);
+            await this.draw(client, peerId);
+          } catch (err) {
+            this.log('warn', `Message delete error: ${stringify(err)}`);
+          }
         } else {
           await this.draw(client, peerId);
         }
       } else if (command === MenuItem.cmdExit) {
-        client
-          .deleteMessages(peerId, [menuMessageId], {revoke: true})
-          .then((res) => {
-            this.log('debug', `Message deleted successfully!`);
-            this.removeMessageId(peerId?.userId);
-          })
-          .catch((err) => {
-            this.log('warn', `Message delete error: ${stringify(err)}`);
-          });
+        try {
+          await client.deleteMessages(peerId, [menuMessageId], {revoke: true});
+          this.log('debug', `Message deleted successfully!`);
+          this.removeMessageId(peerId?.userId);
+        } catch (err) {
+          this.log('warn', `Message delete error: ${stringify(err)}`);
+        }
       } else {
         await this.draw(client, peerId);
       }
