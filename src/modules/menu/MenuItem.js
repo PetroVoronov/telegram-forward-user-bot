@@ -531,11 +531,11 @@ class MenuItem {
       this.setValue('buttonsOffset', buttonsOffset, chatId);
     }
     if (this.command === commandToCheck || (this.isRoot && commandToCheck === MenuItem.cmdExit)) {
-      if (commandToCheck !== commandToCheck) {
+      if (this.isRoot && commandToCheck === MenuItem.cmdExit) {
         this.removeValue('lastCommand', chatId);
       }
       result = this;
-    } else {
+    } else if (commandToCheck.startsWith(this.command) || this.isRoot === true) {
       if (this.isRoot === false) await this.refresh();
       for (const item of this.nested) {
         result = await item.getByCommand(commandToCheck);
