@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.2...v1.3.0) (2024-09-23)
+
+
+### Miscellaneous Chores
+
+* **deps:** Bump telegram from 2.25.4 to 2.25.11 ([36237e2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/36237e2019981049d3e7315aecdac456b60b4992))
+* Modify the `spaceBetweenColumns` configuration parameter maximum value ([08961bf](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08961bf49fdfcb6fec1db29b00346f1fdbcd790a))
+
+
+### Features
+
+* Refactor code to make `telegram-menu-structured` fully independent from Telegram Client or Bot library ([08961bf](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08961bf49fdfcb6fec1db29b00346f1fdbcd790a))
+
+
+### Code Refactoring
+
+* Refactor to accept command only as Bot via Bot Menu ([6679b03](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6679b03ddb21b78e21a09b8e2bfaeb42beaa96c9))
+* **telegram-menu-structured:** Get rid of dependency on external i18n object. Additionally property logger is converted to private. ([eb13300](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/eb133009287b009fadc9d35cc0ef010a5e8c3856))
+* **telegram-menu-structured:** Improve `menuDefaults` to store and provide min, max and step for params. ([08961bf](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08961bf49fdfcb6fec1db29b00346f1fdbcd790a))
+* **telegram-menu-structured:** Refactor menu button classes to work only as Bot to simplify command handling ([6679b03](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6679b03ddb21b78e21a09b8e2bfaeb42beaa96c9))
+* **telegram-menu-structured:** Refactor MenuItem class to handle command checking and value setting ([5401c21](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5401c215f259f6e9cd8bc852fbbbcfc326d57037))
+* **telegram-menu-structured:** Refactor message editing and sending logic in MenuItem class to await approach with edit, send and delete Message ([0348289](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/034828932c0e641e2895051d600d766705d4b8d6))
+
 ## [1.2.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.1...v1.2.2) (2024-09-22)
 
 
