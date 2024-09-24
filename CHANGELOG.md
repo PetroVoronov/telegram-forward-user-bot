@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.0...v1.4.1) (2024-09-24)
+
+
+### Miscellaneous Chores
+
+* align menu Init to be comply with changes ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
+* **telegram-menu-from-structure:** Update `telegram-menu-from-structure` package to version 1.0.1 ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
+
+
+### Documentation
+
+* Update command-line description ([432bebb](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/432bebb254fdcd03579771b2d5f2330ba821da1f))
+
+
+### Code Refactoring
+
+* Add default `false` for all command-line options ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
+* Add new command-line option `--no-debug-cache` to disable debug for the Cache instance ([212d9af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/212d9af4c533f6b8253422428b80ed9cb6903a9b))
+* Add new command-line option `--no-debug-menu` to disable debug for the `telegram-menu-from-structure` ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
+* **Cache:** Refactor Cache to make possible to disable debug only for Cache ([212d9af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/212d9af4c533f6b8253422428b80ed9cb6903a9b))
+* **SecuredLogger:** Refactor SecuredLogger to implement canLog compare of logLevel with external one ([212d9af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/212d9af4c533f6b8253422428b80ed9cb6903a9b))
+
 ## [1.4.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.1...v1.4.0) (2024-09-23)
 
 
