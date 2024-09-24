@@ -42,22 +42,32 @@ const options = yargs
     alias: 'no-bot',
     describe: 'Start without the bot instance',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('d', {
     alias: 'debug',
     describe: 'Debug level of logging',
     type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('no-debug-menu', {
+    describe: 'Disable debug level of logging for the menu instance',
+    type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('debug-client-user', {
     describe: 'Debug level of logging for the client "user" instance',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('debug-client-bot', {
     describe: 'Debug level of logging for the client "bot" instance',
     type: 'boolean',
+    default: false,
     demandOption: false,
   })
   .option('c', {
@@ -1097,10 +1107,10 @@ menuRoot
         }
         return null;
       },
+      logLevel: options.noDebugMenu === true ? 'info' : '',
+      logger: log,
+      i18n,
     },
-    options.debug ? 'debug' : 'info',
-    log,
-    i18n,
   )
   .then(() => {
     if (options.command !== undefined) {
