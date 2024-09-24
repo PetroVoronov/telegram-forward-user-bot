@@ -109,6 +109,8 @@ The Telegram Forward User Bot supports several command line options to customize
 - `-s, --resubscribe-interval <number>`: Resubscribe on changes in sources chats, in minutes. Default is 60 minutes.
 - `-b, --no-bot`: Start without the bot instance.
 - `-d, --debug`: Enable debug level logging.
+- `--no-debug-cache`: Disable debug level logging for the Cache instance.
+- `--no-debug-menu`: Disable debug level logging for the Menu instance.
 - `--debug-client-user`: Enable debug level logging for the client "user" instance.
 - `--debug-client-bot`: Enable debug level logging for the client "bot" instance.
 - `-c, --command <string>`: Test menu command from the command line.
