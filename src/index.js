@@ -53,7 +53,13 @@ const options = yargs
     demandOption: false,
   })
   .option('no-debug-menu', {
-    describe: 'Disable debug level of logging for the menu instance',
+    describe: 'Disable debug level of logging for the Menu instance',
+    type: 'boolean',
+    default: false,
+    demandOption: false,
+  })
+  .option('no-debug-cache', {
+    describe: 'Disable debug level of logging for the Cache instance',
     type: 'boolean',
     default: false,
     demandOption: false,
@@ -306,6 +312,7 @@ const getLanguages = () => {
     getItem: (key) => storage.getItem(key),
     setItem: (key, value) => storage.setItem(key, value),
     removeItem: (key) => storage.removeItem(key),
+    logLevel: options.noDebugCache ? 'info' : '',
   }),
   configurationId = 'configuration';
 let configuration = cache.getItem(configurationId, 'object') || {};

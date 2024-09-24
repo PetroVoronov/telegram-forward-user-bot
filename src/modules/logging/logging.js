@@ -24,7 +24,11 @@ class SecuredLogger extends Logger {
         super._log(level, message, color);
       } else if (Array.isArray(message)) {
         let isBot;
-        if (message.length > 1 && typeof message[message.length - 1] === 'object' && typeof message[message.length - 1].isBot === 'boolean') {
+        if (
+          message.length > 1 &&
+          typeof message[message.length - 1] === 'object' &&
+          typeof message[message.length - 1].isBot === 'boolean'
+        ) {
           isBot = message[message.length - 1].isBot;
           message.pop();
         }
@@ -39,6 +43,16 @@ class SecuredLogger extends Logger {
         super._log(level, messageText, color);
       }
     }
+  }
+
+  /**
+   *
+   * @param level {string}
+   * @param targetLevel {string}
+   * @returns {boolean}
+   */
+  canLog(level, targetLevel) {
+    return targetLevel ? this.levels.indexOf(targetLevel) >= this.levels.indexOf(level) : false;
   }
 
   processMessageObject(message) {

@@ -24,6 +24,8 @@ class Cache {
   #setItem = null;
   #removeItem = null;
 
+  #logLevel = '';
+
   /**
    * typedef {Object} CacheMethods
    * @property {function} getItem - Get item from storage
@@ -34,11 +36,20 @@ class Cache {
   /**
    * @param {CacheMethods} param0 - Methods to get, set and remove items from storage {@link CacheMethods}
    **/
-  constructor({getItem, setItem, removeItem}) {
+  constructor({getItem, setItem, removeItem, logLevel = ''}) {
     this.#getItem = getItem || null;
     this.#setItem = setItem || null;
     this.#removeItem = removeItem || null;
+    this.#logLevel = logLevel;
   }
+
+
+  log(level, ...message) {
+    if (this.#logLevel === '' || log.canLog(level, this.#logLevel)) {
+      log[level](...message);
+    }
+  }
+
 
   /**
    * Get item from cache
@@ -47,7 +58,7 @@ class Cache {
    * @returns {any} - Item value
    **/
   getItem(key, type) {
-    log.debug(`Cache] [Get item: key: ${key}`);
+    this.log('debug', `Cache] [Get item: key: ${key}`);
     const skipKey = `-${key}`;
     let result = null;
     if (this.items.has(key) === false) {
@@ -58,10 +69,10 @@ class Cache {
             result = JSON.parse(result);
             // eslint-disable-next-line sonarjs/no-ignored-exceptions
           } catch (e) {
-            log.debug(`Cache] [Error parsing item from storage: key: ${key}, value: `, {[skipKey]: result});
+            this.log('debug', `Cache] [Error parsing item from storage: key: ${key}, value: `, {[skipKey]: result});
           }
         }
-        log.debug(`Cache] [Get item from storage: key: ${key}, value: `, {[skipKey]: stringify(result)});
+        this.log('debug', `Cache] [Get item from storage: key: ${key}, value: `, {[skipKey]: stringify(result)});
         if (result !== null && result !== undefined) {
           this.items.set(key, result);
         }
@@ -104,7 +115,7 @@ class Cache {
         }
       }
     }
-    log.debug(
+    this.log('debug',
       `Cache] [Get item result: key: ${key}, value: `,
       {[skipKey]: stringify(result)},
       `, type: ${typeof result}, isArray: ${Array.isArray(result)}`,
@@ -120,10 +131,10 @@ class Cache {
    **/
   setItem(key, value) {
     const skipKey = `-${key}`;
-    log.debug(`Cache] [Set item: key: ${key}, value: `, {[skipKey]: stringify(value)});
+    this.log('debug', `Cache] [Set item: key: ${key}, value: `, {[skipKey]: stringify(value)});
     this.items.set(key, value);
     if (this.#setItem !== null) {
-      log.debug(`Cache] [Set item to storage: key: ${key}, value: `, {[skipKey]: stringify(value)});
+      this.log('debug', `Cache] [Set item to storage: key: ${key}, value: `, {[skipKey]: stringify(value)});
       if (value !== null && value !== undefined) {
         this.#setItem(key, JSON.stringify(value, null, 1));
       } else {
@@ -149,7 +160,7 @@ class Cache {
     if (this.reactions.has(key) === true) {
       const reactions = this.reactions.get(key);
       if (reactions[event] !== undefined) {
-        log.debug(`Cache] [Reaction to event: key: ${key}, event: ${event}`);
+        this.log('debug', `Cache] [Reaction to event: key: ${key}, event: ${event}`);
         reactions[event](key, value);
       }
     }
