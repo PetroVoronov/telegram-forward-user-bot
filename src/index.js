@@ -196,7 +196,7 @@ const getLanguages = () => {
         sourceType: 'input',
         presence: 'mandatory',
         editable: true,
-        onSetAfter: onRefreshIntervalChange,
+        onSetAfter: onResubscribeIntervalChange,
         default: resubscribeIntervalDefault,
         label: 'Resubscribe interval',
         text: 'Interval to resubscribe on chats in minutes',
@@ -347,7 +347,6 @@ let apiId = cache.getItem('apiId', 'number'),
   meUser = null,
   meBot = null,
   meUserId = -1,
-  meBotId = -1,
   fromIds = [],
   fromIdsWithEdit = [],
   clientAsUser = null,
@@ -1038,7 +1037,6 @@ function startBotClient() {
             cache.setItem('botStartTimeStamp', `${Date.now()}`);
             clientAsBot.getMe().then((user) => {
               meBot = user;
-              meBotId = Number(meBot.id);
               updateCommandListeners(true);
               if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
                 // eslint-disable-next-line sonarjs/no-nested-functions
@@ -1093,32 +1091,32 @@ cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardLi
 
 menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot
-  .init(
-    {
-      makeButton: (label, command) => Button.inline(label || '?', Buffer.from(command)),
-      sendMessageAsync: async (peer, messageObject) => {
-        if (clientAsBot !== null && clientAsBot.connected === true) {
-          return await clientAsBot.sendMessage(peer, messageObject);
-        }
-        return null;
-      },
-      editMessageAsync: async (peer, messageObject) => {
-        if (clientAsBot !== null && clientAsBot.connected === true) {
-          return await clientAsBot.editMessage(peer, messageObject);
-        }
-        return null;
-      },
-      deleteMessageAsync: async (peer, menuMessageId) => {
-        if (clientAsBot !== null && clientAsBot.connected === true) {
-          return await clientAsBot.deleteMessages(peer, [menuMessageId], {revoke: true});
-        }
-        return null;
-      },
-      logLevel: options.noDebugMenu === true ? 'info' : '',
-      logger: log,
-      i18n,
+  .init({
+    makeButton: (label, command) => Button.inline(label || '?', Buffer.from(command)),
+    sendMessageAsync: async (peer, messageText, messageButtons) => {
+      if (clientAsBot !== null && clientAsBot.connected === true) {
+        const messageObject = {message: messageText, buttons: messageButtons};
+        return await clientAsBot.sendMessage(peer, messageObject);
+      }
+      return null;
     },
-  )
+    editMessageAsync: async (peer, messageId, messageText, messageButtons) => {
+      if (clientAsBot !== null && clientAsBot.connected === true) {
+        const messageObject = {message: messageId, text: messageText, buttons: messageButtons};
+        return await clientAsBot.editMessage(peer, messageObject);
+      }
+      return null;
+    },
+    deleteMessageAsync: async (peer, messageId) => {
+      if (clientAsBot !== null && clientAsBot.connected === true) {
+        return await clientAsBot.deleteMessages(peer, [messageId], {revoke: true});
+      }
+      return null;
+    },
+    logLevel: options.noDebugMenu === true ? 'info' : '',
+    logger: log,
+    i18n,
+  })
   .then(() => {
     if (options.command !== undefined) {
       log.debug(`Testing command: ${options.command}`);
