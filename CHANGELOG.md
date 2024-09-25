@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.1...v1.4.2) (2024-09-25)
+
+
+### Bug Fixes
+
+* Fix `onSetAfter` function call for `resubscribeInterval` ([96f4025](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/96f40255d4fd469bb5c37c39d776e9d8382aebb8))
+
+
+### Code Refactoring
+
+* align changes in "interface" functions `sendMessage` and `editMessage` in `telegram-menu-from-structure`. Fix lowest version of `telegram-menu-from-structure` to 1.1.1. ([96f4025](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/96f40255d4fd469bb5c37c39d776e9d8382aebb8))
+* **localization:** Refactor localization strings to use placeholders for dynamic values ([96f4025](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/96f40255d4fd469bb5c37c39d776e9d8382aebb8))
+
 ## [1.4.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.0...v1.4.1) (2024-09-24)
 
 
