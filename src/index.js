@@ -860,7 +860,7 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
     messageId = event.message.id,
     messageEditDate = event.message.editDate || 0,
     messageIsString = typeof event.message.message === 'string';
-  log.debug(
+  log.info(
     `[${sourceId}, ${messageId}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
     }, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
