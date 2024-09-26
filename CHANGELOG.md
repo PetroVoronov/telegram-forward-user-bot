@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.2...v1.4.3) (2024-09-26)
+
+
+### Continuous Integration
+
+* Update package-lock.json ([f97ce85](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f97ce85700bdb80ee999cdcdc141a4821627f758))
+
+
+### Code Refactoring
+
+* Change a log.debug statement to log.info in the begging of the onMessageToForward function in index.js. ([f97ce85](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f97ce85700bdb80ee999cdcdc141a4821627f758))
+
 ## [1.4.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.1...v1.4.2) (2024-09-25)
 
 
