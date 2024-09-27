@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.3...v1.4.4) (2024-09-27)
+
+
+### Continuous Integration
+
+* Update repo description in deploy_docker_on_tag.yml ([97eb443](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/97eb4430aa8ef33bab03d402a664ae79cae537ea))
+
+
+### Documentation
+
+* Update README.md with new configuration option nad appropriate images. ([9dfced5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9dfced58d27b166a5e73b71090c3ee402730e6af))
+
+
+### Code Refactoring
+
+* Improve the configuration initialization to default values. Automatically delete non-existing values from Cache. ([31b13f1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/31b13f1458ddeb4214b7922b9b7b3044a79f1e2c))
+* Partially change the variable declaration style. ([31b13f1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/31b13f1458ddeb4214b7922b9b7b3044a79f1e2c))
+* Remove unused translation strings and update dependencies. Align with telegram-menu-from-structure version 1.1.5 ([b64423d](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b64423d2bf9c28a3e57be7c43613d312a9fa0c4d))
+
 ## [1.4.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.2...v1.4.3) (2024-09-26)
 
 
