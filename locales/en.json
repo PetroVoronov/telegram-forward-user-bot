@@ -17,7 +17,6 @@
 	"Language of the Menu": "Language of the Menu",
 	"Process missed messages": "Process missed messages",
 	"Process missed messages, max count is 100 messages per channel/group": "Process missed messages, max count is 100 messages per channel/group",
-	"Please enter the \"%s\" integer %s value:": "Please enter the \"%s\" integer %s value:",
 	"Max columns in row": "Max columns in row",
 	"Max count of columns in one row of the menu": "Max count of columns in one row of the menu",
 	"Text summary max length": "Text summary max length",
@@ -28,7 +27,6 @@
 	"Max count of buttons on the one \"page\" of the menu": "Max count of buttons on the one \"page\" of the menu",
 	"Rule label": "Rule label",
 	"Rule identification label": "Rule identification label",
-	"Please enter the \"%s\" %s value:": "Please enter the \"%s\" %s value:",
 	"Enabled": "Enabled",
 	"Enable/disable rule": "Enable/disable rule",
 	"Type of source": "Type of source",
@@ -83,5 +81,6 @@
 	"Interval to resubscribe on chats in minutes": "Interval to resubscribe on chats in minutes",
 	"Wrong input": "Wrong input",
 	"Cancel": "Cancel",
-	"template": "template"
+	"template": "template",
+	"Current \"%s\" value: %s.\nPlease enter new value: %s": "Current \"%s\" value: %s.\nPlease enter new value: %s"
 }
