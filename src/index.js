@@ -15,7 +15,6 @@ const {EditedMessage} = require('telegram/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('telegram/events/CallbackQuery');
 const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
-const {isBot} = require('telegram/client/users');
 
 const refreshIntervalDefault = 300;
 const resubscribeIntervalDefault = 60;
@@ -106,56 +105,57 @@ if (options.command !== undefined) log.info(`Command to test: ${options.command}
 
 const getLanguages = () => {
     return new Map(i18n.getLocales().map((locale) => [locale, locale]));
-  },
-  onLanguageChange = (currentItem, key, data, path) => {
+  };
+const onLanguageChange = (data) => {
     i18n.setLocale(data.language);
     return true;
-  },
-  onRefreshIntervalChange = (currentItem, key, data, path) => {
+  };
+const onRefreshIntervalChange = (data) => {
     if (refreshIntervalSetOnStart === false) {
       refreshInterval = (data?.refreshInterval || 300) * 1000;
       refreshDialogsInit();
     }
-  },
-  onResubscribeIntervalChange = (currentItem, key, data, path) => {
+  };
+const onResubscribeIntervalChange = (data) => {
     const newResubscribeInterval = (data?.resubscribeInterval || 60) * 60 * 1000;
     if (newResubscribeInterval !== resubscribeInterval) {
       resubscribeInterval = newResubscribeInterval;
       resubscribeInit();
     }
-  },
-  onMenuColumnsMaxCountChange = (currentItem, key, data, path) => {
+  };
+const onMenuColumnsMaxCountChange = (data) => {
     if (menuRoot !== null && menuRoot !== undefined) {
       menuRoot.menuColumnsMaxCount = data?.menuColumnsMaxCount || 0;
     }
-  },
-  onTextSummaryMaxLengthChange = (currentItem, key, data, path) => {
+  };
+const onTextSummaryMaxLengthChange = (data) => {
     if (menuRoot !== null && menuRoot !== undefined) {
       menuRoot.textSummaryMaxLength = data?.textSummaryMaxLength || 0;
     }
-  },
-  onSpaceBetweenColumnsChange = (currentItem, key, data, path) => {
+  };
+const onSpaceBetweenColumnsChange = (data) => {
     if (menuRoot !== null && menuRoot !== undefined) {
       menuRoot.spaceBetweenColumns = data?.spaceBetweenColumns || 1;
     }
-  },
-  onButtonMaxCountChange = (currentItem, key, data, path) => {
+  };
+const onButtonMaxCountChange = (data) => {
     if (menuRoot !== null && menuRoot !== undefined) {
       menuRoot.buttonsMaxCount = data?.buttonsMaxCount || 10;
     }
-  },
-  /**
-   * Represents the configuration structure for the menu.
-   *
-   * @typedef {Object} ConfigurationStructure
-   * @property {string} language - The language of the menu.
-   * @property {number} processMissedMaxCount - The maximum count of missed messages to process per channel/group.
-   * @property {number} menuColumnsMaxCount - The maximum count of columns in one row of the menu.
-   * @property {number} textSummaryMaxLength - The approximate maximum length of the text in one row of the menu.
-   * @property {number} spaceBetweenColumns - The space between columns in the menu.
-   * @property {number} buttonsMaxCount - The maximum count of buttons on one "page" of the menu.
-   */
-  configurationStructure = {
+  };
+/**
+ * Represents the configuration structure for the menu.
+ *
+ * @typedef {Object} ConfigurationStructure
+ * @property {string} language - The language of the menu.
+ * @property {number} refreshInterval - The interval to refresh data from Telegram servers in seconds.
+ * @property {number} resubscribeInterval - The interval to resubscribe on chats in minutes.
+ * @property {number} menuColumnsMaxCount - The maximum count of columns in one row of the menu.
+ * @property {number} textSummaryMaxLength - The approximate maximum length of the text in one row of the menu.
+ * @property {number} spaceBetweenColumns - The space between columns in the menu.
+ * @property {number} buttonsMaxCount - The maximum count of buttons on one "page" of the menu.
+ */
+const configurationStructure = {
     type: 'object',
     itemContent: {
       language: {
@@ -306,17 +306,22 @@ const getLanguages = () => {
         },
       },
     },
-  },
-  storage = new LocalStorage('data/storage'),
-  cache = new Cache({
-    getItem: (key) => storage.getItem(key),
-    setItem: (key, value) => storage.setItem(key, value),
-    removeItem: (key) => storage.removeItem(key),
-    logLevel: options.noDebugCache ? 'info' : '',
-  }),
-  configurationId = 'configuration';
+  };
+const storage = new LocalStorage('data/storage');
+const cache = new Cache({
+  getItem: (key) => storage.getItem(key),
+  setItem: (key, value) => storage.setItem(key, value),
+  removeItem: (key) => storage.removeItem(key),
+  logLevel: options.noDebugCache ? 'info' : '',
+});
+const configurationId = 'configuration';
 let configuration = cache.getItem(configurationId, 'object') || {};
 
+Object.keys(configuration).forEach((key) => {
+  if (configurationStructure.itemContent[key] === undefined) {
+    delete configuration[key];
+  }
+});
 if (Object.keys(configuration).length !== Object.keys(configurationStructure.itemContent).length) {
   Object.keys(configurationStructure.itemContent).forEach((key) => {
     if (configuration[key] === undefined) {
@@ -333,38 +338,37 @@ if (refreshIntervalSetOnStart === false) {
   refreshInterval = options.refreshInterval * 1000;
 }
 
-const timeOutToPreventBotFlood = 1000 * 15, // 30 seconds
-  storeSession = new StoreSession('data/session'),
-  lastProcessed = cache.getItem('lastProcessed') || {},
-  lastForwarded = cache.getItem('lastForwarded') || {},
-  lastForwardedDelayed = {},
-  forwardRulesId = 'forwardRules',
-  topicsCache = {};
-let apiId = cache.getItem('apiId', 'number'),
-  apiHash = cache.getItem('apiHash'),
-  botAuthToken = cache.getItem('botAuthToken'),
-  forwardRules = cache.getItem(forwardRulesId) || [],
-  meUser = null,
-  meBot = null,
-  meUserId = -1,
-  fromIds = [],
-  fromIdsWithEdit = [],
-  clientAsUser = null,
-  clientAsBot = null,
-  allowedUsers = [],
-  clientDialogs = [],
-  refreshIntervalId = null,
-  resubscribeIntervalId = null,
-  menuRoot = null;
-const getItemLabel = (data) => data.label,
-  fromToTypes = new Map([
+const timeOutToPreventBotFlood = 1000 * 15; // 15 seconds
+const storeSession = new StoreSession('data/session');
+const lastProcessed = cache.getItem('lastProcessed') || {};
+const lastForwarded = cache.getItem('lastForwarded') || {};
+const lastForwardedDelayed = {};
+const forwardRulesId = 'forwardRules';
+const topicsCache = {};
+let apiId = cache.getItem('apiId', 'number');
+let apiHash = cache.getItem('apiHash');
+let botAuthToken = cache.getItem('botAuthToken');
+let forwardRules = cache.getItem(forwardRulesId) || [];
+let meUser = null;
+let meBot = null;
+let meUserId = -1;
+let fromIds = [];
+let fromIdsWithEdit = [];
+let clientAsUser = null;
+let clientAsBot = null;
+let allowedUsers = [];
+let clientDialogs = [];
+let refreshIntervalId = null;
+let resubscribeIntervalId = null;
+let menuRoot = null;
+const fromToTypes = new Map([
     ['user', i18n.__('User')],
     ['bot', i18n.__('Bot')],
     ['group', i18n.__('Group')],
     ['channel', i18n.__('Channel')],
     ['topic', i18n.__('Topic')],
-  ]),
-  topicIdPresence = (item, path) => {
+  ]);
+const topicIdPresence = (item, path) => {
     const type = path.slice(0, -1).reduce((acc, key) => (acc[key] !== undefined ? acc[key] : null), item);
     return type?.type === 'topic' ? 'mandatory' : 'none';
   },
