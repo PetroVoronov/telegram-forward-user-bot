@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.4...v1.4.5) (2024-09-27)
+
+
+### Continuous Integration
+
+* **docker:** Refactor Docker deployment workflow to make completion of image URLs in README.md before update repo description ([9f27e9c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9f27e9c91142fca4f368e2008b2b537ae3e331ee))
+
+
+### Documentation
+
+* Small fixes in README.md ([9f27e9c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9f27e9c91142fca4f368e2008b2b537ae3e331ee))
+
 ## [1.4.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.3...v1.4.4) (2024-09-27)
 
 
