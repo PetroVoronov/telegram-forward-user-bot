@@ -56,7 +56,7 @@ The bot can be used to configure:
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/yourusername/telegram-forward-user-bot.git
+    git clone https://github.com/PetroVoronov/telegram-forward-user-bot.git
     cd telegram-forward-user-bot
     ```
 
