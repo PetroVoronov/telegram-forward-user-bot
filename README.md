@@ -34,6 +34,7 @@ The bot can be used to configure:
     - [Configuration Options](#configuration-options)
       - [Menu Language](#menu-language)
       - [Refresh Interval](#refresh-interval)
+      - [Resubscribe Interval](#resubscribe-interval)
       - [Max Columns in Row](#max-columns-in-row)
       - [Text Summary Max Length](#text-summary-max-length)
       - [Space Between Columns](#space-between-columns)
@@ -130,19 +131,19 @@ The Telegram Forward User Bot can be configured directly through its interactive
 
 3. Use the ```/start``` command to show the menu.
 
-![Initial, i.e. "Main" menu](docs/images/bot-menu-initial.png)
+[<img src="docs/images/bot-menu-initial.png" width="400"/>](docs/images/bot-menu-initial.png)
 
 ### Configuration Options
 
 The bot menu provides several configuration options to customize the behavior of the bot.
 
-![Configuration menu](docs/images/bot-menu-configuration.png)
+[<img src="docs/images/bot-menu-configuration.png" width="400"/>](docs/images/bot-menu-configuration.png)
 
 Below are the available options:
 
 #### Menu Language
 
-![Language of the Menu](docs/images/bot-menu-configuation-language.png)
+[<img src="docs/images/bot-menu-configuration-language.png" width="400"/>](docs/images/bot-menu-configuration-language.png)
 
 Used to set the language of the menu. Currently, only four languages are supported: English, German, Ukrainian, and Russian.
 
@@ -150,29 +151,35 @@ Used to set the language of the menu. Currently, only four languages are support
 
 Used to set the interval to refresh data from Telegram servers, in seconds. In some cases the "standard" subscription on changes in sources chats is not working properly, so this interval is used to refresh the not only a list of available chats, but also the messages in the sources chats.
 
-![Interval to refresh data from Telegram servers in seconds](docs/images/bot-menu-configuration-refresh-interval.png)
+[<img src="docs/images/bot-menu-configuration-refresh-interval.png" width="400"/>](docs/images/bot-menu-configuration-refresh-interval.png)
+
+#### Resubscribe Interval
+Used to set the interval to resubscribe on changes in sources chats, in minutes. The bot will try to resubscribe on changes in sources chats after this interval. Implemented to prevent the bot from losing the subscription on changes in sources chats.
+
+[<img src="docs/images/bot-menu-configuration-resubscribe-interval.png" width="400"/>](docs/images/bot-menu-configuration-resubscribe-interval.png)
+
 
 #### Max Columns in Row
 
 Used to set the maximum count of columns in one row of the menu. Zero means that the bot will try to calculate the optimal count of columns in each rows individually based on the value of next parameter - [Text Summary Max Length](#text-summary-max-length).
 
-![Max count of columns in one row of the menu](docs/images/bot-menu-configuration-max-columns.png)
+[<img src="docs/images/bot-menu-configuration-max-columns.png" width="400"/>](docs/images/bot-menu-configuration-max-columns.png)
 
 #### Text Summary Max Length
 
 Used to set the approximated max length of the text in one row of the menu. The bot will try to calculate the optimal count of columns based on this value and the value of the previous parameter - [Max Columns in Row](#max-columns-in-row).
 
-![Approximated max length of the text in one row of the menu](docs/images/bot-menu-configuration-max-length.png)
+[<img src="docs/images/bot-menu-configuration-max-length.png" width="400"/>](docs/images/bot-menu-configuration-max-length.png)
 
 #### Space Between Columns
 
 Used to set the space between columns in the menu. The value is in characters.
 
-![Space between columns in the menu](docs/images/bot-menu-configuration-space-between-columns.png)
+[<img src="docs/images/bot-menu-configuration-space-between-columns.png" width="400"/>](docs/images/bot-menu-configuration-space-between-columns.png)
 
 #### Max Buttons on "Page"
 
-![Max count of buttons on one "page" of the menu](docs/images/bot-menu-configuration-max-buttons-on-page.png)
+[<img src="docs/images/bot-menu-configuration-max-buttons-on-page.png" width="400"/>](docs/images/bot-menu-configuration-max-buttons-on-page.png)
 
 Used to set the maximum count of buttons on one "page" or "screen" of the menu. If not all buttons fit on one "page", the bot will split them into multiple "pages", and the user will be able to navigate between them.
 
@@ -180,11 +187,11 @@ Used to set the maximum count of buttons on one "page" or "screen" of the menu. 
 
 Used to add additional users to the bot. The primary user is the one who can access the bot menu and configure the bot. Additional users can be added to have an access to the bot menu and configure the bot as well.
 
-![List of additional users, except the primary one](docs/images/bot-menu-configuration-additional-users.png)
+[<img src="docs/images/bot-menu-configuration-additional-users.png" width="400"/>](docs/images/bot-menu-configuration-additional-users.png)
 
 To add a new user, use the "Add" button.
 
-![Additional users: adding new one.](docs/images/bot-menu-configuration-additional-users-add-new.png)
+[<img src="docs/images/bot-menu-configuration-additional-users-add-new.png" width="400"/>](docs/images/bot-menu-configuration-additional-users-add-new.png)
 
 Then simple select appropriate one from the list of available users. The list of available users is limited to the users known by the primary user.
 
