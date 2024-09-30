@@ -51,6 +51,22 @@ The bot can be used to configure:
       - [Space Between Columns](#space-between-columns)
       - [Max Buttons on "Page"](#max-buttons-on-page)
       - [Additional Users](#additional-users)
+    - [Forwarding Rules](#forwarding-rules)
+      - [Rule Configuration](#rule-configuration)
+      - [Label](#label)
+      - [Status](#status)
+      - [Process replay on forwarded message](#process-replay-on-forwarded-message)
+      - [Process edits of forwarded message](#process-edits-of-forwarded-message)
+      - [Anti fast edit delay](#anti-fast-edit-delay)
+      - [Process missed messages](#process-missed-messages)
+      - [Source Chat Section](#source-chat-section)
+        - [Source chat type](#source-chat-type)
+        - [Source name](#source-name)
+        - [Source topic](#source-topic)
+      - [Destination Chat Section](#destination-chat-section)
+        - [Destination chat type](#destination-chat-type)
+        - [Destination name](#destination-name)
+        - [Destination topic](#destination-topic)
   - [Scripts](#scripts)
   - [License](#license)
   - [Author](#author)
@@ -330,6 +346,80 @@ To add a new user, use the "Add" button.
 [<img src="docs/images/bot-menu-configuration-additional-users-add-new.png" width="400"/>](docs/images/bot-menu-configuration-additional-users-add-new.png)
 
 Then simple select appropriate one from the list of available users. The list of available users is limited to the users known by the primary user.
+
+### Forwarding Rules
+There are a primary part of the Bot menu - "Forwarding Rules". It is used to configure the rules for forwarding messages between chats/groups/channels. The rules presented as a list (array) of submenu items.
+
+Each item is a separate rule. The rule can be enabled or disabled. The rule can be configured to forward messages from the source chat to the destination chat. The rule can be configured to filter messages by keywords or phrases.
+
+In the list each rule is presented by its label and status (enabled or disabled). The label is settable during configuration. The status is presented by the emoji: "✅" for enabled and "❌" for disabled.
+
+[<img src="docs/images/bot-menu-forwarding-rules.png" width="400"/>](docs/images/bot-menu-forwarding-rules.png)
+
+#### Rule Configuration
+Each rule can be configured by the following parameters:
+
+#### Label
+The label of the rule. It is used to identify the rule in the list of rules.
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png)
+
+#### Status
+**Status** - the status of the rule. The rule can be enabled or disabled. The rule will be applied only if it is enabled.
+
+#### Process replay on forwarded message
+The flag to process the replay on the forwarded message. If the flag is set, the bot will try to forward the replay on the forwarded message in source chat to the destination chat.
+
+#### Process edits of forwarded message
+The flag to process the edits of the forwarded message. If the flag is set, the bot will try to forward the edits of the forwarded message in source chat to the destination chat.
+
+#### Anti fast edit delay
+The delay in seconds to prevent the fast edits of the forwarded message. If the delay is set, the bot will wait for the delay before forwarding the  matched message to prevent a flood of messages in the destination chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-anti-fast-edit-delay.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-anti-fast-edit-delay.png)
+
+#### Process missed messages
+The count of missed messages to process. If the count is set, the bot will try to forward the missed matched messages in source chat to the destination chat. Value "0" means that the bot will not try to forward the missed messages. Value is limited to 100. Value is equal to history depth to look for missed messages.
+Missed messages are the messages that were sent to the source chat while the bot was offline or the bot was not able to process them for some reason despite being subscribed to the source chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-process-missed-messages.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-process-missed-messages.png)
+
+#### Source Chat Section
+The section to configure the source chat of the rule. The source chat is the chat where the bot will look for messages to forward.
+
+##### Source chat type
+The type of the source chat. The source chat can be a "User", "Bot", "Group", "Channel", or "Topic" of super group or forum.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-type.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-type.png)
+
+##### Source name
+The name of the source chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the source chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-id.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-id.png)
+
+##### Source topic
+This parameter is available only for the "Topic" type of the source chat. It is used to set the topic of the source chat. The topic is used to filter the messages in the source chat. It can be selected from the list of available topics in the source chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-topic.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-topic.png)
+
+
+#### Destination Chat Section
+The section to configure the destination chat of the rule. The destination chat is the chat where the bot will forward the messages from the source chat.
+
+##### Destination chat type
+The type of the destination chat. The destination chat can be a "User", "Bot", "Group", "Channel", or "Topic" of super group or forum.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-type.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-type.png)
+
+##### Destination name
+The name of the destination chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the destination chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-id.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-id.png)
+
+##### Destination topic
+This parameter is available only for the "Topic" type of the destination chat. It is used to set the topic of the destination chat. The topic is used to filter the messages in the destination chat. It can be selected from the list of available topics in the destination chat.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-topic.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-topic.png)
+
 
 ## Scripts
 
