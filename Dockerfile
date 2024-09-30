@@ -22,4 +22,5 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then npm install -g npm@latest && 
     && apk del build-dependencies ; fi \
     && rm package-lock.json
 
-CMD [ "node", "src/index.js"]
+ENTRYPOINT [ "node", "src/index.js" ]
+CMD []

@@ -11,6 +11,7 @@
         "localstorage",
         "MTProto",
         "NOSONAR",
+        "petrovoronov",
         "preversion",
         "sonarjs",
         "strftime",

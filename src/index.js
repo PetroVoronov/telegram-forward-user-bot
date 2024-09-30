@@ -21,6 +21,8 @@ const resubscribeIntervalDefault = 60;
 let refreshInterval = refreshIntervalDefault * 1000;
 let resubscribeInterval = resubscribeIntervalDefault * 60 * 1000;
 
+const botAuthTokenMinimumLength = 43;
+
 const options = yargs
   .usage('Usage: $0 [options]')
   .option('r', {
@@ -104,45 +106,45 @@ if (options.debug === true) log.info('Verbose logging is enabled!');
 if (options.command !== undefined) log.info(`Command to test: ${options.command}`);
 
 const getLanguages = () => {
-    return new Map(i18n.getLocales().map((locale) => [locale, locale]));
-  };
+  return new Map(i18n.getLocales().map((locale) => [locale, locale]));
+};
 const onLanguageChange = (data) => {
-    i18n.setLocale(data.language);
-    return true;
-  };
+  i18n.setLocale(data.language);
+  return true;
+};
 const onRefreshIntervalChange = (data) => {
-    if (refreshIntervalSetOnStart === false) {
-      refreshInterval = (data?.refreshInterval || 300) * 1000;
-      refreshDialogsInit();
-    }
-  };
+  if (refreshIntervalSetOnStart === false) {
+    refreshInterval = (data?.refreshInterval || 300) * 1000;
+    refreshDialogsInit();
+  }
+};
 const onResubscribeIntervalChange = (data) => {
-    const newResubscribeInterval = (data?.resubscribeInterval || 60) * 60 * 1000;
-    if (newResubscribeInterval !== resubscribeInterval) {
-      resubscribeInterval = newResubscribeInterval;
-      resubscribeInit();
-    }
-  };
+  const newResubscribeInterval = (data?.resubscribeInterval || 60) * 60 * 1000;
+  if (newResubscribeInterval !== resubscribeInterval) {
+    resubscribeInterval = newResubscribeInterval;
+    resubscribeInit();
+  }
+};
 const onMenuColumnsMaxCountChange = (data) => {
-    if (menuRoot !== null && menuRoot !== undefined) {
-      menuRoot.menuColumnsMaxCount = data?.menuColumnsMaxCount || 0;
-    }
-  };
+  if (menuRoot !== null && menuRoot !== undefined) {
+    menuRoot.menuColumnsMaxCount = data?.menuColumnsMaxCount || 0;
+  }
+};
 const onTextSummaryMaxLengthChange = (data) => {
-    if (menuRoot !== null && menuRoot !== undefined) {
-      menuRoot.textSummaryMaxLength = data?.textSummaryMaxLength || 0;
-    }
-  };
+  if (menuRoot !== null && menuRoot !== undefined) {
+    menuRoot.textSummaryMaxLength = data?.textSummaryMaxLength || 0;
+  }
+};
 const onSpaceBetweenColumnsChange = (data) => {
-    if (menuRoot !== null && menuRoot !== undefined) {
-      menuRoot.spaceBetweenColumns = data?.spaceBetweenColumns || 1;
-    }
-  };
+  if (menuRoot !== null && menuRoot !== undefined) {
+    menuRoot.spaceBetweenColumns = data?.spaceBetweenColumns || 1;
+  }
+};
 const onButtonMaxCountChange = (data) => {
-    if (menuRoot !== null && menuRoot !== undefined) {
-      menuRoot.buttonsMaxCount = data?.buttonsMaxCount || 10;
-    }
-  };
+  if (menuRoot !== null && menuRoot !== undefined) {
+    menuRoot.buttonsMaxCount = data?.buttonsMaxCount || 10;
+  }
+};
 /**
  * Represents the configuration structure for the menu.
  *
@@ -156,157 +158,157 @@ const onButtonMaxCountChange = (data) => {
  * @property {number} buttonsMaxCount - The maximum count of buttons on one "page" of the menu.
  */
 const configurationStructure = {
-    type: 'object',
-    itemContent: {
-      language: {
-        type: 'string',
-        presence: 'mandatory',
-        editable: true,
-        sourceType: 'list',
-        source: getLanguages,
-        onSetAfter: onLanguageChange,
-        default: i18n.getLocale(),
-        label: 'Menu language',
-        text: 'Language of the Menu',
+  type: 'object',
+  itemContent: {
+    language: {
+      type: 'string',
+      presence: 'mandatory',
+      editable: true,
+      sourceType: 'list',
+      source: getLanguages,
+      onSetAfter: onLanguageChange,
+      default: i18n.getLocale(),
+      label: 'Menu language',
+      text: 'Language of the Menu',
+    },
+    refreshInterval: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: 30,
+        max: 900,
+        step: 10,
       },
-      refreshInterval: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: 30,
-          max: 900,
-          step: 10,
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onRefreshIntervalChange,
+      default: refreshIntervalDefault,
+      label: 'Refresh interval',
+      text: 'Interval to refresh data from Telegram servers in seconds',
+    },
+    resubscribeInterval: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: 30,
+        max: 180,
+        step: 10,
+      },
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onResubscribeIntervalChange,
+      default: resubscribeIntervalDefault,
+      label: 'Resubscribe interval',
+      text: 'Interval to resubscribe on chats in minutes',
+    },
+    menuColumnsMaxCount: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: menuDefaults.columnsMaxCount.min,
+        max: menuDefaults.columnsMaxCount.max,
+        step: menuDefaults.columnsMaxCount.step,
+      },
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onMenuColumnsMaxCountChange,
+      default: menuDefaults.columnsMaxCount.default,
+      label: 'Max columns in row',
+      text: 'Max count of columns in one row of the menu',
+    },
+    textSummaryMaxLength: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: menuDefaults.textSummaryMaxLength.min,
+        max: menuDefaults.textSummaryMaxLength.max,
+        step: menuDefaults.textSummaryMaxLength.step,
+      },
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onTextSummaryMaxLengthChange,
+      default: menuDefaults.textSummaryMaxLength.default,
+      label: 'Text summary max length',
+      text: 'Approximated max length of the text in one row of the menu',
+    },
+    spaceBetweenColumns: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: menuDefaults.spaceBetweenColumns.min,
+        max: menuDefaults.spaceBetweenColumns.max,
+        step: menuDefaults.spaceBetweenColumns.step,
+      },
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onSpaceBetweenColumnsChange,
+      default: menuDefaults.spaceBetweenColumns.default,
+      label: 'Space between columns',
+      text: 'Space between columns in the menu',
+    },
+    buttonsMaxCount: {
+      type: 'number',
+      subType: 'integer',
+      options: {
+        min: menuDefaults.buttonsMaxCount.min,
+        max: menuDefaults.buttonsMaxCount.max,
+        step: menuDefaults.buttonsMaxCount.step,
+      },
+      sourceType: 'input',
+      presence: 'mandatory',
+      editable: true,
+      onSetAfter: onButtonMaxCountChange,
+      default: menuDefaults.buttonsMaxCount.default,
+      label: 'Max buttons on "page"',
+      text: 'Max count of buttons on the one "page" of the menu',
+    },
+    users: {
+      type: 'array',
+      presence: 'mandatory',
+      editable: true,
+      default: [],
+      label: 'Additional users',
+      text: 'Additional users to be allowed to use the bot',
+      structure: {
+        primaryId: (data, isShort = false) => {
+          let result = ` [${data || '?'}]`;
+          const user = clientDialogs.find((dialog) => dialog.isUser && `${dialog.id}` === `${data}`);
+          if (typeof user === 'object' && typeof user.title === 'string') {
+            result = `${user.title}${isShort ? '' : result}`;
+          }
+          return result;
         },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onRefreshIntervalChange,
-        default: refreshIntervalDefault,
-        label: 'Refresh interval',
-        text: 'Interval to refresh data from Telegram servers in seconds',
-      },
-      resubscribeInterval: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: 30,
-          max: 180,
-          step: 10,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onResubscribeIntervalChange,
-        default: resubscribeIntervalDefault,
-        label: 'Resubscribe interval',
-        text: 'Interval to resubscribe on chats in minutes',
-      },
-      menuColumnsMaxCount: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: menuDefaults.columnsMaxCount.min,
-          max: menuDefaults.columnsMaxCount.max,
-          step: menuDefaults.columnsMaxCount.step,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onMenuColumnsMaxCountChange,
-        default: menuDefaults.columnsMaxCount.default,
-        label: 'Max columns in row',
-        text: 'Max count of columns in one row of the menu',
-      },
-      textSummaryMaxLength: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: menuDefaults.textSummaryMaxLength.min,
-          max: menuDefaults.textSummaryMaxLength.max,
-          step: menuDefaults.textSummaryMaxLength.step,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onTextSummaryMaxLengthChange,
-        default: menuDefaults.textSummaryMaxLength.default,
-        label: 'Text summary max length',
-        text: 'Approximated max length of the text in one row of the menu',
-      },
-      spaceBetweenColumns: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: menuDefaults.spaceBetweenColumns.min,
-          max: menuDefaults.spaceBetweenColumns.max,
-          step: menuDefaults.spaceBetweenColumns.step,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onSpaceBetweenColumnsChange,
-        default: menuDefaults.spaceBetweenColumns.default,
-        label: 'Space between columns',
-        text: 'Space between columns in the menu',
-      },
-      buttonsMaxCount: {
-        type: 'number',
-        subType: 'integer',
-        options: {
-          min: menuDefaults.buttonsMaxCount.min,
-          max: menuDefaults.buttonsMaxCount.max,
-          step: menuDefaults.buttonsMaxCount.step,
-        },
-        sourceType: 'input',
-        presence: 'mandatory',
-        editable: true,
-        onSetAfter: onButtonMaxCountChange,
-        default: menuDefaults.buttonsMaxCount.default,
-        label: 'Max buttons on "page"',
-        text: 'Max count of buttons on the one "page" of the menu',
-      },
-      users: {
-        type: 'array',
-        presence: 'mandatory',
-        editable: true,
-        default: [],
-        label: 'Additional users',
-        text: 'Additional users to be allowed to use the bot',
-        structure: {
-          primaryId: (data, isShort = false) => {
-            let result = ` [${data || '?'}]`;
-            const user = clientDialogs.find((dialog) => dialog.isUser && `${dialog.id}` === `${data}`);
-            if (typeof user === 'object' && typeof user.title === 'string') {
-              result = `${user.title}${isShort ? '' : result}`;
-            }
-            return result;
-          },
-          plain: true,
-          itemContent: {
-            value: {
-              type: 'number',
-              presence: 'mandatory',
-              editable: true,
-              sourceType: 'list',
-              source: () => {
-                const result = new Map(),
-                  users = clientDialogs.filter(
-                    (dialog) =>
-                      dialog.isGroup !== true && dialog.isChannel !== true && dialog.isUser === true && dialog.entity?.bot === false,
-                  );
-                users.forEach((dialog) => {
-                  result.set(Number(dialog.entity.id), dialog.title);
-                });
-                return result;
-              },
-              label: 'User Name',
-              text: 'User Name to be allowed to use the bot',
+        plain: true,
+        itemContent: {
+          value: {
+            type: 'number',
+            presence: 'mandatory',
+            editable: true,
+            sourceType: 'list',
+            source: () => {
+              const result = new Map(),
+                users = clientDialogs.filter(
+                  (dialog) =>
+                    dialog.isGroup !== true && dialog.isChannel !== true && dialog.isUser === true && dialog.entity?.bot === false,
+                );
+              users.forEach((dialog) => {
+                result.set(Number(dialog.entity.id), dialog.title);
+              });
+              return result;
             },
+            label: 'User Name',
+            text: 'User Name to be allowed to use the bot',
           },
         },
       },
     },
-  };
+  },
+};
 const storage = new LocalStorage('data/storage');
 const cache = new Cache({
   getItem: (key) => storage.getItem(key),
@@ -345,6 +347,17 @@ const lastForwarded = cache.getItem('lastForwarded') || {};
 const lastForwardedDelayed = {};
 const forwardRulesId = 'forwardRules';
 const topicsCache = {};
+
+if (typeof process.env.TELEGRAM_USER_API_ID === 'string' && process.env.TELEGRAM_USER_API_ID.length > 0) {
+  cache.setItem('apiId', parseInt(process.env.TELEGRAM_CHAT_ID));
+}
+if (typeof process.env.TELEGRAM_USER_API_HASH === 'string' && process.env.TELEGRAM_USER_API_HASH.length > 0) {
+  cache.setItem('apiHash', process.env.TELEGRAM_USER_API_HASH);
+}
+if (typeof process.env.TELEGRAM_BOT_AUTH_TOKEN === 'string' && process.env.TELEGRAM_BOT_AUTH_TOKEN.length > botAuthTokenMinimumLength) {
+  cache.setItem('botAuthToken', process.env.TELEGRAM_BOT_AUTH_TOKEN);
+}
+
 let apiId = cache.getItem('apiId', 'number');
 let apiHash = cache.getItem('apiHash');
 let botAuthToken = cache.getItem('botAuthToken');
@@ -362,12 +375,12 @@ let refreshIntervalId = null;
 let resubscribeIntervalId = null;
 let menuRoot = null;
 const fromToTypes = new Map([
-    ['user', i18n.__('User')],
-    ['bot', i18n.__('Bot')],
-    ['group', i18n.__('Group')],
-    ['channel', i18n.__('Channel')],
-    ['topic', i18n.__('Topic')],
-  ]);
+  ['user', i18n.__('User')],
+  ['bot', i18n.__('Bot')],
+  ['group', i18n.__('Group')],
+  ['channel', i18n.__('Channel')],
+  ['topic', i18n.__('Topic')],
+]);
 const topicIdPresence = (item, path) => {
     const type = path.slice(0, -1).reduce((acc, key) => (acc[key] !== undefined ? acc[key] : null), item);
     return type?.type === 'topic' ? 'mandatory' : 'none';
@@ -1127,7 +1140,7 @@ menuRoot
       menuRoot.onCommand(null, 0, 0, options.command);
     } else {
       getAPIAttributes().then(() => {
-        if (apiId !== null && apiHash !== null) {
+        if (typeof apiId === 'number' && apiId !== 0 && typeof apiHash === 'string' && apiHash !== '') {
           clientAsUser = new TelegramClient(storeSession, apiId, apiHash, {
             connectionRetries: Infinity,
             autoReconnect: true,
@@ -1232,12 +1245,17 @@ function getEntityById(id) {
 }
 
 async function getAPIAttributes() {
-  if (apiId === null || apiHash === null || botAuthToken === null) {
+  if (
+    typeof apiId !== 'number' || apiId === 0 ||
+    typeof apiHash !== 'string' || apiHash.length === 0 ||
+    typeof botAuthToken !== 'string' ||
+    botAuthToken.length < botAuthTokenMinimumLength
+  ) {
     const rl = readline.createInterface({
       input,
       output,
     });
-    if (apiId === null || apiHash === null) {
+    if (typeof apiId !== 'number' || apiId === 0 || typeof apiHash !== 'string' || apiHash === '') {
       const id = await rl.question('Enter your API ID: ');
       apiId = parseInt(id);
       cache.setItem('apiId', id);
