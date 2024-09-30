@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.5...v1.5.0) (2024-09-30)
+
+
+### Documentation
+
+* Refactor installation and run chapters ([8cd095b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8cd095bf061d356224139240b67f04077cf814f5))
+
+
+### Features
+
+* **docker:** Refactor Dockerfile to use ENTRYPOINT and remove CMD instruction ([8cd095b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8cd095bf061d356224139240b67f04077cf814f5))
+
+
+### Code Refactoring
+
+* Make possible to pass basic parameters as environment variables ([8cd095b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8cd095bf061d356224139240b67f04077cf814f5))
+
 ## [1.4.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.4...v1.4.5) (2024-09-27)
 
 
