@@ -359,8 +359,11 @@ In the list each rule is presented by its label and status (enabled or disabled)
 #### Rule Configuration
 Each rule can be configured by the following parameters:
 
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule.png)
+
 #### Label
 The label of the rule. It is used to identify the rule in the list of rules.
+
 [<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png)
 
 #### Status
@@ -398,9 +401,7 @@ The name of the source chat. In the menu it's represented by chat "Title" or "Us
 
 ##### Source topic
 This parameter is available only for the "Topic" type of the source chat. It is used to set the topic of the source chat. The topic is used to filter the messages in the source chat. It can be selected from the list of available topics in the source chat.
-
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-topic.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-topic.png)
-
+Please see the [Destination Topic](#destination-topic) section for the example image.
 
 #### Destination Chat Section
 The section to configure the destination chat of the rule. The destination chat is the chat where the bot will forward the messages from the source chat.
