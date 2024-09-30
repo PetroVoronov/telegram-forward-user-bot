@@ -583,7 +583,7 @@ const topicIdPresence = (item, path) => {
         default: 0,
         onSetReset: ['enabled'],
         label: 'Anti fast edit delay',
-        text: 'Delay to prevent multiple forwards of the same message due to fast edits on source side',
+        text: 'Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds',
       },
       processMissedMaxCount: {
         type: 'number',

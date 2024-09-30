@@ -82,5 +82,7 @@
 	"Wrong input": "Wrong input",
 	"Cancel": "Cancel",
 	"template": "template",
-	"Current \"%s\" value: %s.\nPlease enter new value: %s": "Current \"%s\" value: %s.\nPlease enter new value: %s"
+	"Current \"%s\" value: %s.\nPlease enter new value: %s": "%s = %s.\nPlease enter new value: %s",
+	"Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds": "Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds",
+	"integer": "integer"
 }
