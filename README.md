@@ -425,19 +425,24 @@ This parameter is available only for the "Topic" type of the destination chat. I
 
 The bot can filter messages by keywords. A keyword can be a part of a word, a whole word, or a phrase (and it can contain parts of words).
 
-Keywords are grouped into "Keywords groups". There are no limitations on the number of "Keywords groups" or the number of keywords in each "Keywords group".
+Keywords are grouped into "Keywords groups". There are no limitations on the number of "Keywords groups".
 
 [<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-groups.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-groups.png)
-
-Each keyword has an "Include" attribute, which is a flag indicating whether the keyword should be present in the message.
-
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png)
 
 Each "Keywords group" has an "Include All" attribute. If set to `true`, the bot will check for the presence of all keywords with the "Include" attribute set to `true` in the message. If set to `false`, the bot will check for the presence of at least one keyword with the "Include" attribute set to `true`.
 
 [<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group.png)
 
-The "Include All" attribute does not affect keywords with the "Include" attribute set to `false`. This means that no keyword with the "Include" attribute set to `false` should be present in the message.
+Each "Keywords group" has a list of keywords. There are no limitations on the number of keywords in a "Keywords group".
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keywords.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keywords.png)
+
+Each keyword has an "Include" attribute, which is a flag indicating whether the keyword should be present in the message.
+
+[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png)
+
+
+The "Include All" attribute does not affect keywords with the "Include" attribute set to `false`. This means that no any keyword with the "Include" attribute set to `false` should be present in the message.
 
 ## License
 

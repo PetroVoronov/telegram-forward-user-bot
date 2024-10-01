@@ -40,13 +40,6 @@
 	"Destination chat": "Destination chat",
 	"Destination chat/group/channel name": "Destination chat/group/channel name",
 	"Destination topic": "Destination topic",
-	"Destination topic name": "Destination topic name",
-	"Keywords to include": "Keywords to include",
-	"Keywords to be included in the message, at least one is mandatory": "Keywords to be included in the message, at least one is mandatory",
-	"Keywords to exclude": "Keywords to exclude",
-	"Keywords to be not included in the message": "Keywords to be not included in the message",
-	"Keyword to include": "Keyword to include",
-	"Keyword to be included in the message, at least one is mandatory": "Keyword to be included in the message, at least one is mandatory",
 	"Exit": "Exit",
 	"Home": "Home",
 	"Back": "Back",
@@ -62,7 +55,6 @@
 	"Keywords group identification label": "Keywords group identification label",
 	"Included all": "Included all",
 	"Included keywords must be present all or some": "Included keywords must be present all or some",
-	"Keywords groups array": "Keywords groups array",
 	"Keyword item": "Keyword item",
 	"Keyword item, i.e. text string to be included or excluded": "Keyword item, i.e. text string to be included or excluded",
 	"Included": "Included",
@@ -84,5 +76,7 @@
 	"template": "template",
 	"Current \"%s\" value: %s.\nPlease enter new value: %s": "%s = %s.\nPlease enter new value: %s",
 	"Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds": "Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds",
-	"integer": "integer"
+	"integer": "integer",
+	"Keywords": "Keywords",
+	"Keywords in the group": "Keywords in the group"
 }

@@ -712,8 +712,8 @@ const topicIdPresence = (item, path) => {
               presence: 'mandatory',
               editable: true,
               default: [],
-              label: 'Keywords groups',
-              text: 'Keywords groups array',
+              label: 'Keywords',
+              text: 'Keywords in the group',
               onSetReset: ['enabled'],
               structure: {
                 primaryId: (data, isShort = false) => `(${data.include ? '+' : '-'}) ${data.keyword}`,
