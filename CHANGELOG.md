@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.5.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.0...v1.5.1) (2024-10-01)
+
+
+### Continuous Integration
+
+* update package-lock.json ([47f11f6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/47f11f67bfdb87325004019e943c4db8a3125b2b))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.2 to 2.0.3 ([7bc450f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7bc450f26fd4a92c8d5569db32757fe044d14897))
+* Update localization and dependencies. ([524116b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/524116bef9ead834d8e5778ec18f90c1443711ca))
+
+
+### Documentation
+
+* Add a forwarding rules configuration to the bot menu, excluding filtering options, i.e. `Keywords group`, and without images. ([5ad1635](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5ad163559932c79439f0e8fcf09fcc7f350ab42f))
+* Finalize readme ([16f4306](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/16f4306b8955cad4a3f4808ac7e0627530101a14))
+* Update images for forwarding rules configuration in README.md ([c9c5677](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c9c567707e18f161bbe02f4597ae2cdf6ccf10ba))
+* Update README.md with information about filtering by keywords groups ([aa86156](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/aa861561d9b22600cf4194276dcdb7a1ad948b8b))
+
+
+### Code Refactoring
+
+* Some adjustments for keywords related texts ([16f4306](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/16f4306b8955cad4a3f4808ac7e0627530101a14))
+
 ## [1.5.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.5...v1.5.0) (2024-09-30)
 
 
