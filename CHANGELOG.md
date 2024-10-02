@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.0...v1.6.1) (2024-10-02)
+
+
+### Code Refactoring
+
+* Made users in configuration be refreshed manually ([a07bee4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a07bee4e3ac7d8654519653c59bba76f2f3d96c7))
+* Update telegram-menu-from-structure to version 1.3.1 to fix the buttons splitting on rows for the menu ([a07bee4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a07bee4e3ac7d8654519653c59bba76f2f3d96c7))
+
 ## [1.6.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.1...v1.6.0) (2024-10-02)
 
 
