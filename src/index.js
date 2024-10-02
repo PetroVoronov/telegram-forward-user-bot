@@ -385,11 +385,14 @@ const topicIdPresence = (item, path) => {
     const type = path.slice(0, -1).reduce((acc, key) => (acc[key] !== undefined ? acc[key] : null), item);
     return type?.type === 'topic' ? 'mandatory' : 'none';
   },
-  getDialogId = (data, key) => {
+  getDialogId = async (data, key, force) => {
     const item = data[key],
       result = new Map();
     if (item !== undefined) {
       const type = item.type;
+      if (force === true) {
+        await refreshDialogs();
+      }
       if (fromToTypes.has(type)) {
         let dialogs = [];
         switch (type) {
@@ -621,7 +624,8 @@ const topicIdPresence = (item, path) => {
             presence: 'mandatory',
             editable: true,
             sourceType: 'list',
-            source: (data) => getDialogId(data, 'from'),
+            sourceAsync: async (data, force) => await getDialogId(data, 'from', force),
+            extraRefresh: true,
             onSetReset: ['enabled', '.topicId'],
             label: 'Source chat',
             text: 'Source name',
@@ -660,7 +664,8 @@ const topicIdPresence = (item, path) => {
             presence: 'mandatory',
             editable: true,
             sourceType: 'list',
-            source: (data) => getDialogId(data, 'to'),
+            sourceAsync: async (data, force) => await getDialogId(data, 'to', force),
+            extraRefresh: true,
             onSetReset: ['enabled', '.topicId'],
             label: 'Destination chat',
             text: 'Destination chat/group/channel name',
@@ -754,10 +759,10 @@ const menuRootStructure = {
     getValue: (key, type) => cache.getItem(key, type),
     setValue: (key, value) => cache.setItem(key, value),
     removeValue: (key) => cache.removeItem(key),
-    menuColumnsMaxCount: configuration.menuColumnsMaxCount,
-    textSummaryMaxLength: configuration.textSummaryMaxLength,
-    spaceBetweenColumns: configuration.spaceBetweenColumns,
-    buttonsMaxCount: configuration.buttonsMaxCount,
+    columnsMaxCount: {default: configuration.menuColumnsMaxCount},
+    textSummaryMaxLength: {default: configuration.textSummaryMaxLength},
+    spaceBetweenColumns: {default: configuration.spaceBetweenColumns},
+    buttonsMaxCount: {default: configuration.buttonsMaxCount},
   },
   structure: {
     [configurationId]: {

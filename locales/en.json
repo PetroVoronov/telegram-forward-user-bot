@@ -78,5 +78,7 @@
 	"Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds": "Delay to prevent multiple forwards of the same message due to fast edits on source side, in seconds",
 	"integer": "integer",
 	"Keywords": "Keywords",
-	"Keywords in the group": "Keywords in the group"
+	"Keywords in the group": "Keywords in the group",
+	"Destination topic name": "Destination topic name",
+	"Refresh": "Refresh"
 }
