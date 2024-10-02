@@ -33,6 +33,6 @@
     "@babel/eslint-parser": "^7.25.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^2.0.3",
-    "globals": "^15.8.0"
+    "globals": "^15.10.0"
   }
 }
