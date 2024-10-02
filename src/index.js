@@ -1013,34 +1013,39 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
   }
 }
 
-function onCommand(event) {
+
+function parseEvent(event) {
+  let result = null;
   if (event instanceof CallbackQueryEvent) {
     const {userId, peer, msgId: messageId, data} = event.query;
-    log.debug(`onCommand | CallBack | userId: ${userId}, messageId: ${messageId}, data: ${data}`, logAsBot);
-    if (
-      data !== undefined &&
-      ((userId !== undefined && allowedUsers.includes(Number(userId))) ||
-        (peer.userId !== undefined && allowedUsers.includes(Number(peer.userId))))
-    ) {
-      const command = data.toString();
-      log.debug(`onCommand | command: ${command}`, logAsBot);
-      if (command.startsWith(menuDefaults.cmdPrefix)) {
-        menuRoot.onCommand(peer, peer.userId, messageId, command, true);
-      }
+    log.debug(`parseEvent | CallBack | userId: ${userId}, messageId: ${messageId}, data: ${data}`, logAsBot);
+    if (data !== undefined) {
+      result = {userId, peer, messageId, command: data.toString(), isEvent: true};
     }
   } else if (event instanceof NewMessageEvent) {
-    const {peerId, id: messageId, message: command} = event.message;
-    log.debug(
-      `onCommand | userId: ${peerId.userId}, isBot: ${event._client?._bot}, messageId: ${messageId}, command: ${command}`,
-      logAsBot,
-    );
-    if (command !== undefined && peerId.userId !== undefined && allowedUsers.includes(Number(peerId.userId))) {
-      menuRoot.onCommand(peerId, peerId.userId, messageId, command, false);
+    const {peerId: peer, id: messageId, message: command} = event.message;
+    log.debug(`parseEvent | userId: ${peer.userId}, messageId: ${messageId}, command: ${command}`, logAsBot);
+    if (command !== undefined && peer.userId !== undefined) {
+      result = {userId: peer.userId, peer, messageId, command, isEvent: false};
+    }
+  }
+  return result;
+}
+
+
+function onCommand(event) {
+  const parsedEvent = parseEvent(event);
+  if (parsedEvent !== null) {
+    const {userId, messageId, command, isEvent} = parsedEvent;
+    log.debug(`onCommand | userId: ${userId}, messageId: ${messageId}, command: ${command}, isEvent: ${isEvent}`, logAsBot);
+    if (userId !== undefined && allowedUsers.includes(Number(userId))) {
+      menuRoot.onCommand(event, userId, messageId, command, isEvent);
     }
   } else {
     log.warn(`onCommand | Unknown event: ${event.constructor.name}!`, logAsBot);
   }
 }
+
 
 function startBotClient() {
   if (options.noBot !== true && botAuthToken !== null) {
@@ -1115,23 +1120,38 @@ menuRoot = new MenuItemRoot(menuRootStructure);
 menuRoot
   .init({
     makeButton: (label, command) => Button.inline(label || '?', Buffer.from(command)),
-    sendMessageAsync: async (peer, messageText, messageButtons) => {
+    sendMessageAsync: async (event, messageText, messageButtons) => {
       if (clientAsBot !== null && clientAsBot.connected === true) {
         const messageObject = {message: messageText, buttons: messageButtons};
-        return await clientAsBot.sendMessage(peer, messageObject);
+        const {peer} = parseEvent(event) || {};
+        if (peer !== undefined) {
+          return await clientAsBot.sendMessage(peer, messageObject);
+        }
       }
       return null;
     },
-    editMessageAsync: async (peer, messageId, messageText, messageButtons) => {
+    editMessageAsync: async (event, messageId, messageText, messageButtons) => {
       if (clientAsBot !== null && clientAsBot.connected === true) {
         const messageObject = {message: messageId, text: messageText, buttons: messageButtons};
-        return await clientAsBot.editMessage(peer, messageObject);
+        const {peer} = parseEvent(event) || {};
+        if (peer !== undefined) {
+          return await clientAsBot.editMessage(peer, messageObject);
+        }
       }
       return null;
     },
-    deleteMessageAsync: async (peer, messageId) => {
+    deleteMessageAsync: async (event, messageId) => {
       if (clientAsBot !== null && clientAsBot.connected === true) {
-        return await clientAsBot.deleteMessages(peer, [messageId], {revoke: true});
+        const {peer} = parseEvent(event) || {};
+        if (peer !== undefined) {
+          return await clientAsBot.deleteMessages(peer, [messageId], {revoke: true});
+        }
+      }
+      return null;
+    },
+    confirmCallBackQueryAsync: async (event) => {
+      if (clientAsBot !== null && clientAsBot.connected === true && typeof event?.query?.queryId !== undefined) {
+        return await event.answer();
       }
       return null;
     },
