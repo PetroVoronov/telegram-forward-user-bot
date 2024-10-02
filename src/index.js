@@ -290,7 +290,10 @@ const configurationStructure = {
             presence: 'mandatory',
             editable: true,
             sourceType: 'list',
-            source: () => {
+            sourceAsync: async (data, force) => {
+              if (force === true) {
+                await refreshDialogs();
+              }
               const result = new Map(),
                 users = clientDialogs.filter(
                   (dialog) =>
@@ -301,6 +304,7 @@ const configurationStructure = {
               });
               return result;
             },
+            extraRefresh: true,
             label: 'User Name',
             text: 'User Name to be allowed to use the bot',
           },
