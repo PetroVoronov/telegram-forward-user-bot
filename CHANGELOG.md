@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.6.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.1...v1.6.0) (2024-10-02)
+
+
+### Features
+
+* Make possible to refresh lists of `source` and `destination` chats manually, during the configuration of `forwardRules`. ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
+
+
+### Code Refactoring
+
+* Implement confirmation of user actions in Menu by `confirmCallBackQueryAsync` introduced in `telegram-menu-from-structure` version 1.3.0. ([ead8d3f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ead8d3f812692d44e9eba22fc9593dee197478dd))
+* Modify getDialogId function in index.js to include an optional force parameter for refreshing dialogs ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
+* **package.json:** Update `telegram-menu-from-structure` to minimal version 1.2.0 to use `extraRefresh` feature. ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
+* Update menuRootStructure in index.js to use the new configuration property names ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
+
+
+### Continuous Integration
+
+* Update release-please-config.json. Change order of Changelog sections. ([535821f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/535821f317681e3b7d5182ca802c1c9e6f2ad04f))
+
 ## [1.5.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.0...v1.5.1) (2024-10-01)
 
 
