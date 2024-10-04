@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.6.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.1...v1.6.2) (2024-10-04)
+
+
+### Bug Fixes
+
+* Fix doubling the Menu messages due to not updated `SendMessageAsync`, which still returned the whole message instead on message id. ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
+
+
+### Code Refactoring
+
+* Align functions in structure to the changes in `telegram-menu-from-structure@1.3.2` ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
+
+
+### Build System
+
+* **deps-dev:** Bump @babel/core, and @babel/eslint-parser to version 7.25.7 ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
+* **deps:** Bump version of `telegram-menu-from-structure` to 1.3.2. ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
+
 ## [1.6.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.0...v1.6.1) (2024-10-02)
 
 
