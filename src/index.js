@@ -108,41 +108,41 @@ if (options.command !== undefined) log.info(`Command to test: ${options.command}
 const getLanguages = () => {
   return new Map(i18n.getLocales().map((locale) => [locale, locale]));
 };
-const onLanguageChange = (data) => {
-  i18n.setLocale(data.language);
+const onLanguageChange = (data, key, _path) => {
+  i18n.setLocale(data[key]);
   return true;
 };
-const onRefreshIntervalChange = (data) => {
+const onRefreshIntervalChange = (data, key, _path) => {
   if (refreshIntervalSetOnStart === false) {
-    refreshInterval = (data?.refreshInterval || 300) * 1000;
+    refreshInterval = (data?.[key] || 300) * 1000;
     refreshDialogsInit();
   }
 };
-const onResubscribeIntervalChange = (data) => {
-  const newResubscribeInterval = (data?.resubscribeInterval || 60) * 60 * 1000;
+const onResubscribeIntervalChange = (data, key, _path) => {
+  const newResubscribeInterval = (data?.[key] || 60) * 60 * 1000;
   if (newResubscribeInterval !== resubscribeInterval) {
     resubscribeInterval = newResubscribeInterval;
     resubscribeInit();
   }
 };
-const onMenuColumnsMaxCountChange = (data) => {
+const onMenuColumnsMaxCountChange = (data, key, _path) => {
   if (menuRoot !== null && menuRoot !== undefined) {
-    menuRoot.menuColumnsMaxCount = data?.menuColumnsMaxCount || 0;
+    menuRoot.menuColumnsMaxCount = data?.[key] || 0;
   }
 };
-const onTextSummaryMaxLengthChange = (data) => {
+const onTextSummaryMaxLengthChange = (data, key, _path) => {
   if (menuRoot !== null && menuRoot !== undefined) {
-    menuRoot.textSummaryMaxLength = data?.textSummaryMaxLength || 0;
+    menuRoot.textSummaryMaxLength = data?.[key] || 0;
   }
 };
-const onSpaceBetweenColumnsChange = (data) => {
+const onSpaceBetweenColumnsChange = (data, key, _path) => {
   if (menuRoot !== null && menuRoot !== undefined) {
-    menuRoot.spaceBetweenColumns = data?.spaceBetweenColumns || 1;
+    menuRoot.spaceBetweenColumns = data?.[key] || 1;
   }
 };
-const onButtonMaxCountChange = (data) => {
+const onButtonMaxCountChange = (data, key, _path) => {
   if (menuRoot !== null && menuRoot !== undefined) {
-    menuRoot.buttonsMaxCount = data?.buttonsMaxCount || 10;
+    menuRoot.buttonsMaxCount = data?.[key] || 10;
   }
 };
 /**
@@ -484,21 +484,21 @@ const topicIdPresence = (item, path) => {
     }
     return result;
   },
-  onEnabledChange = (_currentItem, _key, data, _path) => {
+  onEnabledChange = (data, _key, value, _path) => {
     let result = true;
-    if (data.enabled === false) {
+    if (value === true) {
       result = data.processMissedMaxCount !== undefined && data.processMissedMaxCount !== null;
       if (result === true) {
-        for (const key of ['from', 'to']) {
-          const dialog = getDialogById(data[key].id);
+        for (const item of ['from', 'to']) {
+          const dialog = getDialogById(data[item].id);
           if (dialog !== null && dialog !== undefined) {
-            switch (data[key].type) {
+            switch (data[item].type) {
               case 'user': {
                 result =
                   dialog.isGroup !== true &&
                   dialog.isChannel !== true &&
                   dialog.isUser === true &&
-                  typeof data[key].topicId !== 'number' &&
+                  typeof data[item].topicId !== 'number' &&
                   dialog.entity?.bot === false;
                 break;
               }
@@ -507,22 +507,22 @@ const topicIdPresence = (item, path) => {
                   dialog.isGroup !== true &&
                   dialog.isChannel !== true &&
                   dialog.isUser === true &&
-                  typeof data[key].topicId !== 'number' &&
+                  typeof data[item].topicId !== 'number' &&
                   dialog.entity?.bot === true;
                 break;
               }
               case 'group': {
                 result =
-                  dialog.isGroup === true && dialog.isChannel !== true && dialog.isUser !== true && typeof data[key].topicId !== 'number';
+                  dialog.isGroup === true && dialog.isChannel !== true && dialog.isUser !== true && typeof data[item].topicId !== 'number';
                 break;
               }
               case 'channel': {
                 result =
-                  dialog.isGroup !== true && dialog.isChannel === true && dialog.isUser !== true && typeof data[key].topicId !== 'number';
+                  dialog.isGroup !== true && dialog.isChannel === true && dialog.isUser !== true && typeof data[item].topicId !== 'number';
                 break;
               }
               case 'topic': {
-                result = dialog.entity.forum === true && typeof data[key].topicId === 'number';
+                result = dialog.entity.forum === true && typeof data[item].topicId === 'number';
                 break;
               }
             }
@@ -1129,10 +1129,11 @@ menuRoot
         const messageObject = {message: messageText, buttons: messageButtons};
         const {peer} = parseEvent(event) || {};
         if (peer !== undefined) {
-          return await clientAsBot.sendMessage(peer, messageObject);
+          const message = await clientAsBot.sendMessage(peer, messageObject);
+          return message?.id || 0;
         }
       }
-      return null;
+      return 0;
     },
     editMessageAsync: async (event, messageId, messageText, messageButtons) => {
       if (clientAsBot !== null && clientAsBot.connected === true) {
