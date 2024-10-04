@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.2...v1.6.3) (2024-10-04)
+
+
+### Documentation
+
+* Fix CHANGELOG.md ([0344b9c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/0344b9c3b5cc047ae493ea14f6afec18f38b1d15))
+
 ## [1.6.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.1...v1.6.2) (2024-10-04)
 
 
