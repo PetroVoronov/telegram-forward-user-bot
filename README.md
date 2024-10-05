@@ -285,19 +285,19 @@ The Telegram Forward User Bot can be configured directly through its interactive
 
 3. Use the `/start` command to show the menu.
 
-[<img src="docs/images/bot-menu-initial.png" width="400"/>](docs/images/bot-menu-initial.png)
+![Initial bot menu](docs/images/bot-menu-initial.png)
 
 ### Configuration Options
 
 The bot menu provides several configuration options to customize the behavior of the bot.
 
-[<img src="docs/images/bot-menu-configuration.png" width="400"/>](docs/images/bot-menu-configuration.png)
+![Bot menu configuration options](docs/images/bot-menu-configuration.png)
 
 Below are the available options:
 
 #### Menu Language
 
-[<img src="docs/images/bot-menu-configuration-language.png" width="400"/>](docs/images/bot-menu-configuration-language.png)
+![Menu language configuration](docs/images/config-language.png)
 
 Used to set the language of the menu. Currently, only four languages are supported: English, German, Ukrainian, and Russian.
 
@@ -305,35 +305,35 @@ Used to set the language of the menu. Currently, only four languages are support
 
 Used to set the interval to refresh data from Telegram servers, in seconds. In some cases the "standard" subscription on changes in sources chats is not working properly, so this interval is used to refresh the not only a list of available chats, but also the messages in the sources chats.
 
-[<img src="docs/images/bot-menu-configuration-refresh-interval.png" width="400"/>](docs/images/bot-menu-configuration-refresh-interval.png)
+![Configuration for refresh interval](docs/images/config-refresh-interval.png)
 
 #### Resubscribe Interval
 
 Used to set the interval to resubscribe on changes in sources chats, in minutes. The bot will try to resubscribe on changes in sources chats after this interval. Implemented to prevent the bot from losing the subscription on changes in sources chats.
 
-[<img src="docs/images/bot-menu-configuration-resubscribe-interval.png" width="400"/>](docs/images/bot-menu-configuration-resubscribe-interval.png)
+![Configuration for resubscribe interval](docs/images/config-resubscribe-interval.png)
 
 #### Max Columns in Row
 
-Used to set the maximum count of columns in one row of the menu. Zero means that the bot will try to calculate the optimal count of columns in each rows individually based on the value of next parameter - [Text Summary Max Length](#text-summary-max-length).
+Used to set the maximum count of columns in one row of the menu. Zero means that the bot will try to calculate the optimal count of columns in each row individually based on the value of the next parameter - [Text Summary Max Length](#text-summary-max-length).
 
-[<img src="docs/images/bot-menu-configuration-max-columns.png" width="400"/>](docs/images/bot-menu-configuration-max-columns.png)
+![Configuration for max columns in a row](docs/images/config-max-columns.png)
 
 #### Text Summary Max Length
 
 Used to set the approximated max length of the text in one row of the menu. The bot will try to calculate the optimal count of columns based on this value and the value of the previous parameter - [Max Columns in Row](#max-columns-in-row).
 
-[<img src="docs/images/bot-menu-configuration-max-length.png" width="400"/>](docs/images/bot-menu-configuration-max-length.png)
+![Configuration for text summary max length](docs/images/config-max-length.png)
 
 #### Space Between Columns
 
 Used to set the space between columns in the menu. The value is in characters.
 
-[<img src="docs/images/bot-menu-configuration-space-between-columns.png" width="400"/>](docs/images/bot-menu-configuration-space-between-columns.png)
+![Configuration for space between columns](docs/images/config-space-between-columns.png)
 
 #### Max Buttons on "Page"
 
-[<img src="docs/images/bot-menu-configuration-max-buttons-on-page.png" width="400"/>](docs/images/bot-menu-configuration-max-buttons-on-page.png)
+![Configuration for max buttons on a page](docs/images/config-max-buttons-on-page.png)
 
 Used to set the maximum count of buttons on one "page" or "screen" of the menu. If not all buttons fit on one "page", the bot will split them into multiple "pages", and the user will be able to navigate between them.
 
@@ -341,11 +341,11 @@ Used to set the maximum count of buttons on one "page" or "screen" of the menu. 
 
 Used to add additional users to the bot. The primary user is the one who can access the bot menu and configure the bot. Additional users can be added to have an access to the bot menu and configure the bot as well.
 
-[<img src="docs/images/bot-menu-configuration-additional-users.png" width="400"/>](docs/images/bot-menu-configuration-additional-users.png)
+![Configuration for additional users](docs/images/config-additional-users.png)
 
 To add a new user, use the "Add" button.
 
-[<img src="docs/images/bot-menu-configuration-additional-users-add-new.png" width="400"/>](docs/images/bot-menu-configuration-additional-users-add-new.png)
+![Adding a new user](docs/images/config-additional-users-add-new.png)
 
 Then simple select appropriate one from the list of available users. The list of available users is limited to the users known by the primary user.
 
@@ -356,17 +356,17 @@ Each item is a separate rule. The rule can be enabled or disabled. The rule can 
 
 In the list each rule is presented by its label and status (enabled or disabled). The label is settable during configuration. The status is presented by the emoji: "✅" for enabled and "❌" for disabled.
 
-[<img src="docs/images/bot-menu-forwarding-rules.png" width="400"/>](docs/images/bot-menu-forwarding-rules.png)
+![Forwarding Rules Menu](docs/images/bot-menu-forwarding-rules.png)
 
 #### Rule Configuration
 Each rule can be configured by the following parameters:
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule.png)
+![Forwarding Rule Configuration](docs/images/fw-rules-forwarding-rule.png)
 
 #### Label
 The label of the rule. It is used to identify the rule in the list of rules.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-label.png)
+![Rule Label Configuration](docs/images/fw-rules-fw-rule-label.png)
 
 #### Status
 **Status** - the status of the rule. The rule can be enabled or disabled. The rule will be applied only if it is enabled.
@@ -380,26 +380,26 @@ The flag to process the edits of the forwarded message. If the flag is set, the 
 #### Anti fast edit delay
 The delay in seconds to prevent the fast edits of the forwarded message. If the delay is set, the bot will wait for the delay before forwarding the  matched message to prevent a flood of messages in the destination chat.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-anti-fast-edit-delay.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-anti-fast-edit-delay.png)
+![Anti fast edit delay configuration](docs/images/fw-rules-fw-rule-anti-fast-edit-delay.png)
 
 #### Process missed messages
-The count of missed messages to process. If the count is set, the bot will try to forward the missed matched messages in source chat to the destination chat. Value "0" means that the bot will not try to forward the missed messages. Value is limited to 100. Value is equal to history depth to look for missed messages.
+The count of missed messages to process. If the count is set, the bot will try to forward the missed matched messages in the source chat to the destination chat. Value "0" means that the bot will not try to forward the missed messages. Value is limited to 100. Value is equal to the history depth to look for missed messages.
 Missed messages are the messages that were sent to the source chat while the bot was offline or the bot was not able to process them for some reason despite being subscribed to the source chat.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-process-missed-messages.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-process-missed-messages.png)
+![Process missed messages configuration](docs/images/fw-rules-fw-rule-process-missed-messages.png)
 
 #### Source Chat Section
 The section to configure the source chat of the rule. The source chat is the chat where the bot will look for messages to forward.
 
 ##### Source chat type
-The type of the source chat. The source chat can be a "User", "Bot", "Group", "Channel", or "Topic" of super group or forum.
+The type of the source chat. The source chat can be a "User", "Bot", "Group", "Channel", or "Topic" of a super group or forum.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-type.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-type.png)
+![Source chat type configuration](docs/images/fw-rules-fw-rule-source-chat-type.png)
 
 ##### Source name
 The name of the source chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the source chat.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-id.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-source-chat-id.png)
+![Source chat ID configuration](docs/images/fw-rules-fw-rule-source-chat-id.png)
 
 ##### Source topic
 This parameter is available only for the "Topic" type of the source chat. It is used to set the topic of the source chat. The topic is used to filter the messages in the source chat. It can be selected from the list of available topics in the source chat.
@@ -411,17 +411,17 @@ The section to configure the destination chat of the rule. The destination chat 
 ##### Destination chat type
 The type of the destination chat. The destination chat can be a "User", "Bot", "Group", "Channel", or "Topic" of super group or forum.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-type.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-type.png)
+![Destination chat type configuration](docs/images/fw-rules-fw-rule-destination-chat-type.png)
 
 ##### Destination name
 The name of the destination chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the destination chat.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-id.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-id.png)
+![Destination chat ID configuration](docs/images/fw-rules-fw-rule-destination-chat-id.png)
 
 ##### Destination topic
 This parameter is available only for the "Topic" type of the destination chat. It is used to set the topic of the destination chat. The topic is used to filter the messages in the destination chat. It can be selected from the list of available topics in the destination chat.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-topic.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-destination-chat-topic.png)
+![Destination chat topic configuration](docs/images/fw-rules-fw-rule-destination-chat-topic.png)
 
 #### Filtering - Keywords groups
 
@@ -429,19 +429,19 @@ The bot can filter messages by keywords. A keyword can be a part of a word, a wh
 
 Keywords are grouped into "Keywords groups". There are no limitations on the number of "Keywords groups".
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-groups.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-groups.png)
+![Keywords groups configuration](docs/images/fw-rules-fw-rule-keywords-groups.png)
 
 Each "Keywords group" has an "Include All" attribute. If set to `true`, the bot will check for the presence of all keywords with the "Include" attribute set to `true` in the message. If set to `false`, the bot will check for the presence of at least one keyword with the "Include" attribute set to `true`.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group.png)
+![Keywords group configuration](docs/images/fw-rules-fw-rule-kws-groups-keyword-group.png)
 
 Each "Keywords group" has a list of keywords. There are no limitations on the number of keywords in a "Keywords group".
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keywords.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keywords.png)
+![Keywords list in a group](docs/images/fw-rules-fw-rule-kws-groups-kws-group-keywords.png)
 
 Each keyword has an "Include" attribute, which is a flag indicating whether the keyword should be present in the message.
 
-[<img src="docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png" width="400"/>](docs/images/bot-menu-forwarding-rules-forwarding-rule-keywords-group-keyword-group-keyword.png)
+![Keyword configuration](docs/images/fw-rules-fw-rule-kws-groups-kws-group-keyword.png)
 
 
 The "Include All" attribute does not affect keywords with the "Include" attribute set to `false`. This means that no any keyword with the "Include" attribute set to `false` should be present in the message.
