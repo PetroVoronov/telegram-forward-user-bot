@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.4...v1.6.5) (2024-10-05)
+
+
+### Documentation
+
+* Resize and rename images, with changing the style of usage, to decrease README.md file size ([c0a2777](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c0a27777bd55bcd7ddf5e84506b9695dc1668069))
+
 ## [1.6.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.3...v1.6.4) (2024-10-05)
 
 
