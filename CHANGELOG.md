@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.6](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.5...v1.6.6) (2024-10-06)
+
+
+### Continuous Integration
+
+* **release-please:** run CHANGELOG.md through markdownlint-cli2 on PR's ([1a1cd06](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1a1cd06d88808635d3fe0292ead42d8d89aaceaa))
+* **release-please:** update release workflow to use EndBug/add-and-commit for CHANGELOG.md ([9e4e2b1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9e4e2b1a2e47a2d5f4c403f24ca2f937534fe766))
+
+
+### Miscellaneous Chores
+
+* **dev:** Add markdownlint-cli2 to improve format of documentation (README, CHANGELOG) ([1a1cd06](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1a1cd06d88808635d3fe0292ead42d8d89aaceaa))
+
 ## [1.6.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.4...v1.6.5) (2024-10-05)
 
 ### Documentation
