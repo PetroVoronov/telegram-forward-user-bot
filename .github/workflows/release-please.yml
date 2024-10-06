@@ -31,6 +31,7 @@ jobs:
         if: ${{ steps.release.outputs.pr }}
         with:
           ref: ${{ fromJson(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 
       -
         uses: actions/setup-node@v4
