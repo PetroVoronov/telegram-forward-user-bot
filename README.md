@@ -33,7 +33,7 @@ The bot can be used to configure:
     - [Docker image installation](#docker-image-installation)
     - [Node.js installation from the source code](#nodejs-installation-from-the-source-code)
   - [Basic configuration parameters](#basic-configuration-parameters)
-    - [Environment variables in case of working as telegram user (default):](#environment-variables-in-case-of-working-as-telegram-user-default)
+    - [Environment variables in case of working as telegram user (default)](#environment-variables-in-case-of-working-as-telegram-user-default)
   - [Command Line Options](#command-line-options)
   - [Running](#running)
     - [Running in Docker](#running-in-docker)
@@ -126,7 +126,7 @@ Basic configuration parameters - i.e. Telegram API credentials and Bot authentic
 
 After the first run, the configuration will be stored in the configuration in the application data directory: `data/`.
 
-### Environment variables in case of working as telegram user (default):
+### Environment variables in case of working as telegram user (default)
 
 ```sh
 export TELEGRAM_USER_API_ID=your_telegram_api_id
@@ -180,10 +180,13 @@ Due to the limitations of the Docker environment, the application will not be ab
 So, the first run should be like one of the following:
 
 - to set all basic configuration parameters interactively:
+
   ```sh
   docker run -it --rm -v $(pwd)/data:/app/data --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot
   ```
+
 - to set all basic configuration parameters via environment variables:
+
   ```sh
   docker run -it --rm -v $(pwd)/data:/app/data \
   -e TELEGRAM_USER_API_ID=your_telegram_api_id \
@@ -191,7 +194,9 @@ So, the first run should be like one of the following:
   -e TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token \
   --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot
   ```
+
 - If you want to pass additional command-line options, you can add them to the end of the command. For example, to set the refresh interval to 300 seconds and the resubscribe interval to 60 minutes:
+
   ```sh
   docker run -it --rm -v $(pwd)/data:/app/data \
   -e TELEGRAM_USER_API_ID=your_telegram_api_id \
@@ -350,6 +355,7 @@ To add a new user, use the "Add" button.
 Then simple select appropriate one from the list of available users. The list of available users is limited to the users known by the primary user.
 
 ### Forwarding Rules
+
 There are a primary part of the Bot menu - "Forwarding Rules". It is used to configure the rules for forwarding messages between chats/groups/channels. The rules presented as a list (array) of submenu items.
 
 Each item is a separate rule. The rule can be enabled or disabled. The rule can be configured to forward messages from the source chat to the destination chat. The rule can be configured to filter messages by keywords or phrases.
@@ -359,66 +365,81 @@ In the list each rule is presented by its label and status (enabled or disabled)
 ![Forwarding Rules Menu](docs/images/bot-menu-forwarding-rules.png)
 
 #### Rule Configuration
+
 Each rule can be configured by the following parameters:
 
 ![Forwarding Rule Configuration](docs/images/fw-rules-forwarding-rule.png)
 
 #### Label
+
 The label of the rule. It is used to identify the rule in the list of rules.
 
 ![Rule Label Configuration](docs/images/fw-rules-fw-rule-label.png)
 
 #### Status
+
 **Status** - the status of the rule. The rule can be enabled or disabled. The rule will be applied only if it is enabled.
 
 #### Process replay on forwarded message
+
 The flag to process the replay on the forwarded message. If the flag is set, the bot will try to forward the replay on the forwarded message in source chat to the destination chat.
 
 #### Process edits of forwarded message
+
 The flag to process the edits of the forwarded message. If the flag is set, the bot will try to forward the edits of the forwarded message in source chat to the destination chat.
 
 #### Anti fast edit delay
+
 The delay in seconds to prevent the fast edits of the forwarded message. If the delay is set, the bot will wait for the delay before forwarding the  matched message to prevent a flood of messages in the destination chat.
 
 ![Anti fast edit delay configuration](docs/images/fw-rules-fw-rule-anti-fast-edit-delay.png)
 
 #### Process missed messages
+
 The count of missed messages to process. If the count is set, the bot will try to forward the missed matched messages in the source chat to the destination chat. Value "0" means that the bot will not try to forward the missed messages. Value is limited to 100. Value is equal to the history depth to look for missed messages.
 Missed messages are the messages that were sent to the source chat while the bot was offline or the bot was not able to process them for some reason despite being subscribed to the source chat.
 
 ![Process missed messages configuration](docs/images/fw-rules-fw-rule-process-missed-messages.png)
 
 #### Source Chat Section
+
 The section to configure the source chat of the rule. The source chat is the chat where the bot will look for messages to forward.
 
 ##### Source chat type
+
 The type of the source chat. The source chat can be a "User", "Bot", "Group", "Channel", or "Topic" of a super group or forum.
 
 ![Source chat type configuration](docs/images/fw-rules-fw-rule-source-chat-type.png)
 
 ##### Source name
+
 The name of the source chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the source chat.
 
 ![Source chat ID configuration](docs/images/fw-rules-fw-rule-source-chat-id.png)
 
 ##### Source topic
+
 This parameter is available only for the "Topic" type of the source chat. It is used to set the topic of the source chat. The topic is used to filter the messages in the source chat. It can be selected from the list of available topics in the source chat.
 Please see the [Destination Topic](#destination-topic) section for the example image.
 
 #### Destination Chat Section
+
 The section to configure the destination chat of the rule. The destination chat is the chat where the bot will forward the messages from the source chat.
 
 ##### Destination chat type
+
 The type of the destination chat. The destination chat can be a "User", "Bot", "Group", "Channel", or "Topic" of super group or forum.
 
 ![Destination chat type configuration](docs/images/fw-rules-fw-rule-destination-chat-type.png)
 
 ##### Destination name
+
 The name of the destination chat. In the menu it's represented by chat "Title" or "Username". It can be selected from the list of available chats, filtered by the type of the destination chat.
 
 ![Destination chat ID configuration](docs/images/fw-rules-fw-rule-destination-chat-id.png)
 
 ##### Destination topic
+
 This parameter is available only for the "Topic" type of the destination chat. It is used to set the topic of the destination chat. The topic is used to filter the messages in the destination chat. It can be selected from the list of available topics in the destination chat.
 
 ![Destination chat topic configuration](docs/images/fw-rules-fw-rule-destination-chat-topic.png)
@@ -442,7 +463,6 @@ Each "Keywords group" has a list of keywords. There are no limitations on the nu
 Each keyword has an "Include" attribute, which is a flag indicating whether the keyword should be present in the message.
 
 ![Keyword configuration](docs/images/fw-rules-fw-rule-kws-groups-kws-group-keyword.png)
-
 
 The "Include All" attribute does not affect keywords with the "Include" attribute set to `false`. This means that no any keyword with the "Include" attribute set to `false` should be present in the message.
 

@@ -23,7 +23,7 @@
     "yargs": "^17.7.2"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . ; npx markdownlint-cli2 *.md",
     "start": "node src/index.js",
     "debug": "node src/index.js --debug",
     "help": "node src/index.js --help"
@@ -33,6 +33,7 @@
     "@babel/eslint-parser": "^7.25.7",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-sonarjs": "^2.0.3",
-    "globals": "^15.10.0"
+    "globals": "^15.10.0",
+    "markdownlint-cli2": "^0.14.0"
   }
 }

@@ -13,7 +13,9 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      -
+        uses: googleapis/release-please-action@v4
+        id: release
         with:
           # this assumes that you have created a personal access token
           # (PAT) and configured it as a GitHub action secret named
@@ -23,3 +25,34 @@ jobs:
           config-file: release-please-config.json
           # optional. customize path to .release-please-manifest.json
           manifest-file: .release-please-manifest.json
+
+      -
+        uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.pr }}
+        with:
+          ref: ${{ fromJson(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      -
+        uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.pr }}
+        with:
+          node-version: 22
+
+      -
+        run: npm ci
+        if: ${{ steps.release.outputs.pr }}
+
+
+      -
+        name: Run CHANGELOG.md through markdownlint-cli2
+        if: ${{ steps.release.outputs.pr }}
+        run: npx markdownlint-cli2 CHANGELOG.md --fix
+
+      -
+        name: Commit and push
+        if: ${{ steps.release.outputs.pr }}
+        run: |
+          git add CHANGELOG.md
+          git commit -m 'chore: run CHANGELOG.md through markdownlint-cli2' --no-verify
+          git push

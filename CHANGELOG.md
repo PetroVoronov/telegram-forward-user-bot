@@ -2,13 +2,11 @@
 
 ## [1.6.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.4...v1.6.5) (2024-10-05)
 
-
 ### Documentation
 
 * Resize and rename images, with changing the style of usage, to decrease README.md file size ([c0a2777](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c0a27777bd55bcd7ddf5e84506b9695dc1668069))
 
 ## [1.6.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.3...v1.6.4) (2024-10-05)
-
 
 ### Documentation
 
@@ -16,23 +14,19 @@
 
 ## [1.6.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.2...v1.6.3) (2024-10-04)
 
-
 ### Documentation
 
 * Fix CHANGELOG.md ([0344b9c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/0344b9c3b5cc047ae493ea14f6afec18f38b1d15))
 
 ## [1.6.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.1...v1.6.2) (2024-10-04)
 
-
 ### Bug Fixes
 
 * Fix doubling the Menu messages due to not updated `SendMessageAsync`, which still returned the whole message instead on message id. ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
 
-
 ### Code Refactoring
 
 * Align functions in structure to the changes in `telegram-menu-from-structure@1.3.2` ([a3bf4b7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a3bf4b7c0e382d913d384ea13bdacc54e2c78998))
-
 
 ### Build System
 
@@ -41,7 +35,6 @@
 
 ## [1.6.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.0...v1.6.1) (2024-10-02)
 
-
 ### Code Refactoring
 
 * Made users in configuration be refreshed manually ([a07bee4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a07bee4e3ac7d8654519653c59bba76f2f3d96c7))
@@ -49,11 +42,9 @@
 
 ## [1.6.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.1...v1.6.0) (2024-10-02)
 
-
 ### Features
 
 * Make possible to refresh lists of `source` and `destination` chats manually, during the configuration of `forwardRules`. ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
-
 
 ### Code Refactoring
 
@@ -62,24 +53,20 @@
 * **package.json:** Update `telegram-menu-from-structure` to minimal version 1.2.0 to use `extraRefresh` feature. ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
 * Update menuRootStructure in index.js to use the new configuration property names ([d3d90e8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d3d90e8659bf917703619f4254dcf041342ab2c1))
 
-
 ### Continuous Integration
 
 * Update release-please-config.json. Change order of Changelog sections. ([535821f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/535821f317681e3b7d5182ca802c1c9e6f2ad04f))
 
 ## [1.5.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.5.0...v1.5.1) (2024-10-01)
 
-
 ### Continuous Integration
 
 * update package-lock.json ([47f11f6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/47f11f67bfdb87325004019e943c4db8a3125b2b))
-
 
 ### Miscellaneous Chores
 
 * **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.2 to 2.0.3 ([7bc450f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7bc450f26fd4a92c8d5569db32757fe044d14897))
 * Update localization and dependencies. ([524116b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/524116bef9ead834d8e5778ec18f90c1443711ca))
-
 
 ### Documentation
 
@@ -88,23 +75,19 @@
 * Update images for forwarding rules configuration in README.md ([c9c5677](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c9c567707e18f161bbe02f4597ae2cdf6ccf10ba))
 * Update README.md with information about filtering by keywords groups ([aa86156](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/aa861561d9b22600cf4194276dcdb7a1ad948b8b))
 
-
 ### Code Refactoring
 
 * Some adjustments for keywords related texts ([16f4306](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/16f4306b8955cad4a3f4808ac7e0627530101a14))
 
 ## [1.5.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.5...v1.5.0) (2024-09-30)
 
-
 ### Documentation
 
 * Refactor installation and run chapters ([8cd095b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8cd095bf061d356224139240b67f04077cf814f5))
 
-
 ### Features
 
 * **docker:** Refactor Dockerfile to use ENTRYPOINT and remove CMD instruction ([8cd095b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8cd095bf061d356224139240b67f04077cf814f5))
-
 
 ### Code Refactoring
 
@@ -112,11 +95,9 @@
 
 ## [1.4.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.4...v1.4.5) (2024-09-27)
 
-
 ### Continuous Integration
 
 * **docker:** Refactor Docker deployment workflow to make completion of image URLs in README.md before update repo description ([9f27e9c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9f27e9c91142fca4f368e2008b2b537ae3e331ee))
-
 
 ### Documentation
 
@@ -124,16 +105,13 @@
 
 ## [1.4.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.3...v1.4.4) (2024-09-27)
 
-
 ### Continuous Integration
 
 * Update repo description in deploy_docker_on_tag.yml ([97eb443](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/97eb4430aa8ef33bab03d402a664ae79cae537ea))
 
-
 ### Documentation
 
 * Update README.md with new configuration option nad appropriate images. ([9dfced5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9dfced58d27b166a5e73b71090c3ee402730e6af))
-
 
 ### Code Refactoring
 
@@ -143,11 +121,9 @@
 
 ## [1.4.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.2...v1.4.3) (2024-09-26)
 
-
 ### Continuous Integration
 
 * Update package-lock.json ([f97ce85](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f97ce85700bdb80ee999cdcdc141a4821627f758))
-
 
 ### Code Refactoring
 
@@ -155,11 +131,9 @@
 
 ## [1.4.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.1...v1.4.2) (2024-09-25)
 
-
 ### Bug Fixes
 
 * Fix `onSetAfter` function call for `resubscribeInterval` ([96f4025](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/96f40255d4fd469bb5c37c39d776e9d8382aebb8))
-
 
 ### Code Refactoring
 
@@ -168,17 +142,14 @@
 
 ## [1.4.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.4.0...v1.4.1) (2024-09-24)
 
-
 ### Miscellaneous Chores
 
 * align menu Init to be comply with changes ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
 * **telegram-menu-from-structure:** Update `telegram-menu-from-structure` package to version 1.0.1 ([b39c8af](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b39c8af0bbc71d169f8da448b1473e14460d8342))
 
-
 ### Documentation
 
 * Update command-line description ([432bebb](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/432bebb254fdcd03579771b2d5f2330ba821da1f))
-
 
 ### Code Refactoring
 
@@ -190,19 +161,16 @@
 
 ## [1.4.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.1...v1.4.0) (2024-09-23)
 
-
 ### Features
 
 * Switch to use `telegram-menu-from-structure` package instead of local ([56262e9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/56262e99b21cc614eff991350d0b05a4bd2ce78c))
 
 ## [1.3.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.3.0...v1.3.1) (2024-09-23)
 
-
 ### Bug Fixes
 
 * **telegram-menu-structured:** Fix call with text parameters of i18n conversion after #eb13300 - i18n decoupling ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
 * **telegram-menu-structured:** Fix issue with prompts in inputs after #eb13300 - i18n decoupling ([33edf86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33edf86443924c58a558fc20db9d65794040df79))
-
 
 ### Code Refactoring
 
@@ -211,17 +179,14 @@
 
 ## [1.3.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.2...v1.3.0) (2024-09-23)
 
-
 ### Miscellaneous Chores
 
 * **deps:** Bump telegram from 2.25.4 to 2.25.11 ([36237e2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/36237e2019981049d3e7315aecdac456b60b4992))
 * Modify the `spaceBetweenColumns` configuration parameter maximum value ([08961bf](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08961bf49fdfcb6fec1db29b00346f1fdbcd790a))
 
-
 ### Features
 
 * Refactor code to make `telegram-menu-structured` fully independent from Telegram Client or Bot library ([08961bf](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08961bf49fdfcb6fec1db29b00346f1fdbcd790a))
-
 
 ### Code Refactoring
 
@@ -234,13 +199,11 @@
 
 ## [1.2.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.1...v1.2.2) (2024-09-22)
 
-
 ### Code Refactoring
 
 * Add resubscribe function call in resubscribeInit ([1721bd8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1721bd83dd8afc8928cb99ac35bf4e2753005046))
 
 ## [1.2.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.2.0...v1.2.1) (2024-09-21)
-
 
 ### Documentation
 
@@ -248,16 +211,13 @@
 
 ## [1.2.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.5...v1.2.0) (2024-09-21)
 
-
 ### Features
 
 * Added a new command line option `-s, --resubscribe-interval <number>` to specify the interval for resubscribing on changes in source chats, in minutes. The default interval is 60 minutes. Appropriate code is implemented [5a2d59a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5a2d59ac53a6210901cf3afc0c7fd9f2d69c1402))
 
-
 ### Miscellaneous Chores
 
 * **deps:** Bump telegram from 2.24.11 to 2.25.4 ([4e9b729](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e9b7291e0d22b6801bc27e54e55e7fdb66c99d6))
-
 
 ### Code Refactoring
 
@@ -277,17 +237,14 @@
 
 ## [1.1.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.4...v1.1.5) (2024-09-16)
 
-
 ### Documentation
 
 * Update CHANGELOG.md by previous changes ([bfc597d](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bfc597d9981f8c434c6750f296f56434a1049b5a))
-
 
 ### Bug Fixes
 
 * fix some variable declarations ([ebba407](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ebba407f86f0073bdd4d718881510909eddf5a14))
 * **logger:** make it secured, not show the sensitive information in logs ([ebba407](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ebba407f86f0073bdd4d718881510909eddf5a14))
-
 
 ### Code Refactoring
 
@@ -295,43 +252,35 @@
 
 ## [1.1.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.3...v1.1.4) (2024-09-15)
 
-
 ### Build System
 
 * Update eslint-plugin-sonarjs to version 2.0.2 ([023ee56](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/023ee56c5f8786764e0b74c0014cee1f8e76798f))
-
 
 ### Continuous Integration
 
 * Add `release-please-action` to prepare releases and `Changelog.md` ([f31b0e9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f31b0e95d7d174b63f06168c2c9995af73a5a555))
 
-
 ### Miscellaneous Chores
 
 * Remove unused `genversion` dependencies and scripts ([f31b0e9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f31b0e95d7d174b63f06168c2c9995af73a5a555))
-
 
 ### Code Refactoring
 
 * **docker:** Update npm install command to use 'npm ci' in Dockerfile and make it dependant on `TARGETPLATFORM`. ([f31b0e9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f31b0e95d7d174b63f06168c2c9995af73a5a555))
 * Refactor MenuItemRoot class and light improvement of README.md ([3ddba9a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/3ddba9ad7dcaac5b409fe86f59f6a6887ede3424))
 * Refactor MenuItemRoot class and light improvement of README.md
-    - Moving the MenuItemRoot class definition to MenuItemStructured.js
-    - Updating the constructor of the MenuItemRoot class to accept a menuStructure parameter
-    - Refactor a new MenuItemRoot class that extends the MenuItem class and initializes the menu structure
-    - Added "badges" to README.md
-
+  * Moving the MenuItemRoot class definition to MenuItemStructured.js
+  * Updating the constructor of the MenuItemRoot class to accept a menuStructure parameter
+  * Refactor a new MenuItemRoot class that extends the MenuItem class and initializes the menu structure
+  * Added "badges" to README.md
 
 ## [1.1.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.2...v1.1.3) (2024-09-08)
-
 
 ### Reverts
 
 * Return back storing last forwarded message content, to avoid forwarding messages on later edit ([c28eaa6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c28eaa63231b5edcfb356c30cbad3952002e970a))
 
-
 ## [1.1.2](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.1...v1.1.2) (2024-09-07)
-
 
 ### Bug Fixes
 
@@ -341,9 +290,7 @@
 
 * Exclude message content comparison on `edit` event, not store message content on forward, code improvement related to the edited messages and update docker deployment workflow to include Docker Hub ([b090bf7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b090bf70053717b3db8bf948e8cf43e41ba4b71b))
 
-
 ## [1.1.1](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.1.0...v1.1.1) (2024-09-06)
-
 
 ### Continuous Integration
 
@@ -358,149 +305,113 @@
 * Add annotations to docker deployment workflow ([d4a3a37](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d4a3a374b048116a7d2a25b8122f59bc1d7db76f))
 * Docker building for arm64 ([b8a436e](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b8a436ebd132d5c3731263cd4105a35249a5357c))
 
-
 ## [1.1.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.110...v1.1.0) (2024-09-06)
-
 
 ### Code Refactoring
 
 * Added and-fast edit delay, improved logging on message forwarding, improved versions numeration approach ([51ce3a8](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/51ce3a846478d6e9eae834b00f45a9d60ffaad99))
 
-
 ## [1.0.110](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.104...v1.0.110) (2024-09-06)
-
 
 ### Miscellaneous Chores
 
 * For edited messages added content compare ([e56f6da](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/e56f6dadc01e685923a2d965f41e141ee141039c))
 
-
 ## [1.0.104](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.103...v1.0.104) (2024-09-05)
-
 
 ### Miscellaneous Chores
 
 * Show `forwardRule` state in menu (`enabled` or `disabled`) ([556a2d6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/556a2d6df8fd5a06d6bb0b66ddbb2fee4a967410))
 
-
 ## [1.0.103](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.102...v1.0.103) (2024-09-05)
-
 
 ### Bug Fixes
 
 * Fix catching missed messages on start ([bd499a4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bd499a4ab20899766f87d12c91a2b0e75ca47c2f))
 
-
 ## [1.0.102](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.101...v1.0.102) (2024-09-05)
-
 
 ### Bug Fixes
 
 * Fix message edited debug logs on refresh ([6906e9b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6906e9bd3ba06282298f9f51ad8d565e1ae9afb2))
 
-
 ## [1.0.101](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.100...v1.0.101) (2024-09-05)
-
 
 ### Bug Fixes
 
 * Fix message edited debug logs on refresh ([8538f56](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8538f56b6a30abab2757e49d0a77e2dbaeb71598))
 
-
 ## [1.0.100](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.99...v1.0.100) (2024-09-05)
-
 
 ### Code Refactoring
 
 * Improve debug logging on message reaction ([62f2e44](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/62f2e448b030c4b3470da47c1c5b8549de168a97))
 
-
 ## [1.0.99](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.98...v1.0.99) (2024-09-05)
-
 
 ### Code Refactoring
 
 * Improve message check on refresh on start ([929e9aa](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/929e9aa47942c3dfd79dc0e59db0e21147738b61))
 
-
 ## [1.0.98](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.97...v1.0.98) (2024-09-05)
-
 
 ### Code Refactoring
 
 * Improve message edited debug logs on refresh ([ea92c13](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ea92c13d57d97f922ffa9c6a0159f77f37c9f23c))
 
-
 ## [1.0.97](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.96...v1.0.97) (2024-09-05)
-
 
 ### Code Refactoring
 
 * Improve message edited detection on refresh ([a07c0a4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a07c0a47680ad8ebca415bd574eaa604359d9066))
 
-
 ## [1.0.96](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.95...v1.0.96) (2024-09-05)
-
 
 ### Miscellaneous Chores
 
 * Another improve debug logging on refresh ([6200508](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6200508956095e8f1e926973e6f7e4ec5f09f299))
 
-
 ## [1.0.95](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.94...v1.0.95) (2024-09-05)
-
 
 ### Miscellaneous Chores
 
 * Improve debug logging on refresh ([1be5d95](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1be5d95c98f7ef29ae1f3a76410a66d7ddd49ef4))
 
-
 ## [1.0.94](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.93...v1.0.94) (2024-09-05)
-
 
 ### Miscellaneous Chores
 
 * Improve message edited detection on refresh ([508ad71](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/508ad71f82a50be47f063161d1266117bf7135e2))
 
-
 ## [1.0.93](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.92...v1.0.93) (2024-09-04)
-
 
 ### Bug Fixes
 
 * Fix message retrieval using message IDs for edited messages via Refresh ([2588af1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/2588af1a79a7b7a2fcaf4e8d9a8ac4d21e39390f))
 
-
 ## [1.0.92](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.91...v1.0.92) (2024-09-04)
-
 
 ### Miscellaneous Chores
 
 * Store last processed message Id only if it has a higher Id then previous ([d07e64e](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d07e64ef1b14092fd9d68e9c6c3ecae48c7ec525))
 
-
 ## [1.0.91](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.90...v1.0.91) (2024-09-04)
-
 
 ### Miscellaneous Chores
 
 * Process last message for edits only one time via refresh ([1343f52](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1343f521e09dbe46877d9dd5181b45df7eb5954c))
 
-
 ## [1.0.90](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.89...v1.0.90) (2024-09-04)
-
 
 ### Bug Fixes
 
 * Fix applying the default values of `MenuItemStructured` using `structuredClone`, add missing translation key. ([b2f5554](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b2f5554df9ccb0ed8fc0eb7b9d39487cd219fc58))
-
 
 ## [1.0.89](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.0.88...v1.0.89) (2024-09-03)
 
 ### Bug Fixes
 
 * Change dev dependencies, fix Dockerfile. ([5b65c63](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5b65c637f81c181ea716a0c4d9e446de698e46e7))
-
 
 ## 1.0.88 (2024-08-09)
 
@@ -525,9 +436,7 @@
 
 * Initial version of README.md ([bb6ca4f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bb6ca4f0a8b173034408f6c5813c02ba39884e14))
 
-
 ## 1.0.86 (2024-07-27)
-
 
 ### Code Refactoring
 
@@ -546,9 +455,6 @@
 * Bump @babel/eslint-parser from 7.24.7 to 7.24.8 ([b159335](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b159335017483281e81603660ca284e37164d78d))
 * Merge pull request #5 from PetroVoronov/dependabot/npm_and_yarn/eslint-9.7.0 ([eabe805](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/eabe8055f78c5033ae2eeacfe918e4a53ce6d6ab))
 * Bump eslint from 9.6.0 to 9.7.0 ([d204670](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d204670d70afbb10530cfd520c98261202d7fd41))
-
-### Miscellaneous Chores
-
 * Update VSCode settings and MenuItemStructured class. Decrease the debug count and content. ([f6fb2bc](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f6fb2bc942fc3f55845d895e58bccc32963f338d))
 
 ### Code Refactoring
@@ -559,14 +465,11 @@
 
 * Fixed issues after previous commit, now edits of messages looks functional, as planned. Additionally fixed `eventHandlers` cleanup. ([cb249ff](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/cb249ff5a4cb996a65fd71687c1a126fea8a3abf))
 
-
 ## 1.0.83 (2024-07-22)
-
 
 ### Code Refactoring
 
 * Preliminary preparation to catch edited messages, as event or direct check of `lastForwarded` or `lastProcessed` messages. ([ee034ab](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ee034ab75d89c52daac6bf4f6eb3fae7e6a4afd9))
-
 
 ## 1.0.81 (2024-07-18)
 
@@ -576,7 +479,6 @@
 * In rules - universal structure is changed. Check of the universal keyword rules is implemented. ([5977220](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5977220e9f6b4a28ac2dce4c7bfc0ed1fe6ee8b7))
 * Improve debug for message handling ([053f495](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/053f49583cbce8bfdbe4e3684027b71a51e102c7))
 * Improve handling of undefined messages in refreshDialogs function ([56954b6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/56954b6fa5dd5cc19f2a55665633863a8acc1ea6))
-
 
 ## 1.0.71 (2024-07-16)
 
@@ -590,13 +492,11 @@
 
 * Improve message forwarding logic and handling of null values in event message includes ([857e291](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/857e2916c564650665071aada1e8bdc19728add7))
 
-
 ## 1.0.70 (2024-07-15)
 
 ### Features
 
 * Add process replay on forwarded message functionality. Fixed processing commands from "work" user. ([474d78e](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/474d78e86d62c36ac7ff815f971fd2df62dd5862))
-
 
 ## 1.0.69 (2024-07-14)
 
@@ -609,13 +509,11 @@
 
 * Fix for `updateForwardListener`. ([d75d8d3](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d75d8d3aad725dc9e2c191bfd2256d67e5aa5a04))
 
-
 ## 1.0.68 (2024-07-12)
 
 ### Miscellaneous Chores
 
 * Update logging imports in MenuButton.js, MenuItemStructured and MenuItem.js ([7017b72](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7017b72ec3261df78d2607fb5468a2fa84b2e108))
-
 
 ## 1.0.67 (2024-07-05)
 
@@ -626,14 +524,12 @@
 * Bump globals from 15.6.0 to 15.8.0 ([cffa729](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/cffa729613c40a3ef4536aba227afab5eb932f37))
 * Bump node from 18-alpine to 22-alpine ([58a81ce](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/58a81cebfe2bc99bd6717c847562ec93e8e8c17f))
 
-
 ## 1.0.66 (2024-07-04)
 
 ### Miscellaneous Chores
 
 * Create dependabot.yml ([848d565](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/848d5651e8317a9531ae388568827ea99b620151))
 * Add locales folder to Dockerfile ([dfcdf88](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/dfcdf88eb420c7264e4a68fbee36b08b75f3befd))
-
 
 ## 1.0.65 (2024-07-03)
 
@@ -646,9 +542,7 @@
 
 * Fix Dockerfile and `refreshDialogs`. ([077e3fb](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/077e3fbe439f1e1cb512b67c913f63ea31df18cf))
 
-
 ## 1.0.64 (2024-07-02)
-
 
 ### Features
 
