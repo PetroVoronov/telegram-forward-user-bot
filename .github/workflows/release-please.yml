@@ -55,3 +55,4 @@ jobs:
         with:
           add: 'CHANGELOG.md'
           message: 'chore: run CHANGELOG.md through markdownlint-cli2'
+          default_author: user_info
