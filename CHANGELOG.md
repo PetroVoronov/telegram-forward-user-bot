@@ -2,13 +2,11 @@
 
 ## [1.6.7](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.6...v1.6.7) (2024-10-07)
 
-
 ### Continuous Integration
 
 * **please-release:** update please-release workflow - change commit message for the lint CHANGELOG.md with markdownlint-cli2 ([18c96e1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/18c96e19b53788277ae30acad0b1735dc27ce46d))
 * **release-please:** add token to CHANGELOG.md processing ([6c00064](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6c00064b739d620fcbd89c386d3436d68b172d20))
 * **release-please:** update default author in CHANGELOG.md commit message ([33f6f33](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/33f6f339f4fd5d3708c4fc2cf913831337911657))
-
 
 ### Miscellaneous Chores
 
