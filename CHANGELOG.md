@@ -2,7 +2,6 @@
 
 ## [1.6.8](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.7...v1.6.8) (2024-10-09)
 
-
 ### Miscellaneous Chores
 
 * **deps:** update telegram-menu-from-structure to version 1.3.5 ([5716057](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5716057dbca7c926a7742711c6f663bc16969f7b))
