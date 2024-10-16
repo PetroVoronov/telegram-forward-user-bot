@@ -2,7 +2,6 @@
 
 ## [1.6.9](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.8...v1.6.9) (2024-10-16)
 
-
 ### Miscellaneous Chores
 
 * **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([19048f5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/19048f55800e798a247d0d49398300ed9209c370))
