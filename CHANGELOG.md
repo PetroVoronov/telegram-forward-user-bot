@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.9](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.8...v1.6.9) (2024-10-16)
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/core from 7.25.7 to 7.25.8 ([19048f5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/19048f55800e798a247d0d49398300ed9209c370))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.7 to 7.25.8 ([ccf76f7](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ccf76f73b4729763800b42f79d721af994d8a396))
+* **deps-dev:** Bump globals from 15.10.0 to 15.11.0 ([d6d86b5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d6d86b516e6b1bfb83745b1277bcba7feaf112fc))
+* **deps:** Bump telegram-menu-from-structure from 1.3.5 to 1.3.6 ([08f4920](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/08f4920de95c599dd50f0809ff85e2f0b00b835c))
+* **deps:** update telegram-menu-from-structure to version 1.3.7 ([927c5d9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/927c5d9f670b757d72feb3ff81e1b263d6e358c7))
+
 ## [1.6.8](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.7...v1.6.8) (2024-10-09)
 
 ### Miscellaneous Chores
