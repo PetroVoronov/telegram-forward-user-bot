@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.6.10](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.9...v1.6.10) (2024-11-06)
+
+### Code Refactoring
+
+* **cache:** refactor code of Cache class with type conversion and event reactions ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
+* **logging:** refactor code of SecuredLogger with sensitive data masking ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
+
+### Miscellaneous Chores
+
+* **deps-dev:** add Jest configuration and dependency ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
+* **deps-dev:** Bump @babel/core from 7.25.8 to 7.26.0 ([ad7b360](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ad7b360e0014e219adb0a3dc53fa2fa043fd1bba))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.8 to 7.25.9 ([a8c4d90](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a8c4d907d040d6fc21db0aca17f1f7cdd1564921))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.3 to 2.0.4 ([7adb7e4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7adb7e4d63bb7291bce04a3047570bcb3dcaecf3))
+* **deps-dev:** Bump globals from 15.11.0 to 15.12.0 ([9f87cb9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9f87cb9fd34230a68e66eebb7e48e3fb0dcc633e))
+* **deps:** Bump node from 22-alpine to 23-alpine ([3cfeec5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/3cfeec59c73a996be1985b95f8ed7d3c76a40a14))
+* **deps:** Bump telegram from 2.25.15 to 2.26.6 ([043a8f0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/043a8f006da5762df8487badeda51fcb476bfca8))
+
+### Tests
+
+* **cache:** add some tests ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
+* **logging:** add some tests ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
+
 ## [1.6.9](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.8...v1.6.9) (2024-10-16)
 
 ### Miscellaneous Chores
