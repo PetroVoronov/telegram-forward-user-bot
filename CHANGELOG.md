@@ -2,12 +2,10 @@
 
 ## [1.6.10](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.9...v1.6.10) (2024-11-06)
 
-
 ### Code Refactoring
 
 * **cache:** refactor code of Cache class with type conversion and event reactions ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
 * **logging:** refactor code of SecuredLogger with sensitive data masking ([4e6e204](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4e6e204951ae4818b8dc7cb7635890078b6ad695))
-
 
 ### Miscellaneous Chores
 
@@ -18,7 +16,6 @@
 * **deps-dev:** Bump globals from 15.11.0 to 15.12.0 ([9f87cb9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9f87cb9fd34230a68e66eebb7e48e3fb0dcc633e))
 * **deps:** Bump node from 22-alpine to 23-alpine ([3cfeec5](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/3cfeec59c73a996be1985b95f8ed7d3c76a40a14))
 * **deps:** Bump telegram from 2.25.15 to 2.26.6 ([043a8f0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/043a8f006da5762df8487badeda51fcb476bfca8))
-
 
 ### Tests
 
