@@ -13,8 +13,8 @@ const {securedLogger: log} = require('../logging/logging');
  * @property {function} #removeItem - Remove item from storage
  **/
 class Cache {
-  static eventGet = 'set';
-  static eventSet = 'get';
+  static eventGet = 'get';
+  static eventSet = 'set';
   static eventRemove = 'remove';
   static events = [Cache.eventGet, Cache.eventSet, Cache.eventRemove];
 
@@ -43,13 +43,49 @@ class Cache {
     this.#logLevel = logLevel;
   }
 
-
   log(level, ...message) {
     if (this.#logLevel === '' || log.canLog(level, this.#logLevel)) {
       log[level](...message);
     }
   }
 
+  /**
+   * Convert the type of the result
+   * @param {any} result - The result to convert
+   * @param {string} type - The type to convert to
+   * @returns {any} - The converted result
+   **/
+  convertType(result, type) {
+    if (typeof result !== type) {
+      switch (type) {
+        case 'number': {
+          if (isNaN(result)) {
+            result = null;
+          } else {
+            result = Number(result);
+          }
+          break;
+        }
+        case 'string': {
+          result = String(result);
+          break;
+        }
+        case 'boolean': {
+          result = Boolean(result);
+          break;
+        }
+        case 'array': {
+          if (Array.isArray(result) === false) {
+            result = null;
+          }
+          break;
+        }
+        default:
+          result = null;
+      }
+    }
+    return result;
+  }
 
   /**
    * Get item from cache
@@ -58,7 +94,7 @@ class Cache {
    * @returns {any} - Item value
    **/
   getItem(key, type) {
-    this.log('debug', `Cache] [Get item: key: ${key}`);
+    log.debug(`Cache] [Get item: key: ${key}`);
     const skipKey = `-${key}`;
     let result = null;
     if (this.items.has(key) === false) {
@@ -69,48 +105,20 @@ class Cache {
             result = JSON.parse(result);
             // eslint-disable-next-line sonarjs/no-ignored-exceptions
           } catch (e) {
-            this.log('debug', `Cache] [Error parsing item from storage: key: ${key}, value: `, {[skipKey]: result});
+            log.debug(`Cache] [Error parsing item from storage: key: ${key}, value: `, {[skipKey]: result});
           }
         }
-        this.log('debug', `Cache] [Get item from storage: key: ${key}, value: `, {[skipKey]: stringify(result)});
+        log.debug(`Cache] [Get item from storage: key: ${key}, value: `, {[skipKey]: stringify(result)});
         if (result !== null && result !== undefined) {
           this.items.set(key, result);
         }
       }
     } else {
       result = this.items.get(key);
-    }
-    if (type !== undefined && type !== null) {
-      const originalValue = result;
-      if (typeof result !== type) {
-        switch (type) {
-          case 'number': {
-            if (isNaN(result)) {
-              result = null;
-            } else {
-              result = Number(result);
-            }
-            break;
-          }
-          case 'string': {
-            result = String(result);
-            break;
-          }
-          case 'boolean': {
-            result = Boolean(result);
-            break;
-          }
-          case 'array': {
-            if (Array.isArray(result) === false) {
-              result = null;
-            }
-            break;
-          }
-
-          default:
-            result = null;
-        }
-        if (result !== originalValue) {
+      if (type !== undefined && type !== null) {
+        const originalValue = result;
+        result = this.convertType(result, type);
+        if (result !== null && result !== originalValue) {
           this.setItem(key, result);
         }
       }
@@ -156,6 +164,12 @@ class Cache {
     this.eventReaction(key, Cache.eventRemove, null);
   }
 
+  /**
+   * Trigger reactions for a specific cache event
+   * @param {string} key - Key of the item
+   * @param {string} event - Event type (get, set, remove)
+   * @param {any} value - Value associated with the event
+   **/
   eventReaction(key, event, value) {
     if (this.reactions.has(key) === true) {
       const reactions = this.reactions.get(key);
