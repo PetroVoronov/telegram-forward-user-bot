@@ -18,7 +18,7 @@
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
     "strftime": "^0.10.3",
-    "telegram": "^2.26.6",
+    "telegram": "^2.26.8",
     "telegram-menu-from-structure": "^1.3.7",
     "yargs": "^17.7.2"
   },
