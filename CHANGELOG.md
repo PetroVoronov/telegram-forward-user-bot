@@ -2,11 +2,9 @@
 
 ## [1.6.11](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.10...v1.6.11) (2025-06-13)
 
-
 ### Bug Fixes
 
 * ensure forwardRules is initialized as an empty array if not found in cache - to fix "Setting configuration and/or adding forward rules always fails on docker" [#88](https://github.com/PetroVoronov/telegram-forward-user-bot/issues/88) ([d338252](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d338252c67fca19d8a3eb18cebdf53242f5d0422))
-
 
 ### Miscellaneous Chores
 
