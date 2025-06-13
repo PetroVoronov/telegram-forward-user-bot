@@ -32,7 +32,7 @@
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/eslint-parser": "^7.27.5",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-sonarjs": "^3.0.2",
     "globals": "^15.14.0",
     "jest": "^30.0.0",
