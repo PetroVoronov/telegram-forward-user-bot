@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.6.11](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.10...v1.6.11) (2025-06-13)
+
+### Bug Fixes
+
+* ensure forwardRules is initialized as an empty array if not found in cache - to fix "Setting configuration and/or adding forward rules always fails on docker" [#88](https://github.com/PetroVoronov/telegram-forward-user-bot/issues/88) ([d338252](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d338252c67fca19d8a3eb18cebdf53242f5d0422))
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.9 to 7.26.5 ([fe6321e](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/fe6321eba3670447723efd719975cbec265f5455))
+* **deps-dev:** Bump @babel/eslint-parser from 7.25.9 to 7.26.5 ([d69db02](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d69db029748333db3095d88e8f0d168ba89292da))
+* **deps-dev:** Bump @babel/eslint-parser from 7.26.5 to 7.27.5 ([a57c32e](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a57c32e685a363d7e7230cd8f72c18c94c0689f4))
+* **deps-dev:** Bump @babel/eslint-parser from 7.26.5 to 7.27.5 ([9092c77](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/9092c77ac4fba985587c6dc2f61f1a5c44c1adfa))
+* **deps-dev:** Bump eslint-config-prettier from 9.1.0 to 10.1.5 ([4c1e0e2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/4c1e0e24886b9b167d602ce9c15fe0e2a2163b30))
+* **deps-dev:** Bump eslint-config-prettier from 9.1.0 to 10.1.5 ([5b3ddbc](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/5b3ddbcf86623bb6256e9450a6ef1e55f8f527b9))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.4 to 3.0.1 ([e6b05b6](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/e6b05b636d7a11fa274e1123cd844cb0f40fc476))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 2.0.4 to 3.0.1 ([81a644b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/81a644b331c2c3bece1ab7a57fe372920e88a0e8))
+* **deps-dev:** Bump globals from 15.12.0 to 15.14.0 ([f15c2e3](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f15c2e3558ef219a9b51a18e2ea38a0aec7410db))
+* **deps-dev:** Bump globals from 15.12.0 to 15.14.0 ([dc5f72f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/dc5f72fc3d3fe75996e8792c14d98b16ce4e5f4b))
+* **deps-dev:** Bump jest from 29.7.0 to 30.0.0 ([617e32a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/617e32a475eee51280ceb66c9af28325a8d86a49))
+* **deps-dev:** Bump jest from 29.7.0 to 30.0.0 ([3514d7f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/3514d7f71f3d9d99499567c97b9b395d959d7af9))
+* **deps-dev:** Bump markdownlint-cli2 from 0.14.0 to 0.17.2 ([25c295b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/25c295b9ee36c2b155126bbc490ce93d65b7ef37))
+* **deps-dev:** Bump markdownlint-cli2 from 0.14.0 to 0.17.2 ([0bb0375](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/0bb03758800dc3e3a41ea6f7401f2b5f8cba2f03))
+* **deps:** Bump store2 from 2.14.3 to 2.14.4 in the npm_and_yarn group ([e72a8e3](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/e72a8e371654c95f63e7341e5e426acdffe7dfd9))
+* **deps:** Bump store2 from 2.14.3 to 2.14.4 in the npm_and_yarn group ([ae93ffa](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ae93ffaf069b1feeea9efb2a77a84a96286b070e))
+* **deps:** Bump telegram from 2.26.6 to 2.26.16 ([b81d749](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b81d749e0f8cec69680f2278a98e44ee8c5b7c9d))
+* **deps:** Bump telegram from 2.26.6 to 2.26.16 ([bcfd655](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/bcfd655abadaa3b378fbbddfe6f9a702d4b2c4a1))
+* **deps:** Bump yargs from 17.7.2 to 18.0.0 ([6da0e33](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6da0e33bb6ee97498214e7996ac1dde0bcc8e8bf))
+* **deps:** Bump yargs from 17.7.2 to 18.0.0 ([6290f34](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/6290f34f41ad0031d4fa06a0ec01a3e1c4cdea42))
+
 ## [1.6.10](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.9...v1.6.10) (2024-11-06)
 
 ### Code Refactoring
