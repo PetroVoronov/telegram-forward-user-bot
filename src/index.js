@@ -1337,7 +1337,7 @@ async function refreshDialogs() {
     error = '';
   if (clientAsUser !== null && clientAsUser.connected === true) {
     const dialogs = await clientAsUser.getDialogs();
-    forwardRules = cache.getItem(forwardRulesId);
+    forwardRules = cache.getItem(forwardRulesId) || [];
     if (Array.isArray(dialogs) && dialogs.length > 0) {
       clientDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null);
       const groupsOrChannels = dialogs.filter((dialog) => dialog.isChannel || dialog.isGroup),
