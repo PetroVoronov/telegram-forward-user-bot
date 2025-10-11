@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.6.12](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.11...v1.6.12) (2025-10-11)
+
+### Bug Fixes
+
+* **index.js:** wrong environment variable is saved ([7a2a884](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7a2a884c8272a2a3026b43903d583530a4ba0323))
+
+### Miscellaneous Chores
+
+* **deps-dev:** Bump eslint-plugin-sonarjs from 3.0.2 to 3.0.5 ([d178a79](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d178a79520ae254a29173e013f9ae4b5cd180308))
+* **deps-dev:** Bump eslint-plugin-sonarjs from 3.0.2 to 3.0.5 ([7d4f9f0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7d4f9f027ceac9d28b2cc7ede5aca9f165ab5156))
+* **deps-dev:** Bump globals from 15.14.0 to 16.4.0 ([f878843](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f878843b6773cc9bc85b61490930b2f266203435))
+* **deps-dev:** Bump globals from 15.14.0 to 16.4.0 ([2aadf75](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/2aadf75d2f305c16c847089a7d8181827b63488a))
+* **deps-dev:** Bump jest from 30.0.0 to 30.2.0 ([c399917](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/c3999179ae109f1e727c953254b45b582d1ce932))
+* **deps-dev:** Bump jest from 30.0.0 to 30.2.0 ([0b30f84](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/0b30f848463da11964793f8f0880bfc71a0877b9))
+* **deps-dev:** Bump markdownlint-cli2 from 0.17.2 to 0.18.1 ([cc95c6d](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/cc95c6d4ba6b849b14ecbc452bb576aa47ae8f3f))
+* **deps-dev:** Bump markdownlint-cli2 from 0.17.2 to 0.18.1 ([44e4fe4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/44e4fe4609a1c7f6909fec836cdef280b05439e2))
+* **deps:** Bump node from 23-alpine to 24-alpine ([54ba132](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/54ba1329979cc114a0a31adb34993099388d67d0))
+* **deps:** Bump node from 23-alpine to 24-alpine ([1929715](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/19297154316844ea7f9ec50dec7b0467e73c3d75))
+* **deps:** Bump telegram from 2.26.16 to 2.26.22 ([998a6dc](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/998a6dc92d5d23c0c6da4b6151925b4ed3992310))
+* **deps:** Bump telegram from 2.26.16 to 2.26.22 ([e35cf35](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/e35cf351fd017fce81dd614108b666f4749902d0))
+
 ## [1.6.11](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.10...v1.6.11) (2025-06-13)
 
 ### Bug Fixes
