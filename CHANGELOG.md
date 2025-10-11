@@ -2,11 +2,9 @@
 
 ## [1.6.12](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.11...v1.6.12) (2025-10-11)
 
-
 ### Bug Fixes
 
 * **index.js:** wrong environment variable is saved ([7a2a884](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/7a2a884c8272a2a3026b43903d583530a4ba0323))
-
 
 ### Miscellaneous Chores
 
