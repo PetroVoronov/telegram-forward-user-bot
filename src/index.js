@@ -353,7 +353,7 @@ const forwardRulesId = 'forwardRules';
 const topicsCache = {};
 
 if (typeof process.env.TELEGRAM_USER_API_ID === 'string' && process.env.TELEGRAM_USER_API_ID.length > 0) {
-  cache.setItem('apiId', parseInt(process.env.TELEGRAM_CHAT_ID));
+  cache.setItem('apiId', parseInt(process.env.TELEGRAM_USER_API_ID));
 }
 if (typeof process.env.TELEGRAM_USER_API_HASH === 'string' && process.env.TELEGRAM_USER_API_HASH.length > 0) {
   cache.setItem('apiHash', process.env.TELEGRAM_USER_API_HASH);
