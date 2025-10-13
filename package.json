@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "emoji-regex": "^10.3.0",
-    "i18n": "^0.15.1",
+    "i18n": "^0.15.2",
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
     "strftime": "^0.10.3",
