@@ -2,11 +2,9 @@
 
 ## [1.6.13](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.12...v1.6.13) (2025-10-26)
 
-
 ### Build System
 
 * **contrib:** Add commit message guide ([a4c5d5a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a4c5d5a733aa2872ec74886827209091eaf319a2))
-
 
 ### Miscellaneous Chores
 
