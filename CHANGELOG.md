@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.13](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.12...v1.6.13) (2025-10-26)
+
+
+### Build System
+
+* **contrib:** Add commit message guide ([a4c5d5a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/a4c5d5a733aa2872ec74886827209091eaf319a2))
+
+
+### Miscellaneous Chores
+
+* **cli:** migrate CLI from yargs to commander ([8ab88d4](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/8ab88d41797f926514ceb457c1f7dade04d6dba7))
+* **vscode:** add launch.json to enable debugging (launches src/index.js with -d) ([b77c03a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b77c03a242e6e376b64cda9dfc92f56f2741905d))
+
 ## [1.6.12](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.6.11...v1.6.12) (2025-10-11)
 
 ### Bug Fixes
