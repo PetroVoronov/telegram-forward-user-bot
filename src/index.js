@@ -7,7 +7,7 @@ const stringify = require('json-stringify-safe');
 const {LocalStorage} = require('node-localstorage');
 const {menuDefaults, MenuItemRoot} = require('telegram-menu-from-structure');
 const {Cache} = require('./modules/cache/Cache');
-const yargs = require('yargs');
+const {Command} = require('commander');
 const {setTimeout} = require('node:timers');
 const {securedLogger: log} = require('./modules/logging/logging');
 const {NewMessage, NewMessageEvent} = require('telegram/events');
@@ -23,70 +23,44 @@ let resubscribeInterval = resubscribeIntervalDefault * 60 * 1000;
 
 const botAuthTokenMinimumLength = 43;
 
-const options = yargs
-  .usage('Usage: $0 [options]')
-  .option('r', {
-    alias: 'refresh-interval',
-    describe: 'Refresh information from Telegram servers, in seconds',
-    type: 'number',
-    default: refreshIntervalDefault,
-    demandOption: false,
-  })
-  .option('s', {
-    alias: 'resubscribe-interval',
-    describe: 'Resubscribe on changes in sources chats, in minutes',
-    type: 'number',
-    default: resubscribeIntervalDefault,
-    demandOption: false,
-  })
-  .option('b', {
-    alias: 'no-bot',
-    describe: 'Start without the bot instance',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('d', {
-    alias: 'debug',
-    describe: 'Debug level of logging',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('no-debug-menu', {
-    describe: 'Disable debug level of logging for the Menu instance',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('no-debug-cache', {
-    describe: 'Disable debug level of logging for the Cache instance',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('debug-client-user', {
-    describe: 'Debug level of logging for the client "user" instance',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('debug-client-bot', {
-    describe: 'Debug level of logging for the client "bot" instance',
-    type: 'boolean',
-    default: false,
-    demandOption: false,
-  })
-  .option('c', {
-    alias: 'command',
-    describe: 'Test menu command from the command line',
-    type: 'string',
-    demandOption: false,
-  })
-  .version(scriptVersion)
-  .help('h')
-  .alias('h', 'help')
-  .epilog(`${scriptName} v${scriptVersion}`).argv;
+const program = new Command();
+
+program
+  .name(scriptName)
+  .usage('[options]')
+  .description('Forward messages between Telegram chats/groups/channels')
+  .helpOption('-h, --help', 'Show help')
+  .version(scriptVersion, '-v, --version', 'Show version number')
+  .addHelpText('after', `\n${scriptName} v${scriptVersion}`)
+  .option('-r, --refresh-interval <seconds>', 'Refresh information from Telegram servers, in seconds', refreshIntervalDefault)
+  .option('-s, --resubscribe-interval <minutes>', 'Resubscribe on changes in source chats, in minutes', resubscribeIntervalDefault)
+  .option('-b, --no-bot', 'Start without the bot instance')
+  .option('-d, --debug', 'Debug level of logging', false)
+  .option('--no-debug-menu', 'Disable debug level of logging for the Menu instance')
+  .option('--no-debug-cache', 'Disable debug level of logging for the Cache instance')
+  .option('--debug-client-user', 'Debug level of logging for the client "user" instance', false)
+  .option('--debug-client-bot', 'Debug level of logging for the client "bot" instance', false)
+  .option('-c, --command <command>', 'Test menu command from the command line');
+
+program.parse(process.argv);
+
+const parsedOptions = program.opts();
+const toNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+const options = {
+  refreshInterval: toNumber(parsedOptions.refreshInterval, refreshIntervalDefault),
+  resubscribeInterval: toNumber(parsedOptions.resubscribeInterval, resubscribeIntervalDefault),
+  noBot: parsedOptions.bot === false,
+  debug: Boolean(parsedOptions.debug),
+  noDebugMenu: parsedOptions.debugMenu === false,
+  noDebugCache: parsedOptions.debugCache === false,
+  debugClientUser: Boolean(parsedOptions.debugClientUser),
+  debugClientBot: Boolean(parsedOptions.debugClientBot),
+  command: parsedOptions.command,
+  processMissed: parsedOptions.processMissed,
+};
 
 if (options.debug) {
   log.setLevel('debug');
