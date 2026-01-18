@@ -108,6 +108,9 @@ class Cache {
             log.debug(`Cache] [Error parsing item from storage: key: ${key}, value: `, {[skipKey]: result});
           }
         }
+        if (type !== undefined && type !== null) {
+          result = this.convertType(result, type);
+        }
         log.debug(`Cache] [Get item from storage: key: ${key}, value: `, {[skipKey]: stringify(result)});
         if (result !== null && result !== undefined) {
           this.items.set(key, result);
