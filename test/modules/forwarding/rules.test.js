@@ -4,7 +4,98 @@ const {
     isMessageInRuleTopic,
     getRuleKey,
     getMessageState,
+    matchKeywords,
+    applyRuleDefaults,
 } = require('../../../src/modules/forwarding/rules');
+
+describe('applyRuleDefaults', () => {
+    test('should set the missing keywords group options to the values of the earlier behavior', () => {
+        const rules = [{label: 'old', keywordsGroups: [{label: 'a'}, {label: 'b', caseSensitive: false}]}];
+        expect(applyRuleDefaults(rules)).toBe(true);
+        expect(rules[0].keywordsGroups[0].caseSensitive).toBe(true);
+        expect(rules[0].keywordsGroups[1].caseSensitive).toBe(false);
+    });
+
+    test('should report no changes, if all options are set', () => {
+        expect(applyRuleDefaults([{keywordsGroups: [{caseSensitive: true}]}])).toBe(false);
+        expect(applyRuleDefaults([{label: 'no groups'}])).toBe(false);
+        expect(applyRuleDefaults(undefined)).toBe(false);
+        expect(applyRuleDefaults([null])).toBe(false);
+    });
+});
+
+describe('matchKeywords', () => {
+    const include = (keyword) => ({keyword, include: true}),
+        exclude = (keyword) => ({keyword, include: false});
+
+    test('should not match any message, if the rule has no keywords groups, as in the earlier versions', () => {
+        expect(matchKeywords([], 'anything').matched).toBe(false);
+        expect(matchKeywords(undefined, '').matched).toBe(false);
+    });
+
+    test('should match any message by the group without keywords', () => {
+        expect(matchKeywords([{label: 'all', includeAll: true, keywords: []}], 'anything').matched).toBe(true);
+    });
+
+    test('should require some or all included keywords', () => {
+        const some = [{includeAll: false, keywords: [include('alpha'), include('beta')]}],
+            all = [{includeAll: true, keywords: [include('alpha'), include('beta')]}];
+        expect(matchKeywords(some, 'only alpha here').matched).toBe(true);
+        expect(matchKeywords(all, 'only alpha here').matched).toBe(false);
+        expect(matchKeywords(all, 'alpha and beta').matched).toBe(true);
+        expect(matchKeywords(some, 'nothing').matched).toBe(false);
+    });
+
+    test('should not match, if an excluded keyword is present', () => {
+        const groups = [{includeAll: false, keywords: [include('sale'), exclude('sold out')]}];
+        expect(matchKeywords(groups, 'sale today').matched).toBe(true);
+        expect(matchKeywords(groups, 'sale today, sold out').matched).toBe(false);
+    });
+
+    test('should match case insensitive, if it is switched off in the group, including Cyrillic', () => {
+        const groups = [{includeAll: false, caseSensitive: false, keywords: [include('Sale'), include('1 група')]}];
+        expect(matchKeywords(groups, 'SALE today').matched).toBe(true);
+        expect(matchKeywords(groups, 'Вмикаємо 1 ГРУПУ').matched).toBe(false);
+        expect(matchKeywords(groups, 'Вмикаємо 1 Група').matched).toBe(true);
+        expect(matchKeywords([{caseSensitive: false, keywords: [exclude('Sold Out')]}], 'all SOLD OUT').matched).toBe(false);
+    });
+
+    test('should match case sensitive by default, as in the earlier versions', () => {
+        const groups = [{includeAll: false, keywords: [include('Sale')]}];
+        expect(matchKeywords(groups, 'SALE today').matched).toBe(false);
+        expect(matchKeywords(groups, 'Sale today').matched).toBe(true);
+        expect(matchKeywords([{caseSensitive: true, keywords: [include('Sale')]}], 'SALE today').matched).toBe(false);
+    });
+
+    test('should apply the case option per group', () => {
+        const groups = [
+            {label: 'exact', keywords: [include('CODE')]},
+            {label: 'any case', caseSensitive: false, keywords: [include('sale')]},
+        ];
+        expect(matchKeywords(groups, 'code only').matched).toBe(false);
+        expect(matchKeywords(groups, 'Big SALE').matched).toBe(true);
+    });
+
+    test('should match by any group and report details per group', () => {
+        const result = matchKeywords(
+            [
+                {label: 'first', includeAll: true, keywords: [include('alpha')]},
+                {label: 'second', includeAll: false, keywords: [include('beta')]},
+            ],
+            'beta only',
+        );
+        expect(result.matched).toBe(true);
+        expect(result.groups).toEqual([
+            {label: 'first', includeAll: true, caseSensitive: true, includesFound: false, excludesNotFound: true},
+            {label: 'second', includeAll: false, caseSensitive: true, includesFound: true, excludesNotFound: true},
+        ]);
+    });
+
+    test('should treat the empty message as text without keywords', () => {
+        expect(matchKeywords([{keywords: [include('alpha')]}], '').matched).toBe(false);
+        expect(matchKeywords([{keywords: [exclude('alpha')]}], undefined).matched).toBe(true);
+    });
+});
 
 describe('getRuleKey', () => {
     test('should differ for rules with the same source and different destinations', () => {
