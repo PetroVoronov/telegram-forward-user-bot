@@ -64,10 +64,68 @@ function getMessageState(state) {
   return null;
 }
 
+/**
+ * Check the message text by the keywords groups of the rule.
+ * The message matches the group, if the included keywords of the group are present (all or some of them, see includeAll)
+ * and no excluded keyword is present. The message matches the rule, if it matches any group.
+ * The rule without keywords groups doesn't match any message (as in the earlier versions), the group without keywords matches any.
+ * The keywords are matched case sensitive (as in the earlier versions), unless it is switched off in the group (caseSensitive).
+ * @param {object[]} keywordsGroups - The keywords groups of the rule
+ * @param {string} message - The message text
+ * @returns {{matched: boolean, groups: object[]}} The result and the details per group:
+ *   {label, includeAll, caseSensitive, includesFound, excludesNotFound}
+ **/
+function matchKeywords(keywordsGroups, message) {
+  if (Array.isArray(keywordsGroups) === false || keywordsGroups.length === 0) {
+    return {matched: false, groups: []};
+  }
+  const groups = keywordsGroups.map((group) => {
+    const caseSensitive = group?.caseSensitive !== false,
+      normalize = (value) => (caseSensitive ? `${value ?? ''}` : `${value ?? ''}`.toLocaleLowerCase()),
+      text = normalize(message),
+      keywords = Array.isArray(group?.keywords) ? group.keywords : [],
+      includes = keywords.filter((item) => item.include === true).map((item) => normalize(item.keyword)),
+      excludes = keywords.filter((item) => item.include === false).map((item) => normalize(item.keyword)),
+      includeAll = group?.includeAll === true,
+      includesFound =
+        includes.length === 0 || (includeAll ? includes.every((item) => text.includes(item)) : includes.some((item) => text.includes(item))),
+      excludesNotFound = excludes.every((item) => text.includes(item) === false);
+    return {label: group?.label, includeAll, caseSensitive, includesFound, excludesNotFound};
+  });
+  return {matched: groups.some((group) => group.includesFound && group.excludesNotFound), groups};
+}
+
+// Rule options added in the later versions, with the values which keep the earlier behavior of the existing rules
+const keywordsGroupDefaults = {
+  caseSensitive: true,
+};
+
+/**
+ * Set the missing options of the rules (i.e. rules created by the earlier versions) to the defaults
+ * @param {object[]} rules - The forwarding rules, changed in place
+ * @returns {boolean} True if any rule is changed
+ **/
+function applyRuleDefaults(rules) {
+  let changed = false;
+  for (const rule of Array.isArray(rules) ? rules : []) {
+    for (const group of Array.isArray(rule?.keywordsGroups) ? rule.keywordsGroups : []) {
+      for (const [key, value] of Object.entries(keywordsGroupDefaults)) {
+        if (typeof group === 'object' && group !== null && group[key] === undefined) {
+          group[key] = value;
+          changed = true;
+        }
+      }
+    }
+  }
+  return changed;
+}
+
 module.exports = {
   getMessageTopicId,
   getEnabledRulesForSource,
   isMessageInRuleTopic,
   getRuleKey,
   getMessageState,
+  matchKeywords,
+  applyRuleDefaults,
 };

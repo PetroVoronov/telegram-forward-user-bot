@@ -452,6 +452,8 @@ The label of the rule. It is used to identify the rule in the list of rules.
 
 **Status** - the status of the rule. The rule can be enabled or disabled. The rule will be applied only if it is enabled.
 
+The rule with the source or destination topic is disabled automatically, if the topic is not available any more (i.e. it is deleted). In this case the bot sends you a notification.
+
 #### Process replay on forwarded message
 
 The flag to process the replay on the forwarded message. If the flag is set, the bot will try to forward the replay on the forwarded message in source chat to the destination chat.
@@ -537,6 +539,12 @@ Each keyword has an "Include" attribute, which is a flag indicating whether the 
 ![Keyword configuration](docs/images/fw-rules-fw-rule-kws-groups-kws-group-keyword.png)
 
 The "Include All" attribute does not affect keywords with the "Include" attribute set to `false`. This means that no any keyword with the "Include" attribute set to `false` should be present in the message.
+
+The message is forwarded, if it matches at least one "Keywords group". Additionally:
+
+- A rule without "Keywords groups" doesn't forward any message.
+- **To forward all messages** of the source (including media without a caption), add a "Keywords group" without keywords - it matches any message.
+- Keywords are matched **case sensitive** by default, as in the earlier versions. Switch off the **Case sensitive** option of the "Keywords group" to ignore the case in this group, i.e. then the keyword `Sale` matches `sale` and `SALE` too.
 
 ## License
 

@@ -12,7 +12,7 @@ const {Command} = require('commander');
 const qrcode = require('qrcode-terminal');
 const {setTimeout} = require('node:timers');
 const {securedLogger: log, SecuredLogger} = require('./modules/logging/logging');
-const {getEnabledRulesForSource, isMessageInRuleTopic, getRuleKey, getMessageState} = require('./modules/forwarding/rules');
+const {getEnabledRulesForSource, isMessageInRuleTopic, getRuleKey, getMessageState, matchKeywords, applyRuleDefaults} = require('./modules/forwarding/rules');
 const {NewMessage, NewMessageEvent} = require('teleproto/events');
 const {EditedMessage} = require('teleproto/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('teleproto/events/CallbackQuery');
@@ -399,6 +399,9 @@ let apiId = cache.getItem('apiId', 'number');
 let apiHash = cache.getItem('apiHash');
 let botAuthToken = cache.getItem('botAuthToken');
 let forwardRules = cache.getItem(forwardRulesId) || [];
+if (applyRuleDefaults(forwardRules)) {
+  cache.setItem(forwardRulesId, forwardRules);
+}
 let meUser = null;
 let meBot = null;
 let meUserId = -1;
@@ -720,7 +723,7 @@ const topicIdPresence = (item, path) => {
         editable: true,
         default: [],
         label: 'Keywords groups',
-        text: 'Keywords to be included or excluded in the message by groups',
+        text: 'Keywords to be included or excluded in the message by groups. A group without keywords forwards all messages',
         onSetReset: ['enabled'],
         structure: {
           primaryId: (data, isShort = false) => `(${i18n.__(data.includeAll ? 'All' : 'Some')}) ${data.label}`,
@@ -740,6 +743,15 @@ const topicIdPresence = (item, path) => {
               default: true,
               label: 'Included all',
               text: 'Included keywords must be present all or some',
+              onSetReset: ['enabled'],
+            },
+            caseSensitive: {
+              type: 'boolean',
+              presence: 'mandatory',
+              editable: true,
+              default: true,
+              label: 'Case sensitive',
+              text: 'Keywords are matched case sensitive, i.e. "Sale" does not match "sale". Switch off to ignore the case',
               onSetReset: ['enabled'],
             },
             keywords: {
@@ -1083,22 +1095,21 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
           `[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`,
           logAsUser,
         );
-      } else if (skipProcessing === false && messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
-        toForward = rule.keywordsGroups.some((keywordsGroup) => {
-          const includes = keywordsGroup.keywords.filter((item) => item.include === true).map((item) => item.keyword),
-            excludes = keywordsGroup.keywords.filter((item) => item.include === false).map((item) => item.keyword);
-          let includesFound = false;
-          if (keywordsGroup.includeAll === true) {
-            includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
-            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, logAsUser);
-          } else {
-            includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
-            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, logAsUser);
-          }
-          const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
-          log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, logAsUser);
-          return includesFound && excludesNotFound;
-        });
+      } else if (skipProcessing === false && messageIsString) {
+        // The rule without keywords groups forwards nothing. Matching is case sensitive, unless it is switched off in the group
+        const keywordsCheck = matchKeywords(rule.keywordsGroups, message);
+        if (keywordsCheck.groups.length === 0) {
+          log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Rule has no keywords groups, nothing is forwarded!`, logAsUser);
+        }
+        for (const group of keywordsCheck.groups) {
+          log.debug(
+            `[${rule.label}, ${sourceId}, ${messageId}]: Keywords group "${group.label}"${group.caseSensitive ? '' : ' (ignore case)'}: ` +
+              `${group.includeAll ? 'All' : 'Some'} includes are found: ` +
+              `${group.includesFound}, no any exclude is found: ${group.excludesNotFound}`,
+            logAsUser,
+          );
+        }
+        toForward = keywordsCheck.matched;
         log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, logAsUser);
       }
       if (toForward) {
@@ -1665,6 +1676,25 @@ async function processRuleMissedMessages(rule, dialogFrom) {
   }
 }
 
+/**
+ * Send the notification to the owner (the logged in user) via the bot. The failure is only logged.
+ * @param {string} text - The notification text
+ * @returns {Promise<boolean>} True if the notification is sent
+ **/
+function notifyOwner(text) {
+  if (clientAsBot === null || clientAsBot.connected !== true || meUserId <= 0) {
+    log.warn(`Notification is not sent, as the bot is not available: ${text}`, logAsBot);
+    return Promise.resolve(false);
+  }
+  return clientAsBot
+    .sendMessage(meUserId, {message: text})
+    .then(() => true)
+    .catch((err) => {
+      log.warn(`Notification is not sent! Error is ${stringify(err)}`, logAsBot);
+      return false;
+    });
+}
+
 async function refreshDialogsRun() {
   if (clientAsUser === null || clientAsUser.connected !== true) {
     clientDialogs = [];
@@ -1672,6 +1702,7 @@ async function refreshDialogsRun() {
   }
   const dialogs = await clientAsUser.getDialogs();
   forwardRules = cache.getItem(forwardRulesId) || [];
+  applyRuleDefaults(forwardRules);
   if (Array.isArray(dialogs) === false || dialogs.length === 0) {
     clientDialogs = [];
     log.warn(`No dialogs found!`, logAsUser);
@@ -1689,6 +1720,7 @@ async function refreshDialogsRun() {
       if ((await isRuleTopicAvailable(rule, 'from', dialogFrom)) === false || (await isRuleTopicAvailable(rule, 'to', dialogTo)) === false) {
         log.warn(`[${rule.label}]: Rule is disabled, as the topic is not available!`, logAsUser);
         rule.enabled = false;
+        notifyOwner(i18n.__('Rule "%s" is disabled, as its topic is not available any more!', rule.label));
       } else if (dialogFrom !== undefined && dialogFrom !== null) {
         if (rule.processMissedMaxCount > 0) {
           await processRuleMissedMessages(rule, dialogFrom);
