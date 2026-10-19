@@ -1298,6 +1298,10 @@ menuRoot
           clientAsUser
             .start({
               phoneNumber: async () => {
+                if (isInteractive === false && options.loginQr !== true) {
+                  // The QR code login is possible without a terminal (the QR code is in the log), the login code is not
+                  throw loginRequiredError('The Telegram user is not logged in, or the session is terminated by Telegram');
+                }
                 const phoneNumber = options.loginQr
                   ? 'qr'
                   : (await rl.question('Enter your phone number (or "qr" to log in via QR code): ')).trim();
@@ -1311,11 +1315,17 @@ menuRoot
               },
               qrCode: async ({token, expires}) => printLoginQrCode(token, expires),
               password: async (hint) => {
+                if (isInteractive === false) {
+                  throw loginRequiredError('The two-step verification password is required');
+                }
                 const hintText = hint ? ` (hint: ${hint})` : '';
                 return rl.question(`Enter your password${hintText}: `);
               },
               phoneCode: async () => rl.question('Enter the code: '),
               onError: (err) => {
+                if (err?.loginRequired === true) {
+                  throw err;
+                }
                 log.warn(err, logAsUser);
                 throw new Error("Can't login user client!");
               },
@@ -1363,11 +1373,19 @@ menuRoot
             })
             .catch((err) => {
               rl.close();
-              log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+              if (err?.loginRequired === true) {
+                exitLoginRequired(err.message);
+              } else {
+                log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
+              }
             });
         }
       }).catch((err) => {
-        log.error(`Can't get API attributes! Error is ${stringify(err)}`);
+        if (err?.loginRequired === true) {
+          exitLoginRequired(err.message);
+        } else {
+          log.error(`Can't get API attributes! Error is ${stringify(err)}`);
+        }
       });
     }
   })
@@ -1419,25 +1437,30 @@ function getEntityById(id) {
 }
 
 async function getAPIAttributes() {
-  if (
-    typeof apiId !== 'number' || apiId === 0 ||
-    typeof apiHash !== 'string' || apiHash.length === 0 ||
-    typeof botAuthToken !== 'string' ||
-    botAuthToken.length < botAuthTokenMinimumLength
-  ) {
+  const apiCredentialsMissing = typeof apiId !== 'number' || apiId === 0 || typeof apiHash !== 'string' || apiHash.length === 0,
+    botAuthTokenMissing =
+      options.noBot !== true && (typeof botAuthToken !== 'string' || botAuthToken.length < botAuthTokenMinimumLength);
+  if (apiCredentialsMissing || botAuthTokenMissing) {
+    if (isInteractive === false) {
+      throw loginRequiredError(
+        apiCredentialsMissing
+          ? 'The Telegram API credentials (TELEGRAM_USER_API_ID, TELEGRAM_USER_API_HASH) are not set'
+          : 'The bot auth token (TELEGRAM_BOT_AUTH_TOKEN) is not set',
+      );
+    }
     const rl = readline.createInterface({
       input,
       output,
     });
     rl.on('SIGINT', gracefulExit);
-    if (typeof apiId !== 'number' || apiId === 0 || typeof apiHash !== 'string' || apiHash === '') {
+    if (apiCredentialsMissing) {
       const id = await rl.question('Enter your API ID: ');
       apiId = parseInt(id);
       cache.setItem('apiId', apiId);
       apiHash = await rl.question('Enter your API Hash: ');
       cache.setItem('apiHash', apiHash);
     }
-    if (botAuthToken === null && options.noBot !== true) {
+    if (botAuthTokenMissing) {
       botAuthToken = await rl.question('Enter your Bot Auth Token: ');
       cache.setItem('botAuthToken', botAuthToken);
     }
@@ -1446,7 +1469,7 @@ async function getAPIAttributes() {
   return Promise.resolve();
 }
 
-async function processClientExit(clients) {
+async function processClientExit(clients, exitCode = 0) {
   for (const client of clients) {
     if (client !== null && client.connected === true) {
       const logAs = client === clientAsBot ? logAsBot : logAsUser;
@@ -1461,22 +1484,46 @@ async function processClientExit(clients) {
     }
   }
   log.info('All clients are disconnected! Exiting ...');
-  exit(0);
+  exit(exitCode);
 }
 
 const exitTimeout = 5000;
 let exitInProgress = false;
 
-function gracefulExit() {
+function gracefulExit(exitCode) {
+  // As a signal handler it is called with the signal name
+  const code = typeof exitCode === 'number' ? exitCode : 0;
   if (exitInProgress === false) {
     exitInProgress = true;
     // Disconnection can hang (i.e. on the client which is not logged in), so the process is terminated after the timeout anyway
     setTimeout(() => {
       log.warn(`Clients are not disconnected in ${exitTimeout / 1000} seconds! Exiting ...`);
-      exit(0);
+      exit(code);
     }, exitTimeout);
-    processClientExit([clientAsBot, clientAsUser]);
+    processClientExit([clientAsBot, clientAsUser], code);
   }
+}
+
+// The questions (API credentials, login) can be answered only with a terminal, i.e. not in a Docker container without "-it"
+const isInteractive = input.isTTY === true;
+
+function loginRequiredError(reason) {
+  const error = new Error(reason);
+  error.loginRequired = true;
+  return error;
+}
+
+/**
+ * Stop the application, as the login data can't be entered without a terminal, and explain how to log in
+ * @param {string} reason - What is missing
+ **/
+function exitLoginRequired(reason) {
+  log.error(`${reason}! The missing data can't be entered without a terminal (i.e. Docker container started without "-it").`);
+  log.error('Run the application once interactively with the same data directory to log in, i.e.:');
+  log.error('  docker run -it --rm -v $(pwd)/data:/app/data petrovoronov/telegram-forward-user-bot --login-qr');
+  log.error('  npm start -- --login-qr');
+  log.error('The API credentials and the bot token can be passed as environment variables too. See "User login" in README.md.');
+  gracefulExit(1);
 }
 
 /**
