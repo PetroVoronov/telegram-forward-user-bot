@@ -74,4 +74,24 @@ describe('Cache', () => {
 
         expect(cache.getItem(key)).toEqual({ test: 'value' });
     });
+
+    test('should convert type of item when getting it from storage first time', () => {
+        mockGetItem.mockReturnValue('"12345"');
+
+        expect(cache.getItem('apiId', 'number')).toBe(12345);
+    });
+
+    test('should return null for missing item regardless of the requested type', () => {
+        mockGetItem.mockReturnValue(null);
+
+        expect(cache.getItem('missingNumber', 'number')).toBeNull();
+        expect(cache.getItem('missingString', 'string')).toBeNull();
+        expect(cache.getItem('missingBoolean', 'boolean')).toBeNull();
+    });
+
+    test('should not convert null or undefined in convertType', () => {
+        expect(cache.convertType(null, 'number')).toBeNull();
+        expect(cache.convertType(null, 'string')).toBeNull();
+        expect(cache.convertType(undefined, 'number')).toBeUndefined();
+    });
 });

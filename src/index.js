@@ -10,6 +10,7 @@ const {Cache} = require('./modules/cache/Cache');
 const {Command} = require('commander');
 const {setTimeout} = require('node:timers');
 const {securedLogger: log, SecuredLogger} = require('./modules/logging/logging');
+const {getEnabledRulesForSource, isMessageInRuleTopic} = require('./modules/forwarding/rules');
 const {NewMessage, NewMessageEvent} = require('teleproto/events');
 const {EditedMessage} = require('teleproto/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('teleproto/events/CallbackQuery');
@@ -795,8 +796,11 @@ function updateCommandListeners(force = false) {
 
 function updateForwardListeners(force = false) {
   if (clientAsUser !== null && clientAsUser.connected === true) {
-    const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
-      newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
+    // Several rules can have the same source, so the source ids are deduplicated
+    const newFromIds = [...new Set(forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)))],
+      newFromIdsWithEdit = [
+        ...new Set(forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id))),
+      ];
     if (
       force ||
       fromIds.length !== newFromIds.length ||
@@ -900,10 +904,8 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
         : event.message.message) || '',
     messageEditDate = event.message.editDate || 0,
     messageIsString = Array.isArray(albumMessages) || typeof event.message.message === 'string';
-  let messageId = event.message.id,
-    messageIds = Array.isArray(albumMessages) ? albumMessages.map((item) => item.id) : [messageId];
   log.info(
-    `[${sourceId}, ${messageId}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
+    `[${sourceId}, ${event.message.id}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
     }, message.date: ${event.message.date} (${printMessageDate(event.message.date)}), message.editDate: ${
       event.message.editDate
@@ -911,22 +913,32 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
     logAsUser,
   );
   if (typeof peerId === 'object' && fromIds.includes(sourceId)) {
-    const rule = forwardRules.find((rule) => rule.from.id === `${sourceId}`),
-      entityFrom = rule ? getEntityById(rule.from.id) : null,
-      entityTo = rule ? getEntityById(rule.to.id) : null;
-    if (
-      entityFrom !== null &&
-      entityFrom !== undefined &&
-      (rule.from.type !== 'topic' ||
-        (entityFrom.forum === true &&
-          (event.message?.replyToMsgId === rule.from.topicId || (rule.from.topicId === 1 && event.message?.replyToMsgId === undefined)))) &&
-      entityTo !== null &&
-      entityTo !== undefined
-    ) {
-      if (onEdit === false && albumMessages === null && event.message.groupedId) {
-        collectAlbumMessage(event, sourceId, onRefresh);
-        return;
-      }
+    // All enabled rules with this source are processed, each one with own topic, keywords and destination
+    const rulesToProcess = getEnabledRulesForSource(forwardRules, sourceId)
+      .map((rule) => ({rule, entityFrom: getEntityById(rule.from.id), entityTo: getEntityById(rule.to.id)}))
+      .filter(
+        ({rule, entityFrom, entityTo}) =>
+          entityFrom !== null &&
+          entityFrom !== undefined &&
+          entityTo !== null &&
+          entityTo !== undefined &&
+          isMessageInRuleTopic(rule, entityFrom, event.message),
+      );
+    if (rulesToProcess.length === 0) {
+      return;
+    }
+    if (onEdit === false && albumMessages === null && event.message.groupedId) {
+      collectAlbumMessage(event, sourceId, onRefresh);
+      return;
+    }
+    if (onEdit === false) {
+      clientAsUser.markAsRead(rulesToProcess[0].entityFrom, event.message).catch((err) => {
+        log.warn(`[${sourceId}, ${event.message.id}]: MarkAsRead error: ${stringify(err)}`, logAsUser);
+      });
+    }
+    for (const {rule, entityTo} of rulesToProcess) {
+      let messageId = event.message.id,
+        messageIds = Array.isArray(albumMessages) ? albumMessages.map((item) => item.id) : [messageId];
       if (onEdit === true && event.message.groupedId) {
         // Edit of any album part is processed as an edit of the whole album
         const albumForwarded = [lastForwarded[rule.from.id], lastForwardedDelayed[rule.from.id]].find(
@@ -936,11 +948,6 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
           messageId = albumForwarded.id;
           messageIds = albumForwarded.ids;
         }
-      }
-      if (onEdit === false) {
-        clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
-          log.warn(`[${rule.label}, ${sourceId}, ${messageId}]: MarkAsRead error: ${stringify(err)}`, logAsUser);
-        });
       }
       const lastForwardedId =
           (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
@@ -1074,7 +1081,9 @@ function onCommand(event) {
     const {userId, messageId, command, isEvent} = parsedEvent;
     log.debug(`onCommand | userId: ${userId}, messageId: ${messageId}, command: ${command}, isEvent: ${isEvent}`, logAsBot);
     if (userId !== undefined && allowedUsers.includes(Number(userId))) {
-      menuRoot.onCommand(event, userId, messageId, command, isEvent);
+      menuRoot.onCommand(event, userId, messageId, command, isEvent).catch((err) => {
+        log.warn(`onCommand | Command "${command}" failed! Error is ${stringify(err)}`, logAsBot);
+      });
     }
   } else {
     log.warn(`onCommand | Unknown event: ${event.constructor.name}!`, logAsBot);
@@ -1096,7 +1105,7 @@ function startBotClient() {
           .isUserAuthorized()
           .then((isAuthorized) => {
             log.info(`Is authorized: ${isAuthorized}`, logAsBot);
-            cache.setItem('botStartTimeStamp', `${Date.now()}`);
+            cache.setItem('botStartTimeStamp', Date.now());
             clientAsBot.getMe().then((user) => {
               meBot = user;
               updateCommandListeners(true);
@@ -1126,6 +1135,8 @@ function startBotClient() {
                   log.debug(`Chat with bot is already started!`, logAsBot);
                 }
               }
+            }).catch((err) => {
+              log.warn(`Can't get bot info! Error is ${stringify(err)}`, logAsBot);
             });
           })
           .catch((err) => {
@@ -1146,6 +1157,10 @@ function startBotClient() {
 
 process.on('SIGINT', gracefulExit);
 process.on('SIGTERM', gracefulExit);
+// Any not handled error (i.e. Telegram API error on the menu drawing) is logged, instead of the process termination
+process.on('unhandledRejection', (reason) => {
+  log.error(`Unhandled rejection: ${stringify(reason)}`);
+});
 
 i18n.setLocale(configuration.language);
 cache.registerEventForItem(forwardRulesId, Cache.eventSet, () => updateForwardListeners());
@@ -1197,7 +1212,9 @@ menuRoot
   .then(() => {
     if (options.command !== undefined) {
       log.debug(`Testing command: ${options.command}`);
-      menuRoot.onCommand(null, 0, 0, options.command);
+      menuRoot.onCommand(null, 0, 0, options.command).catch((err) => {
+        log.error(`Testing command failed! Error is ${stringify(err)}`);
+      });
     } else {
       getAPIAttributes().then(() => {
         if (typeof apiId === 'number' && apiId !== 0 && typeof apiHash === 'string' && apiHash !== '') {
@@ -1274,6 +1291,8 @@ menuRoot
                     } else {
                       startBotClient();
                     }
+                  }).catch((err) => {
+                    log.warn(`Can't get user info! Error is ${stringify(err)}`, logAsUser);
                   });
                 })
                 .catch((err) => {
@@ -1285,6 +1304,8 @@ menuRoot
               log.warn(`User can't connect! Error is ${stringify(err)}`, logAsUser);
             });
         }
+      }).catch((err) => {
+        log.error(`Can't get API attributes! Error is ${stringify(err)}`);
       });
     }
   })
@@ -1328,7 +1349,7 @@ async function getAPIAttributes() {
     if (typeof apiId !== 'number' || apiId === 0 || typeof apiHash !== 'string' || apiHash === '') {
       const id = await rl.question('Enter your API ID: ');
       apiId = parseInt(id);
-      cache.setItem('apiId', id);
+      cache.setItem('apiId', apiId);
       apiHash = await rl.question('Enter your API Hash: ');
       cache.setItem('apiHash', apiHash);
     }

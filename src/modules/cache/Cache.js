@@ -55,7 +55,8 @@ class Cache {
    * @returns {any} - The converted result
    **/
   convertType(result, type) {
-    if (typeof result !== type) {
+    // Missing value stays missing, i.e. not converted to "null" string or 0 number
+    if (result !== null && result !== undefined && typeof result !== type) {
       switch (type) {
         case 'number': {
           if (isNaN(result)) {
