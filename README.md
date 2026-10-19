@@ -36,10 +36,14 @@ The bot can be used to configure:
     - [Environment variables in case of working as telegram user (default)](#environment-variables-in-case-of-working-as-telegram-user-default)
   - [Command Line Options](#command-line-options)
   - [Running](#running)
+    - [User login](#user-login)
+      - [Login via QR code](#login-via-qr-code)
+      - [Repeated login](#repeated-login)
     - [Running in Docker](#running-in-docker)
       - [Docker Volumes](#docker-volumes)
       - [Docker first run](#docker-first-run)
       - [Docker next runs](#docker-next-runs)
+      - [Docker repeated login](#docker-repeated-login)
     - [Docker Compose](#docker-compose)
     - [Running Locally, i.e. via Node.js](#running-locally-ie-via-nodejs)
   - [Configuration via Telegram Bot Menu](#configuration-via-telegram-bot-menu)
@@ -138,7 +142,7 @@ export TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 
 - Take in account that environment variables have a higher priority than the data stored in the configuration file. So, if you pass the environment variables, the configuration file will be overwritten by the data from environment variables.
 
-- Additionally, you have to keep in mind that the Telegram API credentials will be used to authenticate the user instance and on the first run the application will ask you to enter the phone number, the code from the Telegram, as well as the password if 2FA is enabled.
+- Additionally, you have to keep in mind that the Telegram API credentials will be used to authenticate the user instance and on the first run the application will ask you to log in the Telegram account - see [User login](#user-login).
 
 ## Command Line Options
 
@@ -149,6 +153,7 @@ The Telegram Forward User Bot supports several command line options to customize
 | `--refresh-interval`     | `-r`  | Refresh information from Telegram servers, in seconds.     | number  | 300     | No       |
 | `--resubscribe-interval` | `-s`  | Resubscribe on changes in sources chats, in minutes.       | number  | 60      | No       |
 | `--no-bot`               | `-b`  | Start without the bot instance.                            | boolean | false   | No       |
+| `--login-qr`             |       | Log in the user via QR code instead of the login code.     | boolean | false   | No       |
 | `--debug`                | `-d`  | Enable debug level logging.                                | boolean | false   | No       |
 | `--no-debug-cache`       |       | Disable debug level logging for the Cache instance.        | boolean | false   | No       |
 | `--no-debug-menu`        |       | Disable debug level logging for the Menu instance.         | boolean | false   | No       |
@@ -161,6 +166,36 @@ The Telegram Forward User Bot supports several command line options to customize
 ## Running
 
 On first run the application will ask for user authentication and the missing configuration parameters interactively.
+
+### User login
+
+The application works as your Telegram user, so on the first run it has to log in your Telegram account. The session is stored in the `data/session` directory and is used on the next runs.
+
+There are two ways to log in:
+
+- **Login code** (default) - enter the phone number in international format (i.e. `+380XXXXXXXXX`). Telegram sends the code **not via SMS**, but to your Telegram app - see the chat "Telegram" (service notifications, with a blue checkmark). Then enter the code and the password, if two-step verification is enabled.
+- **QR code** - see [Login via QR code](#login-via-qr-code). Recommended if the login code doesn't arrive.
+
+**Notice:** Telegram sometimes doesn't deliver login codes to third-party applications at all, even if the code request is accepted. It is a known issue on the Telegram side, see i.e. [Telethon issue #4730](https://github.com/LonamiWebs/Telethon/issues/4730). In this case use the login via QR code.
+
+#### Login via QR code
+
+1. Start the application with the `--login-qr` option, or enter `qr` instead of the phone number when the application asks for it:
+
+   ```sh
+   npm start -- --login-qr
+   ```
+
+2. The application prints the QR code. Scan it in the Telegram app, where your account is already logged in: **Settings -> Devices -> Link Desktop Device**.
+   The QR code is refreshed automatically every 30 seconds, until it is scanned.
+
+3. Enter the password, if two-step verification is enabled.
+
+The `--login-qr` option is used only when the login is needed, so it is safe to keep it in the command line for the next runs.
+
+#### Repeated login
+
+Telegram terminates sessions which are not used for a long time (by default - 6 months, see **Settings -> Privacy and Security -> Automatically terminate old sessions** in the Telegram app), or the session can be terminated manually in the list of active sessions. In this case the log contains the error like `AuthKeyUnregisteredError` and the application asks to log in again - just log in again as described above.
 
 ### Running in Docker
 
@@ -205,6 +240,14 @@ So, the first run should be like one of the following:
   --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot --refresh-interval 300 --resubscribe-interval 60
   ```
 
+- to log in the Telegram user via QR code (see [Login via QR code](#login-via-qr-code)), add the `--login-qr` option. The QR code is printed in the terminal:
+
+  ```sh
+  docker run -it --rm -v $(pwd)/data:/app/data --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot --login-qr
+  ```
+
+The `-it` options are needed for the first run, to answer the questions of the application, i.e. the API credentials, the login code or the two-step verification password.
+
 **Important notice: pass all later needed command-line options at first run!\***
 
 After the first run the application will store the configuration parameters and additional info - please stop the container by pressing `Ctrl+C` and start it again with the commands from the next section.
@@ -225,6 +268,24 @@ To stop the application, run the following command:
 
 ```sh
 docker stop telegram-forward-user-bot
+```
+
+#### Docker repeated login
+
+If Telegram terminated the session (see [Repeated login](#repeated-login)), the container started in the background can't ask for the login code. Log in again in the interactive mode, with the same `data` directory:
+
+```sh
+docker stop telegram-forward-user-bot
+docker rm telegram-forward-user-bot
+docker run -it --rm -v $(pwd)/data:/app/data --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot --login-qr
+```
+
+After the log message `User is authorized: true`, stop it by pressing `Ctrl+C` and start the container in the background again, as described in [Docker next runs](#docker-next-runs).
+
+If two-step verification is not enabled for your account, the login via QR code works in the background container too: start it with the `--login-qr` option and scan the QR code from the container log:
+
+```sh
+docker logs -f telegram-forward-user-bot
 ```
 
 ### Docker Compose
@@ -258,6 +319,14 @@ docker compose up -d
 ```
 
 This will start the application with the specified configuration parameters.
+
+The first run (or the [repeated login](#repeated-login)) has to be interactive, to log in the Telegram user. Use `docker compose run`, it allows to answer the questions of the application and shows the QR code:
+
+```sh
+docker compose run --rm telegram-forward-user-bot --login-qr
+```
+
+After the log message `User is authorized: true`, stop it by pressing `Ctrl+C` and start the application with `docker compose up -d`.
 
 ### Running Locally, i.e. via Node.js
 

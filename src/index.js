@@ -8,6 +8,7 @@ const {LocalStorage} = require('node-localstorage');
 const {menuDefaults, MenuItemRoot} = require('telegram-menu-from-structure');
 const {Cache} = require('./modules/cache/Cache');
 const {Command} = require('commander');
+const qrcode = require('qrcode-terminal');
 const {setTimeout} = require('node:timers');
 const {securedLogger: log, SecuredLogger} = require('./modules/logging/logging');
 const {NewMessage, NewMessageEvent} = require('teleproto/events');
@@ -35,6 +36,7 @@ program
   .option('-r, --refresh-interval <seconds>', 'Refresh information from Telegram servers, in seconds', refreshIntervalDefault)
   .option('-s, --resubscribe-interval <minutes>', 'Resubscribe on changes in source chats, in minutes', resubscribeIntervalDefault)
   .option('-b, --no-bot', 'Start without the bot instance')
+  .option('--login-qr', 'Log in the user via QR code (Telegram app: Settings - Devices - Link Desktop Device) instead of a login code')
   .option('-d, --debug', 'Debug level of logging', false)
   .option('--plain-logs', 'Disable ANSI color codes in log output')
   .option('--no-debug-menu', 'Disable debug level of logging for the Menu instance')
@@ -54,6 +56,7 @@ const options = {
   refreshInterval: toNumber(parsedOptions.refreshInterval, refreshIntervalDefault),
   resubscribeInterval: toNumber(parsedOptions.resubscribeInterval, resubscribeIntervalDefault),
   noBot: parsedOptions.bot === false,
+  loginQr: Boolean(parsedOptions.loginQr),
   debug: Boolean(parsedOptions.debug),
   plainLogs: Boolean(parsedOptions.plainLogs),
   noDebugMenu: parsedOptions.debugMenu === false,
@@ -1231,10 +1234,26 @@ menuRoot
             input,
             output,
           });
+          rl.on('SIGINT', gracefulExit);
           clientAsUser
             .start({
-              phoneNumber: async () => await rl.question('Enter your phone number: '),
-              password: async () => rl.question('Enter your password: '),
+              phoneNumber: async () => {
+                const phoneNumber = options.loginQr
+                  ? 'qr'
+                  : (await rl.question('Enter your phone number (or "qr" to log in via QR code): ')).trim();
+                if (phoneNumber.toLowerCase() === 'qr') {
+                  // On this error teleproto switches to the QR code login, i.e. the qrCode callback below
+                  const qrLoginRequest = new Error('Log in via QR code');
+                  qrLoginRequest.errorMessage = 'RESTART_AUTH_WITH_QR';
+                  throw qrLoginRequest;
+                }
+                return phoneNumber;
+              },
+              qrCode: async ({token, expires}) => printLoginQrCode(token, expires),
+              password: async (hint) => {
+                const hintText = hint ? ` (hint: ${hint})` : '';
+                return rl.question(`Enter your password${hintText}: `);
+              },
               phoneCode: async () => rl.question('Enter the code: '),
               onError: (err) => {
                 log.warn(err, logAsUser);
@@ -1301,6 +1320,27 @@ function printMessageDate(date) {
   return new Date(date * 1000).toString();
 }
 
+/**
+ * Print the QR code for the user login. It is refreshed by teleproto until it is scanned.
+ * Printed directly to stdout (not via logger) to keep the QR code intact, it is visible in `docker logs` too.
+ * @param {Buffer} token - The login token
+ * @param {number} expires - The token expiration time, Unix time in seconds
+ **/
+function printLoginQrCode(token, expires) {
+  const loginUrl = `tg://login?token=${Buffer.from(token).toString('base64url')}`;
+  qrcode.generate(loginUrl, {small: true}, (qrCodeText) => {
+    console.log(
+      [
+        '',
+        'Scan the QR code in the Telegram app: Settings -> Devices -> Link Desktop Device',
+        qrCodeText,
+        `The QR code is valid until ${new Date(expires * 1000).toLocaleTimeString()}, a new one will be shown automatically.`,
+        '',
+      ].join('\n'),
+    );
+  });
+}
+
 function getDialogById(id) {
   let result = null;
   if (typeof id === 'string' && Array.isArray(clientDialogs) && clientDialogs.length > 0) {
@@ -1325,6 +1365,7 @@ async function getAPIAttributes() {
       input,
       output,
     });
+    rl.on('SIGINT', gracefulExit);
     if (typeof apiId !== 'number' || apiId === 0 || typeof apiHash !== 'string' || apiHash === '') {
       const id = await rl.question('Enter your API ID: ');
       apiId = parseInt(id);
@@ -1341,35 +1382,37 @@ async function getAPIAttributes() {
   return Promise.resolve();
 }
 
-function processClientExit(clients) {
-  if (Array.isArray(clients) && clients.length > 0) {
-    const client = clients.shift();
+async function processClientExit(clients) {
+  for (const client of clients) {
     if (client !== null && client.connected === true) {
-      client.isBot().then((isBot) => {
-        client.disconnect().then(() => {
-          log.info(`Client is disconnected!`, isBot ? logAsBot : logAsUser);
-          client.destroy().then(() => {
-            log.info(`Client is destroyed!`, isBot ? logAsBot : logAsUser);
-            if (clients.length > 0) {
-              processClientExit(clients);
-            } else {
-              log.info('All clients are disconnected! Exiting ...');
-              exit(0);
-            }
-          });
-        });
-      });
-    } else {
-      processClientExit(clients);
+      const logAs = client === clientAsBot ? logAsBot : logAsUser;
+      try {
+        await client.disconnect();
+        log.info(`Client is disconnected!`, logAs);
+        await client.destroy();
+        log.info(`Client is destroyed!`, logAs);
+      } catch (err) {
+        log.warn(`Client is not disconnected properly! Error is ${stringify(err)}`, logAs);
+      }
     }
-  } else {
-    log.info('All clients are disconnected!');
-    exit(0);
   }
+  log.info('All clients are disconnected! Exiting ...');
+  exit(0);
 }
 
+const exitTimeout = 5000;
+let exitInProgress = false;
+
 function gracefulExit() {
-  processClientExit([clientAsBot, clientAsUser]);
+  if (exitInProgress === false) {
+    exitInProgress = true;
+    // Disconnection can hang (i.e. on the client which is not logged in), so the process is terminated after the timeout anyway
+    setTimeout(() => {
+      log.warn(`Clients are not disconnected in ${exitTimeout / 1000} seconds! Exiting ...`);
+      exit(0);
+    }, exitTimeout);
+    processClientExit([clientAsBot, clientAsUser]);
+  }
 }
 
 async function refreshDialogs() {
