@@ -1,4 +1,40 @@
-const {getMessageTopicId, getEnabledRulesForSource, isMessageInRuleTopic} = require('../../../src/modules/forwarding/rules');
+const {
+    getMessageTopicId,
+    getEnabledRulesForSource,
+    isMessageInRuleTopic,
+    getRuleKey,
+    getMessageState,
+} = require('../../../src/modules/forwarding/rules');
+
+describe('getRuleKey', () => {
+    test('should differ for rules with the same source and different destinations', () => {
+        const first = {from: {id: '100'}, to: {id: '200', topicId: 2}},
+            second = {from: {id: '100'}, to: {id: '200', topicId: 9}};
+        expect(getRuleKey(first)).not.toBe(getRuleKey(second));
+    });
+
+    test('should be the same for the same source and destination', () => {
+        expect(getRuleKey({label: 'a', from: {id: '100', topicId: 3}, to: {id: '200'}})).toBe(
+            getRuleKey({label: 'b', from: {id: '100', topicId: 3}, to: {id: '200'}}),
+        );
+    });
+});
+
+describe('getMessageState', () => {
+    test('should convert the legacy number state', () => {
+        expect(getMessageState(42)).toEqual({id: 42, editDate: 0, message: ''});
+    });
+
+    test('should keep the object state and fill the missing fields', () => {
+        expect(getMessageState({id: 7, ids: [7, 8]})).toEqual({id: 7, ids: [7, 8], editDate: 0, message: ''});
+    });
+
+    test('should return null for the missing or invalid state', () => {
+        expect(getMessageState(undefined)).toBeNull();
+        expect(getMessageState(0)).toBeNull();
+        expect(getMessageState({})).toBeNull();
+    });
+});
 
 describe('getMessageTopicId', () => {
     test('should return 1 for a message in the "General" topic', () => {
