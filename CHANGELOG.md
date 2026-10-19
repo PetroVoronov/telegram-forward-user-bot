@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.9.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.8.0...v1.9.0) (2026-10-19)
+
+### Features
+
+* **rules:** case insensitive keywords per group, notice on rule auto disabling ([88cd50f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/88cd50f9d2f8715d8de1bc607b6f9dfb81e596cf))
+* **rules:** case insensitive keywords per keywords group ([529b8a0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/529b8a080004c306888feb80d250131e3adc44d1))
+* **rules:** notify the owner when a rule is disabled automatically ([529b8a0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/529b8a080004c306888feb80d250131e3adc44d1))
+
+### Bug Fixes
+
+* **index:** FloodWait retry, safe missed messages for all source types, stored bot session ([293e14f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/293e14f4653e00785831affdfda6e1cffb869355))
+* **index:** retry forwards on FloodWait and process missed messages of all source types safely ([1863e62](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1863e629ecd5b2df1f268d99bfa1c86e43474317))
+
+### Build System
+
+* **lint:** skip generated CHANGELOG.md in markdownlint ([1863e62](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1863e629ecd5b2df1f268d99bfa1c86e43474317))
+
+### Documentation
+
+* **readme:** describe keywords matching options and the rule auto disabling ([529b8a0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/529b8a080004c306888feb80d250131e3adc44d1))
+
 ## [1.8.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.5...v1.8.0) (2026-10-19)
 
 ### Features
