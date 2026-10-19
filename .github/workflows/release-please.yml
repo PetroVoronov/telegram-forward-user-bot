@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         id: release
         with:
           # this assumes that you have created a personal access token
@@ -27,17 +27,17 @@ jobs:
           manifest-file: .release-please-manifest.json
 
       -
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         if: ${{ steps.release.outputs.pr }}
         with:
           ref: ${{ fromJson(steps.release.outputs.pr).headBranchName }}
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 
       -
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         if: ${{ steps.release.outputs.pr }}
         with:
-          node-version: 22
+          node-version: 24
 
       -
         run: npm ci
@@ -52,7 +52,7 @@ jobs:
       -
         name: Commit and push
         if: ${{ steps.release.outputs.pr }}
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v11
         with:
           add: 'CHANGELOG.md'
           message: 'chore: run CHANGELOG.md through markdownlint-cli2'

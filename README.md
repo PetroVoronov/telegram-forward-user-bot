@@ -77,7 +77,7 @@ The bot can be used to configure:
 
 Node.js or Docker installed.
 
-- Node.js (version 22 or later) and npm (version 7 or later)
+- Node.js (version 22.12 or later) and npm (version 7 or later)
 - Docker, for running in a container
 
 ## Installation
@@ -216,8 +216,10 @@ After the first run you can run the application with the same configuration para
 To start the application, run the following command:
 
 ```sh
-docker run telegram-forward-user-bot
+docker run -d -v $(pwd)/data:/app/data --name telegram-forward-user-bot petrovoronov/telegram-forward-user-bot
 ```
+
+The same `data` directory has to be mapped on every run, otherwise the session and configuration are lost and the application will ask for them again.
 
 To stop the application, run the following command:
 
@@ -230,9 +232,8 @@ docker stop telegram-forward-user-bot
 To run the application using Docker Compose, create a `docker-compose.yml` file with the following content:
 
 ```yaml
-version: '3'
 services:
-    telegram-forward-user-bot
+    telegram-forward-user-bot:
         image: petrovoronov/telegram-forward-user-bot
         volumes:
             - ./data:/app/data
@@ -242,7 +243,7 @@ services:
             - TELEGRAM_BOT_AUTH_TOKEN=your_telegram_bot_auth_token
 ```
 
-Replace `/path/to/your/config` with the actual paths on your system where you want to store the application config.
+Replace `./data` with the actual path on your system where you want to store the application data.
 
 If you want to start the application with the additional command-line options, you can add them to the `command` section of the service definition.
 
@@ -253,7 +254,7 @@ command: --refresh-interval 300 --resubscribe-interval 60
 Then, run the following command to start the application:
 
 ```sh
-docker-compose up -d
+docker compose up -d
 ```
 
 This will start the application with the specified configuration parameters.

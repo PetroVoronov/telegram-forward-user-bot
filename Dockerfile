@@ -1,26 +1,21 @@
-FROM node:25-alpine
-ARG TARGETPLATFORM
-
-# Copy across the files from our `intermediate` container
-RUN mkdir app
-
-COPY ../src /app/src
-
-COPY ../locales /app/locales
-
-COPY ../package*.json /app
+FROM node:24-alpine
 
 WORKDIR /app
 
+COPY package*.json ./
+
+RUN npm ci --omit=dev \
+    && npm cache clean --force \
+    && rm package-lock.json
+
+COPY src ./src
+
+COPY locales ./locales
+
 RUN mkdir data
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then npm install -g npm@latest && npm ci --omit=dev ; else \
-    apk --no-cache --update --virtual build-dependencies add \
-    build-base python3 \
-    && npm install -g npm@latest \
-    && npm ci --omit=dev \
-    && apk del build-dependencies ; fi \
-    && rm package-lock.json
+# Session, configuration and forwarding rules are stored here - mount it to keep them between runs
+VOLUME /app/data
 
 ENTRYPOINT [ "node", "src/index.js" ]
 CMD []

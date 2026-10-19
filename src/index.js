@@ -353,6 +353,8 @@ let fromIds = [];
 let fromIdsWithEdit = [];
 let clientAsUser = null;
 let clientAsBot = null;
+let clientLogger = null;
+let botLogger = null;
 let allowedUsers = [];
 let clientDialogs = [];
 let refreshIntervalId = null;
@@ -823,7 +825,6 @@ function updateForwardListeners(force = false) {
   }
 }
 
-// eslint-disable-next-line sonarjs/sonar-max-params
 function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate, messageIds = [messageId]) {
   // All parts of an album (media group) have to be forwarded in one request, otherwise Telegram delivers them as separate messages
   const forwardMessageInput = {
@@ -886,7 +887,6 @@ function collectAlbumMessage(event, sourceId, onRefresh) {
   }, albumCollectDelay);
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessages = null) {
   const peerId = event.message?.peerId,
     sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0),
@@ -1101,25 +1101,24 @@ function startBotClient() {
               meBot = user;
               updateCommandListeners(true);
               if (Array.isArray(clientDialogs) && clientDialogs.length > 0) {
-                // eslint-disable-next-line sonarjs/no-nested-functions
                 const items = clientDialogs.filter((dialog) => dialog.isUser && `${dialog.id}` === `${meBot.id}`);
                 if (items.length === 0 && meUser !== null) {
                   log.info(`Chat with bot is not open!`, logAsBot);
                   clientAsUser
                     .getInputEntity(meBot.username)
-                    // eslint-disable-next-line sonarjs/no-nested-functions
                     .then((botId) => {
                       log.debug(`Entity: ${stringify(botId)}`, logAsUser);
                       clientAsUser
                         .sendMessage(botId, {message: '/start'})
+                        // eslint-disable-next-line sonarjs/no-nested-functions
                         .then((msg) => {
                           log.debug(`Message to the chat with bot sent successfully!`, logAsUser);
                         })
+                        // eslint-disable-next-line sonarjs/no-nested-functions
                         .catch((err) => {
                           log.warn(`Can't send message to the bot! Error is ${stringify(err)}`, logAsUser);
                         });
                     })
-                    // eslint-disable-next-line sonarjs/no-nested-functions
                     .catch((err) => {
                       log.warn(`Can't get bot entity! Error is ${stringify(err)}`, logAsBot);
                     });
@@ -1248,7 +1247,6 @@ menuRoot
                 .isUserAuthorized()
                 .then((isAuthorized) => {
                   log.info(`User is authorized: ${isAuthorized}`, logAsUser);
-                  // eslint-disable-next-line sonarjs/no-nested-functions
                   clientAsUser.getMe().then((user) => {
                     meUser = user;
                     if (meUser !== null) {

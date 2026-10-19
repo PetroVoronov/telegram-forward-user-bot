@@ -1,4 +1,4 @@
-const { Logger } = require('telegram/extensions/Logger');
+const { Logger } = require('teleproto/extensions/Logger');
 const { securedLogger } = require('../../../src/modules/logging/logging');
 
 describe('SecuredLogger', () => {
@@ -51,7 +51,7 @@ describe('SecuredLogger', () => {
     test('should log messages at appropriate levels', () => {
         const spy = jest.spyOn(Logger.prototype, '_log');
         logger.info('This is an info message');
-        expect(spy).toHaveBeenCalledWith('info', 'This is an info message', expect.anything());
+        expect(spy).toHaveBeenCalledWith('info', 'This is an info message');
         spy.mockRestore();
     });
 });
