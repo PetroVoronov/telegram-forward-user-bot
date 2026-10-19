@@ -345,6 +345,8 @@ const lastProcessed = cache.getItem('lastProcessed') || {};
 const lastForwarded = cache.getItem('lastForwarded') || {};
 // Messages waiting for the anti fast edit delay: rule key -> Map of message id -> {ids, timeout}
 const pendingForwards = {};
+// The last forward request to the destination: destination key -> Promise, see forwardMessage()
+const forwardQueues = {};
 const forwardRulesId = 'forwardRules';
 const topicsCache = {};
 const forumTopicsPageSize = 100;
@@ -893,8 +895,14 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, messageId, message, me
   if (rule.to.topicId !== null && rule.to.topicId !== undefined) {
     forwardMessageInput.topMsgId = rule.to.topicId;
   }
-  return clientAsUser
-    .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
+  // Forwards to the same destination are sent one by one: parallel requests can be completed in any order,
+  // so the messages were delivered not in the original order (i.e. missed messages after restart)
+  const destinationKey = `${rule.to.id}:${rule.to.topicId ?? ''}`,
+    forwarding = (forwardQueues[destinationKey] ?? Promise.resolve()).then(() =>
+      clientAsUser.invoke(new Api.messages.ForwardMessages(forwardMessageInput)),
+    );
+  forwardQueues[destinationKey] = forwarding.catch(() => null);
+  return forwarding
     .then((res) => {
       log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Message is forwarded successfully!`, logAsUser);
       if (messageId > (getMessageState(lastProcessed[rule.from.id])?.id || 0)) {
