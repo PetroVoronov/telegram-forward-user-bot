@@ -1,7 +1,6 @@
 import globals from "globals";
 import eslintConfigPrettier from "eslint-config-prettier";
 import sonarjs from "eslint-plugin-sonarjs";
-import babelParser from "@babel/eslint-parser";
 
 export default [
 
@@ -14,12 +13,20 @@ export default [
                 ...globals.node,
             },
 
-            ecmaVersion: 2021,
-            parser: babelParser
+            ecmaVersion: "latest",
+            sourceType: "commonjs",
         },
 
         rules: {
             "sonarjs/cognitive-complexity": "off",
+        },
+    },
+    {
+        files: ["test/**/*.js"],
+        languageOptions: {
+            globals: {
+                ...globals.jest,
+            },
         },
     },
     eslintConfigPrettier
