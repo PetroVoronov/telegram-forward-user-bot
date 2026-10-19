@@ -11,7 +11,7 @@ const {Command} = require('commander');
 const qrcode = require('qrcode-terminal');
 const {setTimeout} = require('node:timers');
 const {securedLogger: log, SecuredLogger} = require('./modules/logging/logging');
-const {getEnabledRulesForSource, isMessageInRuleTopic} = require('./modules/forwarding/rules');
+const {getEnabledRulesForSource, isMessageInRuleTopic, getRuleKey, getMessageState} = require('./modules/forwarding/rules');
 const {NewMessage, NewMessageEvent} = require('teleproto/events');
 const {EditedMessage} = require('teleproto/events/EditedMessage');
 const {CallbackQuery, CallbackQueryEvent} = require('teleproto/events/CallbackQuery');
@@ -19,7 +19,9 @@ const {name: scriptName, version: scriptVersion} = require('./version');
 const i18n = require('./modules/i18n/i18n.config');
 
 const refreshIntervalDefault = 300;
+const refreshIntervalMinimum = 30;
 const resubscribeIntervalDefault = 60;
+const resubscribeIntervalMinimum = 30;
 let refreshInterval = refreshIntervalDefault * 1000;
 let resubscribeInterval = resubscribeIntervalDefault * 60 * 1000;
 
@@ -82,9 +84,6 @@ const logAsBot = {isBot: true};
 const logAsUser = {isBot: false};
 
 log.info(`${scriptName} v${scriptVersion} started!`);
-log.info(`Refresh interval: ${options.refreshInterval} seconds!`);
-log.info(`Resubscribe interval: ${options.resubscribeInterval} minutes!`);
-log.info(`Process missed messages: ${options.processMissed ? 'not more than ' + options.processMissed : 'disabled'}.`);
 if (options.noBot === true) log.info('Starting without bot instance!');
 if (options.debug === true) log.info('Verbose logging is enabled!');
 if (options.command !== undefined) log.info(`Command to test: ${options.command}`);
@@ -98,13 +97,13 @@ const onLanguageChange = (data, key, _path) => {
 };
 const onRefreshIntervalChange = (data, key, _path) => {
   if (refreshIntervalSetOnStart === false) {
-    refreshInterval = (data?.[key] || 300) * 1000;
+    refreshInterval = (data?.[key] || refreshIntervalDefault) * 1000;
     refreshDialogsInit();
   }
 };
 const onResubscribeIntervalChange = (data, key, _path) => {
-  const newResubscribeInterval = (data?.[key] || 60) * 60 * 1000;
-  if (newResubscribeInterval !== resubscribeInterval) {
+  const newResubscribeInterval = (data?.[key] || resubscribeIntervalDefault) * 60 * 1000;
+  if (resubscribeIntervalSetOnStart === false && newResubscribeInterval !== resubscribeInterval) {
     resubscribeInterval = newResubscribeInterval;
     resubscribeInit();
   }
@@ -159,7 +158,7 @@ const configurationStructure = {
       type: 'number',
       subType: 'integer',
       options: {
-        min: 30,
+        min: refreshIntervalMinimum,
         max: 900,
         step: 10,
       },
@@ -175,7 +174,7 @@ const configurationStructure = {
       type: 'number',
       subType: 'integer',
       options: {
-        min: 30,
+        min: resubscribeIntervalMinimum,
         max: 180,
         step: 10,
       },
@@ -321,20 +320,64 @@ if (Object.keys(configuration).length !== Object.keys(configurationStructure.ite
   cache.setItem(configurationId, configuration);
 }
 
-const refreshIntervalSetOnStart = Boolean(process.argv.indexOf('-r') > -1 || process.argv.indexOf('--refresh-interval') > -1);
-if (refreshIntervalSetOnStart === false) {
-  refreshInterval = configuration.refreshInterval * 1000;
-} else {
-  refreshInterval = options.refreshInterval * 1000;
-}
+// The interval from the command line has priority over the one from the configuration (set in the menu)
+const refreshIntervalSetOnStart = program.getOptionValueSource('refreshInterval') === 'cli',
+  resubscribeIntervalSetOnStart = program.getOptionValueSource('resubscribeInterval') === 'cli';
+refreshInterval =
+  Math.max(
+    (refreshIntervalSetOnStart ? options.refreshInterval : configuration.refreshInterval) || refreshIntervalDefault,
+    refreshIntervalMinimum,
+  ) * 1000;
+resubscribeInterval =
+  Math.max(
+    (resubscribeIntervalSetOnStart ? options.resubscribeInterval : configuration.resubscribeInterval) || resubscribeIntervalDefault,
+    resubscribeIntervalMinimum,
+  ) *
+  60 *
+  1000;
+log.info(`Refresh interval: ${refreshInterval / 1000} seconds${refreshIntervalSetOnStart ? ' (command line)' : ''}!`);
+log.info(`Resubscribe interval: ${resubscribeInterval / 60000} minutes${resubscribeIntervalSetOnStart ? ' (command line)' : ''}!`);
 
 const timeOutToPreventBotFlood = 1000 * 15; // 15 seconds
 const storeSession = new StoreSession('data/session');
+// Last processed message is stored per source chat, last forwarded message - per rule (see getRuleKey())
 const lastProcessed = cache.getItem('lastProcessed') || {};
 const lastForwarded = cache.getItem('lastForwarded') || {};
-const lastForwardedDelayed = {};
+// Messages waiting for the anti fast edit delay: rule key -> Map of message id -> {ids, timeout}
+const pendingForwards = {};
+// The last forward request to the destination: destination key -> Promise, see forwardMessage()
+const forwardQueues = {};
 const forwardRulesId = 'forwardRules';
 const topicsCache = {};
+const forumTopicsPageSize = 100;
+const forumTopicsMaxPages = 20;
+
+/**
+ * Get the forum topics. Telegram returns them by pages, so the pages are requested until the last one.
+ * @param {object} entity - The forum entity
+ * @returns {Promise<object[]>} The list of the topics
+ **/
+async function getAllForumTopics(entity) {
+  const topics = [];
+  let offsetDate = 0,
+    offsetId = 0,
+    offsetTopic = 0;
+  for (let page = 0; page < forumTopicsMaxPages; page++) {
+    const result = await clientAsUser.invoke(
+      new Api.messages.GetForumTopics({peer: entity, q: '', limit: forumTopicsPageSize, offsetId, offsetDate, offsetTopic}),
+    );
+    const pageTopics = (result.topics || []).filter((topic) => topics.some((item) => item.id === topic.id) === false);
+    topics.push(...pageTopics);
+    if (pageTopics.length === 0 || result.topics.length < forumTopicsPageSize || topics.length >= result.count) {
+      break;
+    }
+    const lastTopic = result.topics.at(-1);
+    offsetTopic = lastTopic.id;
+    offsetId = lastTopic.topMessage;
+    offsetDate = (result.messages || []).find((message) => message.id === lastTopic.topMessage)?.date || 0;
+  }
+  return topics;
+}
 
 if (typeof process.env.TELEGRAM_USER_API_ID === 'string' && process.env.TELEGRAM_USER_API_ID.length > 0) {
   cache.setItem('apiId', parseInt(process.env.TELEGRAM_USER_API_ID));
@@ -428,20 +471,10 @@ const topicIdPresence = (item, path) => {
         ) {
           resolve(topicsCache[`${entity.id}`].topics);
         } else {
-          clientAsUser
-            .invoke(
-              new Api.messages.GetForumTopics({
-                peer: entity,
-                q: "",
-                limit: 100,
-                offsetId: 0,
-                offsetDate: 0,
-                offsetTopic: 0,
-              }),
-            )
-            .then((result) => {
-              topicsCache[`${entity.id}`] = {topics: result.topics, timeStamp: Date.now()};
-              resolve(result.topics);
+          getAllForumTopics(entity)
+            .then((topics) => {
+              topicsCache[`${entity.id}`] = {topics, timeStamp: Date.now()};
+              resolve(topics);
             })
             .catch((err) => {
               log.warn(err, logAsUser);
@@ -832,7 +865,19 @@ function updateForwardListeners(force = false) {
   }
 }
 
-function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate, messageIds = [messageId]) {
+function getRulePendingForwards(ruleKey) {
+  if (pendingForwards[ruleKey] === undefined) {
+    pendingForwards[ruleKey] = new Map();
+  }
+  return pendingForwards[ruleKey];
+}
+
+function getRuleLastForwarded(rule) {
+  // The state stored per source by earlier versions is used, until the rule forwards a message
+  return getMessageState(lastForwarded[getRuleKey(rule)] ?? lastForwarded[rule.from.id]);
+}
+
+function forwardMessage(rule, fromPeer, sourceId, toPeer, messageId, message, messageEditDate, messageIds = [messageId]) {
   // All parts of an album (media group) have to be forwarded in one request, otherwise Telegram delivers them as separate messages
   const forwardMessageInput = {
     fromPeer: fromPeer,
@@ -850,18 +895,21 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
   if (rule.to.topicId !== null && rule.to.topicId !== undefined) {
     forwardMessageInput.topMsgId = rule.to.topicId;
   }
-  clientAsUser
-    .invoke(new Api.messages.ForwardMessages(forwardMessageInput))
+  // Forwards to the same destination are sent one by one: parallel requests can be completed in any order,
+  // so the messages were delivered not in the original order (i.e. missed messages after restart)
+  const destinationKey = `${rule.to.id}:${rule.to.topicId ?? ''}`,
+    forwarding = (forwardQueues[destinationKey] ?? Promise.resolve()).then(() =>
+      clientAsUser.invoke(new Api.messages.ForwardMessages(forwardMessageInput)),
+    );
+  forwardQueues[destinationKey] = forwarding.catch(() => null);
+  return forwarding
     .then((res) => {
-      if (rule.antiFastEditDelay > 0 && lastForwardedDelayed[rule.from.id] === undefined) {
-        delete lastForwardedDelayed[rule.from.id];
-      }
       log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Message is forwarded successfully!`, logAsUser);
-      if (messageId > lastProcessedId) {
+      if (messageId > (getMessageState(lastProcessed[rule.from.id])?.id || 0)) {
         lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
         cache.setItem('lastProcessed', lastProcessed);
       }
-      lastForwarded[rule.from.id] = {id: messageId, ids: messageIds, editDate: messageEditDate, message: message};
+      lastForwarded[getRuleKey(rule)] = {id: messageId, ids: messageIds, editDate: messageEditDate, message: message};
       cache.setItem('lastForwarded', lastForwarded);
     })
     .catch((err) => {
@@ -939,12 +987,17 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
         log.warn(`[${sourceId}, ${event.message.id}]: MarkAsRead error: ${stringify(err)}`, logAsUser);
       });
     }
+    const forwards = [];
     for (const {rule, entityTo} of rulesToProcess) {
+      const ruleKey = getRuleKey(rule),
+        rulePendingForwards = getRulePendingForwards(ruleKey),
+        ruleLastForwarded = getRuleLastForwarded(rule),
+        sourceLastProcessed = getMessageState(lastProcessed[rule.from.id]);
       let messageId = event.message.id,
         messageIds = Array.isArray(albumMessages) ? albumMessages.map((item) => item.id) : [messageId];
       if (onEdit === true && event.message.groupedId) {
         // Edit of any album part is processed as an edit of the whole album
-        const albumForwarded = [lastForwarded[rule.from.id], lastForwardedDelayed[rule.from.id]].find(
+        const albumForwarded = [ruleLastForwarded, ...[...rulePendingForwards].map(([id, pending]) => ({id, ids: pending.ids}))].find(
           (item) => Array.isArray(item?.ids) && item.ids.includes(messageId),
         );
         if (albumForwarded !== undefined) {
@@ -952,22 +1005,22 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
           messageIds = albumForwarded.ids;
         }
       }
-      const lastForwardedId =
-          (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-        lastForwardedEditDate = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].editDate : 0,
-        lastForwardedMessage = typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].message : '',
-        lastProcessedId =
-          (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0,
-        lastProcessedEditDate = typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].editDate : 0,
-        lastForwardedDelayedId = lastForwardedDelayed[rule.from.id]?.id || 0,
-        lastForwardedDelayedTimeout = lastForwardedDelayed[rule.from.id]?.timeout || null;
-      let skipProcessing =
-        onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && lastForwardedDelayedId !== messageId;
+      const lastForwardedId = ruleLastForwarded?.id || 0,
+        lastForwardedEditDate = ruleLastForwarded?.editDate || 0,
+        lastForwardedMessage = ruleLastForwarded?.message || '',
+        lastProcessedId = sourceLastProcessed?.id || 0,
+        lastProcessedEditDate = sourceLastProcessed?.editDate || 0,
+        pendingForward = rulePendingForwards.get(messageId);
+      if (onEdit === false && (pendingForward !== undefined || lastForwardedId === messageId)) {
+        // I.e. the missed messages processing on refresh can meet the message, which is already handled by the event
+        log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is already forwarded or waiting to be forwarded!`, logAsUser);
+        continue;
+      }
+      let skipProcessing = onEdit === true && lastProcessedId !== messageId && lastForwardedId !== messageId && pendingForward === undefined;
       let toForward = false;
       if (onEdit === true) {
         if (lastForwardedId === messageId && lastForwardedEditDate < messageEditDate) {
           if (message !== lastForwardedMessage) {
-            toForward = true;
             log.debug(
               `[${rule.label}, ${sourceId}, ${messageId}]: Forwarded message is edited and going to be checked by rules!`,
               logAsUser,
@@ -980,20 +1033,16 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
             );
           }
         }
-        if (lastForwardedDelayedId === messageId && lastForwardedDelayedTimeout !== null) {
-          clearTimeout(lastForwardedDelayedTimeout);
-          delete lastForwardedDelayed[rule.from.id];
-          if (skipProcessing === false) {
-            toForward = true;
-            log.info(
-              `[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`,
-              logAsUser,
-            );
-          }
+        if (pendingForward !== undefined) {
+          clearTimeout(pendingForward.timeout);
+          rulePendingForwards.delete(messageId);
+          log.info(
+            `[${rule.label}, ${sourceId}, ${messageId}]: Message is edited before anti fast edit delay! Previous version will not be forwarded!`,
+            logAsUser,
+          );
         }
       }
       if (
-        toForward === false &&
         skipProcessing === false &&
         rule.processReplyOnForwarded === true &&
         event.message?.replyTo?.replyToMsgId !== undefined &&
@@ -1004,30 +1053,22 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
           `[${rule.label}, ${sourceId}, ${messageId}]: Message is a reply on the last forwarded message! Going to forward it too.`,
           logAsUser,
         );
-      } else if (
-        toForward === false &&
-        skipProcessing === false &&
-        messageIsString &&
-        Array.isArray(rule.keywordsGroups) &&
-        rule.keywordsGroups.length > 0
-      ) {
-        toForward =
-          toForward ||
-          rule.keywordsGroups.some((keywordsGroup) => {
-            const includes = keywordsGroup.keywords.filter((item) => item.include === true).map((item) => item.keyword),
-              excludes = keywordsGroup.keywords.filter((item) => item.include === false).map((item) => item.keyword);
-            let includesFound = false;
-            if (keywordsGroup.includeAll === true) {
-              includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
-              log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, logAsUser);
-            } else {
-              includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
-              log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, logAsUser);
-            }
-            const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
-            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, logAsUser);
-            return includesFound && excludesNotFound;
-          });
+      } else if (skipProcessing === false && messageIsString && Array.isArray(rule.keywordsGroups) && rule.keywordsGroups.length > 0) {
+        toForward = rule.keywordsGroups.some((keywordsGroup) => {
+          const includes = keywordsGroup.keywords.filter((item) => item.include === true).map((item) => item.keyword),
+            excludes = keywordsGroup.keywords.filter((item) => item.include === false).map((item) => item.keyword);
+          let includesFound = false;
+          if (keywordsGroup.includeAll === true) {
+            includesFound = includes.length === 0 || includes.every((item) => message.includes(item));
+            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: All includes are found: ${includesFound}`, logAsUser);
+          } else {
+            includesFound = includes.length === 0 || includes.some((item) => message.includes(item));
+            log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Some includes are found: ${includesFound}`, logAsUser);
+          }
+          const excludesNotFound = excludes.length === 0 || excludes.find((item) => message.includes(item)) === undefined;
+          log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: No any exclude is found: ${excludesNotFound}`, logAsUser);
+          return includesFound && excludesNotFound;
+        });
         log.info(`[${rule.label}, ${sourceId}, ${messageId}]: Result of rules check to forward: ${toForward}`, logAsUser);
       }
       if (toForward) {
@@ -1036,16 +1077,16 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
             `[${rule.label}, ${sourceId}, ${messageId}]: Message is going to be forwarded in ${rule.antiFastEditDelay} seconds!`,
             logAsUser,
           );
-          lastForwardedDelayed[rule.from.id] = {
-            id: messageId,
+          // Each message has own timer, so the next message doesn't affect the waiting one
+          rulePendingForwards.set(messageId, {
             ids: messageIds,
             timeout: setTimeout(() => {
-              delete lastForwardedDelayed[rule.from.id];
-              forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate, messageIds);
+              rulePendingForwards.delete(messageId);
+              forwardMessage(rule, peerId, sourceId, entityTo, messageId, message, messageEditDate, messageIds);
             }, rule.antiFastEditDelay * 1000),
-          };
+          });
         } else {
-          forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate, messageIds);
+          forwards.push(forwardMessage(rule, peerId, sourceId, entityTo, messageId, message, messageEditDate, messageIds));
         }
       } else {
         log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is not forwarded! See reasons above.`, logAsUser);
@@ -1055,6 +1096,8 @@ function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessa
         }
       }
     }
+    // Resolved when the immediate forwards are done, i.e. to process the missed messages in order
+    return Promise.all(forwards);
   }
 }
 
@@ -1436,177 +1479,165 @@ function gracefulExit() {
   }
 }
 
-async function refreshDialogs() {
-  let result = false,
-    error = '';
-  if (clientAsUser !== null && clientAsUser.connected === true) {
-    const dialogs = await clientAsUser.getDialogs();
-    forwardRules = cache.getItem(forwardRulesId) || [];
-    if (Array.isArray(dialogs) && dialogs.length > 0) {
-      clientDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null);
-      const groupsOrChannels = dialogs.filter((dialog) => dialog.isChannel || dialog.isGroup),
-        filteredRules = forwardRules.filter((rule) => rule.enabled);
-      for (const rule of filteredRules) {
-        let dialogFrom = null;
-        for (const key of ['from', 'to']) {
-          const item = groupsOrChannels.find((item) => rule[key].id === `${item.entity.id}`);
-          if (key === 'from') {
-            dialogFrom = item;
-          }
-          if (rule[key].topicId !== null && rule[key].topicId !== undefined) {
-            if (item.entity?.forum === true) {
-              const forum = await clientAsUser.invoke(
-                new Api.messages.GetForumTopics({
-                  peer: item.entity,
-                  q: "",
-                  limit: 100,
-                  offsetId: 0,
-                  offsetDate: 0,
-                  offsetTopic: 0,
-                }),
-              );
-              if (Array.isArray(forum.topics) && forum.topics.length > 0) {
-                if (forum.topics.find((topic) => topic.id === rule[key].topicId) === undefined) {
-                  log.warn(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
-                  rule.enabled = false;
-                }
-              } else {
-                log.warn(`[${rule.label}]: No topics found in ${item.title}!`);
-                rule.enabled = false;
-              }
-            } else {
-              log.warn(`[${rule.label}]: Topic with id ${rule[key].topicId} not found in ${item.title}!`);
-              rule.enabled = false;
-            }
+/**
+ * Check if the source or destination topic of the rule still exists
+ * @param {object} rule - The forwarding rule
+ * @param {string} key - 'from' or 'to'
+ * @param {object} dialog - The dialog of the source or destination chat
+ * @returns {Promise<boolean>} True if the topic exists, or the rule has no topic
+ **/
+async function isRuleTopicAvailable(rule, key, dialog) {
+  const topicId = rule[key].topicId;
+  if (topicId === null || topicId === undefined) {
+    return true;
+  }
+  if (dialog?.entity?.forum !== true) {
+    log.warn(`[${rule.label}]: Chat ${dialog?.title ?? rule[key].id} is not found or is not a forum!`, logAsUser);
+    return false;
+  }
+  // Requested by id, as the list of topics is returned by pages and the topic can be not on the first one
+  const forum = await clientAsUser.invoke(new Api.messages.GetForumTopicsByID({peer: dialog.entity, topics: [topicId]}));
+  const isFound = Array.isArray(forum?.topics) && forum.topics.some((topic) => topic instanceof Api.ForumTopic && topic.id === topicId);
+  if (isFound === false) {
+    log.warn(`[${rule.label}]: Topic with id ${topicId} is not found in ${dialog.title}!`, logAsUser);
+  }
+  return isFound;
+}
+
+/**
+ * Process the edits of the last forwarded or processed message and the messages missed while the application was not running
+ * @param {object} rule - The forwarding rule
+ * @param {object} dialogFrom - The dialog of the source chat
+ **/
+async function processRuleMissedMessages(rule, dialogFrom) {
+  const sourceLastProcessed = getMessageState(lastProcessed[rule.from.id]),
+    lastProcessedId = sourceLastProcessed?.id || 0,
+    lastProcessedEditDate = sourceLastProcessed?.editDate || 0,
+    lastSourceId = dialogFrom.dialog?.topMessage;
+  if (rule.processEditsOnForwarded === true) {
+    const ruleLastForwarded = getRuleLastForwarded(rule),
+      lastForwardedId = ruleLastForwarded?.id || 0,
+      lastForwardedEditDate = ruleLastForwarded?.editDate || 0;
+    for (const [messageId, knownEditDate, description] of [
+      [lastForwardedId, lastForwardedEditDate, 'last forwarded'],
+      [lastProcessedId !== lastForwardedId ? lastProcessedId : 0, lastProcessedEditDate, 'last processed'],
+    ]) {
+      if (messageId !== 0) {
+        const [message] = await clientAsUser.getMessages(dialogFrom, {ids: messageId});
+        if (typeof message === 'object' && message !== null) {
+          const messageDate = message.date || 0,
+            messageEditDate = message.editDate || 0;
+          log.debug(
+            `[${rule.label}]: In "${dialogFrom.title}" ${description} message - id: ${message.id}, message.date: ${printMessageDate(
+              messageDate,
+            )}, message.editDate: ${printMessageDate(messageEditDate)}, known editDate: ${printMessageDate(knownEditDate)}`,
+            logAsUser,
+          );
+          if (messageEditDate > messageDate && messageEditDate > knownEditDate) {
+            log.debug(`[${rule.label}]: In "${dialogFrom.title}" ${description} message is edited - id: ${message.id}`, logAsUser);
+            await onMessageToForward({message}, true, true);
           }
         }
-        if (rule.enabled) {
-          if (fromIds.includes(Number(rule.from.id)) === false) {
-            fromIds.push(Number(rule.from.id));
-          }
-          if (fromIdsWithEdit.includes(Number(rule.from.id)) === false && rule.processEditsOnForwarded === true) {
-            fromIdsWithEdit.push(Number(rule.from.id));
-          }
-          const lastProcessedId =
-            (typeof lastProcessed[rule.from.id] === 'object' ? lastProcessed[rule.from.id].id : lastProcessed[rule.from.id]) || 0;
-          const lastProcessedEditDate = lastProcessed[rule.from.id]?.editDate || 0;
-          const lastSourceId = dialogFrom?.dialog?.topMessage;
-          if (rule.processMissedMaxCount > 0 && dialogFrom !== null && dialogFrom !== undefined) {
-            if (rule.processEditsOnForwarded === true) {
-              const lastForwardedId =
-                  (typeof lastForwarded[rule.from.id] === 'object' ? lastForwarded[rule.from.id].id : lastForwarded[rule.from.id]) || 0,
-                lastForwardedEditDate = lastForwarded[rule.from.id]?.editDate || 0;
-              if (lastForwardedId !== 0) {
-                const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastForwardedId});
-                if (Array.isArray(messages) && messages.length > 0) {
-                  const message = messages[0],
-                    messageDate = message.date || 0,
-                    messageEditDate = message.editDate || 0;
-                  if (typeof message === 'object' && message !== null) {
-                    log.debug(
-                      `[${rule.label}]: In "${dialogFrom.title}" last forwarded message - id: ${message.id}, message: ${
-                        message.message
-                      }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
-                        messageEditDate,
-                      )}, lastForwardedEditDate: ${printMessageDate(lastForwardedEditDate)}`,
-                      logAsUser,
-                    );
-                    if (messageEditDate > messageDate && messageEditDate > lastForwardedEditDate) {
-                      log.debug(
-                        `[${rule.label}]: In "${dialogFrom.title}" edited forwarded message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastForwardedEditDate}, message: ${message.message}`,
-                        logAsUser,
-                      );
-                      onMessageToForward({message}, true, true);
-                    }
-                  }
-                }
-              }
-              if (lastProcessedId !== 0 && lastProcessedId !== lastForwardedId) {
-                const messages = await clientAsUser.getMessages(dialogFrom, {ids: lastProcessedId});
-                if (Array.isArray(messages) && messages.length > 0) {
-                  const message = messages[0],
-                    messageDate = message.date || 0,
-                    messageEditDate = message.editDate || 0;
-                  if (typeof message === 'object' && message !== null) {
-                    log.debug(
-                      `[${rule.label}]: In "${dialogFrom.title}" last processed message - id: ${message.id}, message: ${
-                        message.message
-                      }, message.date: ${printMessageDate(messageDate)}, message.editDate: ${printMessageDate(
-                        messageEditDate,
-                      )}, lastProcessedEditDate: ${printMessageDate(lastProcessedEditDate)}`,
-                      logAsUser,
-                    );
-                    if (messageEditDate > messageDate && messageEditDate > lastProcessedEditDate) {
-                      log.debug(
-                        `[${rule.label}]: In "${dialogFrom.title}" edited last processed message - id: ${message.id}, message.date: ${messageDate}, message.editDate: ${messageEditDate}, lastProcessedEditDate: ${lastProcessedEditDate}, message: ${message.message}`,
-                        logAsUser,
-                      );
-                      onMessageToForward({message}, true, true);
-                    }
-                  }
-                }
-              }
-            }
-            if (lastProcessedId !== 0 && lastSourceId !== 0 && lastProcessedId < lastSourceId) {
-              log.debug(
-                `[${rule.label}]: In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, ` +
-                  `last source message id: ${lastSourceId}`,
-                logAsUser,
-              );
-              const messageCount =
-                  lastSourceId - lastProcessedId > rule.processMissedMaxCount ? rule.processMissedMaxCount : lastSourceId - lastProcessedId,
-                messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
-                messages = await clientAsUser.getMessages(dialogFrom, {
-                  ids: messageIds,
-                });
-              if (Array.isArray(messages) && messages.length > 0) {
-                messages.forEach((message, index) => {
-                  if (message !== undefined) {
-                    log.debug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, logAsUser);
-                    onMessageToForward({message}, true);
-                  } else {
-                    log.debug(`[${rule.label}]: Missed message [${index}] is undefined!`, logAsUser);
-                  }
-                });
-              }
-            } else if (lastProcessedId === undefined && lastSourceId !== undefined) {
-              lastProcessed[rule.from.id] = lastSourceId;
-              cache.setItem('lastProcessed', lastProcessed);
-            }
-          } else if (
-            rule.enabled &&
-            dialogFrom !== null &&
-            dialogFrom !== undefined &&
-            lastSourceId !== undefined &&
-            lastSourceId > lastProcessedId
-          ) {
-            lastProcessed[rule.from.id] = lastSourceId;
+      }
+    }
+  }
+  if (lastProcessedId !== 0 && typeof lastSourceId === 'number' && lastProcessedId < lastSourceId) {
+    log.debug(
+      `[${rule.label}]: In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, last source message id: ${lastSourceId}`,
+      logAsUser,
+    );
+    const messageCount = Math.min(lastSourceId - lastProcessedId, rule.processMissedMaxCount),
+      messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
+      messages = await clientAsUser.getMessages(dialogFrom, {ids: messageIds});
+    if (Array.isArray(messages)) {
+      // One by one, to keep the order of the messages in the destination
+      for (const [index, message] of messages.entries()) {
+        if (message !== undefined && message !== null) {
+          log.debug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, logAsUser);
+          await onMessageToForward({message}, true);
+        } else {
+          log.debug(`[${rule.label}]: Missed message [${index}] is undefined!`, logAsUser);
+        }
+      }
+    }
+  } else if (lastProcessedId === 0 && typeof lastSourceId === 'number') {
+    // The source is not processed yet, so the missed messages are counted from now
+    lastProcessed[rule.from.id] = {id: lastSourceId, editDate: 0};
+    cache.setItem('lastProcessed', lastProcessed);
+  }
+}
+
+async function refreshDialogsRun() {
+  if (clientAsUser === null || clientAsUser.connected !== true) {
+    clientDialogs = [];
+    throw new Error('User client is not connected!');
+  }
+  const dialogs = await clientAsUser.getDialogs();
+  forwardRules = cache.getItem(forwardRulesId) || [];
+  if (Array.isArray(dialogs) === false || dialogs.length === 0) {
+    clientDialogs = [];
+    log.warn(`No dialogs found!`, logAsUser);
+    throw new Error(`Can't get dialogs!`);
+  }
+  clientDialogs = dialogs.filter((dialog) => dialog.entity?.migratedTo === undefined || dialog.entity?.migratedTo === null);
+  const groupsOrChannels = dialogs.filter((dialog) => dialog.isChannel || dialog.isGroup),
+    filteredRules = forwardRules.filter((rule) => rule.enabled);
+  for (const rule of filteredRules) {
+    // Each rule is processed separately, so the error in one of them (i.e. FloodWait) doesn't stop the others
+    try {
+      const dialogFrom = groupsOrChannels.find((item) => rule.from.id === `${item.entity.id}`),
+        dialogTo = groupsOrChannels.find((item) => rule.to.id === `${item.entity.id}`);
+      if ((await isRuleTopicAvailable(rule, 'from', dialogFrom)) === false || (await isRuleTopicAvailable(rule, 'to', dialogTo)) === false) {
+        log.warn(`[${rule.label}]: Rule is disabled, as the topic is not available!`, logAsUser);
+        rule.enabled = false;
+      } else if (dialogFrom !== undefined && dialogFrom !== null) {
+        if (rule.processMissedMaxCount > 0) {
+          await processRuleMissedMessages(rule, dialogFrom);
+        } else {
+          const lastSourceId = dialogFrom.dialog?.topMessage;
+          if (typeof lastSourceId === 'number' && lastSourceId > (getMessageState(lastProcessed[rule.from.id])?.id || 0)) {
+            lastProcessed[rule.from.id] = {id: lastSourceId, editDate: 0};
             cache.setItem('lastProcessed', lastProcessed);
           }
         }
       }
-      cache.setItem(forwardRulesId, forwardRules);
-      log.debug(
-        `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, IdsToMonitor: ${stringify(
-          forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
-        )}`,
-        logAsUser,
-      );
-      result = true;
-    } else {
-      error = `Can't get dialogs!`;
-      clientDialogs = [];
-      log.warn(`No dialogs found!`, logAsUser);
+    } catch (err) {
+      log.warn(`[${rule.label}]: Refresh of the rule is failed! Error is ${stringify(err)}`, logAsUser);
     }
   }
-  return new Promise((resolve, reject) => {
-    if (result) {
-      resolve(true);
-    } else {
-      clientDialogs = [];
-      reject(new Error(error));
-    }
-  });
+  // Saving the rules triggers updateForwardListeners(), which subscribes on the changed sources
+  cache.setItem(forwardRulesId, forwardRules);
+  log.debug(
+    `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, IdsToMonitor: ${stringify(fromIds)}`,
+    logAsUser,
+  );
+  return true;
+}
+
+let refreshDialogsRunning = null,
+  refreshDialogsQueued = null;
+
+/**
+ * Refresh the dialogs and process the missed messages. It is started by the interval, by the menu and on the rules save,
+ * so the overlapping calls are joined: one more run is done after the current one, instead of the parallel processing.
+ * @returns {Promise<boolean>} Resolved with true when the dialogs are refreshed
+ **/
+function refreshDialogs() {
+  if (refreshDialogsRunning === null) {
+    refreshDialogsRunning = refreshDialogsRun().finally(() => {
+      refreshDialogsRunning = null;
+    });
+    return refreshDialogsRunning;
+  }
+  if (refreshDialogsQueued === null) {
+    refreshDialogsQueued = refreshDialogsRunning
+      .catch(() => false)
+      .then(() => {
+        refreshDialogsQueued = null;
+        return refreshDialogs();
+      });
+  }
+  return refreshDialogsQueued;
 }
 
 function refreshDialogsOnce() {

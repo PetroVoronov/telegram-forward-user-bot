@@ -39,8 +39,35 @@ function isMessageInRuleTopic(rule, entityFrom, message) {
   return entityFrom?.forum === true && getMessageTopicId(message) === rule.from.topicId;
 }
 
+/**
+ * Get the key of the rule to keep the forwarding state per rule: several rules can have the same source.
+ * The key is based on the source and destination, so it is changed if the rule is pointed to another chat or topic.
+ * @param {object} rule - The forwarding rule
+ * @returns {string} The rule key
+ **/
+function getRuleKey(rule) {
+  return `${rule.from?.id}:${rule.from?.topicId ?? ''}>${rule.to?.id}:${rule.to?.topicId ?? ''}`;
+}
+
+/**
+ * Normalize the stored message state. Earlier versions stored only the message id as a number.
+ * @param {object|number|undefined} state - The stored state
+ * @returns {{id: number, ids?: number[], editDate: number, message: string}|null} The message state or null
+ **/
+function getMessageState(state) {
+  if (typeof state === 'number' && state > 0) {
+    return {id: state, editDate: 0, message: ''};
+  }
+  if (typeof state === 'object' && state !== null && typeof state.id === 'number') {
+    return {...state, editDate: state.editDate || 0, message: state.message || ''};
+  }
+  return null;
+}
+
 module.exports = {
   getMessageTopicId,
   getEnabledRulesForSource,
   isMessageInRuleTopic,
+  getRuleKey,
+  getMessageState,
 };
