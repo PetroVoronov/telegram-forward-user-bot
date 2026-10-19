@@ -796,8 +796,11 @@ function updateCommandListeners(force = false) {
 
 function updateForwardListeners(force = false) {
   if (clientAsUser !== null && clientAsUser.connected === true) {
-    const newFromIds = forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)),
-      newFromIdsWithEdit = forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id));
+    // Several rules can have the same source, so the source ids are deduplicated
+    const newFromIds = [...new Set(forwardRules.filter((rule) => rule.enabled).map((rule) => Number(rule.from.id)))],
+      newFromIdsWithEdit = [
+        ...new Set(forwardRules.filter((rule) => rule.enabled && rule.processEditsOnForwarded).map((rule) => Number(rule.from.id))),
+      ];
     if (
       force ||
       fromIds.length !== newFromIds.length ||
