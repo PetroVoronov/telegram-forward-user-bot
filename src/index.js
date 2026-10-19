@@ -824,16 +824,17 @@ function updateForwardListeners(force = false) {
 }
 
 // eslint-disable-next-line sonarjs/sonar-max-params
-function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate) {
+function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messageId, message, messageEditDate, messageIds = [messageId]) {
+  // All parts of an album (media group) have to be forwarded in one request, otherwise Telegram delivers them as separate messages
   const forwardMessageInput = {
     fromPeer: fromPeer,
-    id: [messageId],
+    id: messageIds,
     toPeer: toPeer,
-    randomId: [getRandomId()],
+    randomId: messageIds.map(() => getRandomId()),
     silent: false,
     background: false,
     withMyScore: false,
-    grouped: false,
+    grouped: messageIds.length > 1,
     fromLive: false,
     useQuickAck: false,
     scheduleDate: null,
@@ -852,7 +853,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
         lastProcessed[rule.from.id] = {id: messageId, editDate: messageEditDate};
         cache.setItem('lastProcessed', lastProcessed);
       }
-      lastForwarded[rule.from.id] = {id: messageId, editDate: messageEditDate, message: message};
+      lastForwarded[rule.from.id] = {id: messageId, ids: messageIds, editDate: messageEditDate, message: message};
       cache.setItem('lastForwarded', lastForwarded);
     })
     .catch((err) => {
@@ -860,13 +861,47 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, lastProcessedId, messa
     });
 }
 
-function onMessageToForward(event, onRefresh = false, onEdit = false) {
+// Album (media group) parts arrive as separate messages sharing the same groupedId, so they are collected for a short time
+// and processed together
+const albumCollectDelay = 1500;
+const albumsPending = {};
+
+function collectAlbumMessage(event, sourceId, onRefresh) {
+  const albumKey = `${sourceId}:${event.message.groupedId}`;
+  if (albumsPending[albumKey] === undefined) {
+    albumsPending[albumKey] = {messages: new Map(), onRefresh: onRefresh, timeout: null};
+  }
+  const album = albumsPending[albumKey];
+  album.messages.set(event.message.id, event.message);
+  album.onRefresh = album.onRefresh && onRefresh;
+  clearTimeout(album.timeout);
+  album.timeout = setTimeout(() => {
+    delete albumsPending[albumKey];
+    const albumMessages = [...album.messages.values()].sort((a, b) => a.id - b.id);
+    log.debug(
+      `[${sourceId}]: Album ${event.message.groupedId} is collected: ${stringify(albumMessages.map((item) => item.id))}`,
+      logAsUser,
+    );
+    onMessageToForward({message: albumMessages.at(-1)}, album.onRefresh, false, albumMessages);
+  }, albumCollectDelay);
+}
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
+function onMessageToForward(event, onRefresh = false, onEdit = false, albumMessages = null) {
   const peerId = event.message?.peerId,
     sourceId = Number(peerId?.channelId || peerId?.userId || peerId?.chatId || 0),
-    message = event.message.message || '',
-    messageId = event.message.id,
+    // For an album the caption is usually attached to only one of its parts, so the text of all parts is combined
+    message =
+      (Array.isArray(albumMessages)
+        ? albumMessages
+            .map((item) => item.message)
+            .filter((item) => typeof item === 'string' && item !== '')
+            .join('\n')
+        : event.message.message) || '',
     messageEditDate = event.message.editDate || 0,
-    messageIsString = typeof event.message.message === 'string';
+    messageIsString = Array.isArray(albumMessages) || typeof event.message.message === 'string';
+  let messageId = event.message.id,
+    messageIds = Array.isArray(albumMessages) ? albumMessages.map((item) => item.id) : [messageId];
   log.info(
     `[${sourceId}, ${messageId}]: Message in monitored channel/group via ${onRefresh ? 'refresh' : 'event'} ${
       onEdit ? 'onEdit' : 'onNew'
@@ -888,6 +923,20 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
       entityTo !== null &&
       entityTo !== undefined
     ) {
+      if (onEdit === false && albumMessages === null && event.message.groupedId) {
+        collectAlbumMessage(event, sourceId, onRefresh);
+        return;
+      }
+      if (onEdit === true && event.message.groupedId) {
+        // Edit of any album part is processed as an edit of the whole album
+        const albumForwarded = [lastForwarded[rule.from.id], lastForwardedDelayed[rule.from.id]].find(
+          (item) => Array.isArray(item?.ids) && item.ids.includes(messageId),
+        );
+        if (albumForwarded !== undefined) {
+          messageId = albumForwarded.id;
+          messageIds = albumForwarded.ids;
+        }
+      }
       if (onEdit === false) {
         clientAsUser.markAsRead(entityFrom, event.message).catch((err) => {
           log.warn(`[${rule.label}, ${sourceId}, ${messageId}]: MarkAsRead error: ${stringify(err)}`, logAsUser);
@@ -979,13 +1028,14 @@ function onMessageToForward(event, onRefresh = false, onEdit = false) {
           );
           lastForwardedDelayed[rule.from.id] = {
             id: messageId,
+            ids: messageIds,
             timeout: setTimeout(() => {
               delete lastForwardedDelayed[rule.from.id];
-              forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
+              forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate, messageIds);
             }, rule.antiFastEditDelay * 1000),
           };
         } else {
-          forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate);
+          forwardMessage(rule, peerId, sourceId, entityTo, lastProcessedId, messageId, message, messageEditDate, messageIds);
         }
       } else {
         log.debug(`[${rule.label}, ${sourceId}, ${messageId}]: Message is not forwarded! See reasons above.`, logAsUser);
