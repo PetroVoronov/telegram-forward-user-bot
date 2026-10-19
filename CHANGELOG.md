@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.8.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.5...v1.8.0) (2026-10-19)
+
+### Features
+
+* **index:** log in the Telegram user via QR code ([f6ad8c9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f6ad8c9bd6731431c048b214bbcc95e1c3a56e68))
+* **index:** log in the Telegram user via QR code ([ad70d73](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ad70d7349957d382086403b75e05123e9a3f55bf))
+
+### Bug Fixes
+
+* **cache:** keep missing items missing on type conversion ([69a03b1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/69a03b1f618d3fd81b36c0276d3f5986aec8861c))
+* **index:** apply the resubscribe interval on start ([098bd34](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/098bd34c8055079d60fe6d8337ba19261e50916c))
+* **index:** exit on Ctrl+C or SIGTERM during the login ([ad70d73](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ad70d7349957d382086403b75e05123e9a3f55bf))
+* **index:** forwarding state per rule, safe refresh, message order, intervals on start ([1acca61](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/1acca614e4d7dd15112d758931ea1606f5fe3c76))
+* **index:** keep forwarding state per rule and make the refresh safe ([098bd34](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/098bd34c8055079d60fe6d8337ba19261e50916c))
+* **index:** keep the order of forwarded messages per destination ([02c437c](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/02c437c8283175e4647441c94016d695b6929964))
+* **index:** keep the process running on menu and startup errors ([69a03b1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/69a03b1f618d3fd81b36c0276d3f5986aec8861c))
+* **index:** process all enabled rules of a source and detect forum topics correctly ([69a03b1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/69a03b1f618d3fd81b36c0276d3f5986aec8861c))
+* **index:** process all enabled rules of a source, detect forum topics, keep running on errors ([aceaab1](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/aceaab1d8786a4f1152e19a15b6fae009b1c3f8d))
+* **index:** stop with instructions when the login is needed without a terminal ([822ef24](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/822ef24c541e0c76ee76b415def7cb85f04aac01))
+* **index:** stop with instructions when the login is needed without a terminal ([b24bda2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b24bda25e54553a94f2b8c769a09120b49addd2a))
+* **index:** subscribe once to a source used by several rules ([00fdc86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/00fdc86b5768feff5feb23633a59800a13493844))
+
+### Documentation
+
+* **readme:** describe the stop without a terminal when the login is needed ([b24bda2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b24bda25e54553a94f2b8c769a09120b49addd2a))
+* **readme:** describe the user login and the repeated login in Docker ([ad70d73](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ad70d7349957d382086403b75e05123e9a3f55bf))
+
 ## [1.7.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.4...v1.7.5) (2026-10-19)
 
 ### Bug Fixes
