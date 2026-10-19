@@ -2,12 +2,10 @@
 
 ## [1.8.0](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.5...v1.8.0) (2026-10-19)
 
-
 ### Features
 
 * **index:** log in the Telegram user via QR code ([f6ad8c9](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/f6ad8c9bd6731431c048b214bbcc95e1c3a56e68))
 * **index:** log in the Telegram user via QR code ([ad70d73](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/ad70d7349957d382086403b75e05123e9a3f55bf))
-
 
 ### Bug Fixes
 
@@ -23,7 +21,6 @@
 * **index:** stop with instructions when the login is needed without a terminal ([822ef24](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/822ef24c541e0c76ee76b415def7cb85f04aac01))
 * **index:** stop with instructions when the login is needed without a terminal ([b24bda2](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b24bda25e54553a94f2b8c769a09120b49addd2a))
 * **index:** subscribe once to a source used by several rules ([00fdc86](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/00fdc86b5768feff5feb23633a59800a13493844))
-
 
 ### Documentation
 
