@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.7.5](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.4...v1.7.5) (2026-10-19)
+
+### Bug Fixes
+
+* **deps:** update telegram-menu-from-structure to 1.3.8 ([d94bb66](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d94bb667176c219d3293f27a43066df1c23e5bc0))
+* **deps:** update telegram-menu-from-structure to 1.3.8 ([209c067](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/209c06701ea8a6979cb87dc28272cec251b080b0))
+
+### Build System
+
+* **deps-dev:** override vulnerable markdownlint-cli2 dependencies ([209c067](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/209c06701ea8a6979cb87dc28272cec251b080b0))
+
 ## [1.7.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.3...v1.7.4) (2026-10-19)
 
 ### Bug Fixes
