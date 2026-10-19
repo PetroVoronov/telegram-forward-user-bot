@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.7.4](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.3...v1.7.4) (2026-10-19)
+
+
+### Bug Fixes
+
+* api id not loading from storage ([47d67eb](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/47d67ebdabc2b53d53607968a16e36226035c626))
+* **deps:** update teleproto and runtime dependencies ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+* **deps:** update teleproto, tooling, Docker image and CI ([36cd0c0](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/36cd0c0510112e766647ff6c7f7df5fe5a3c357a))
+* **forward:** forward albums (media groups) as a single message ([b38b811](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/b38b811f0a8d7242c6846ccbcd1c89798f8f7551))
+* **forward:** forward albums (media groups) as a single message ([36c073f](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/36c073f39c459576189fa82e61c014ef3bd29a36))
+* **index:** declare clientLogger and botLogger explicitly ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+* unavail for supergroups ([2c8aa4b](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/2c8aa4bc4d847d00dcf9ef128320167cf7be57a2))
+
+
+### Build System
+
+* **docker:** use Node 24 LTS image with reproducible install ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+* **eslint:** drop Babel parser, move to ESLint 10 and sonarjs 4 ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+
+
+### Continuous Integration
+
+* **dependabot:** weekly grouped updates ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+* **workflows:** add lint and test workflow, bump action versions ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+
+
+### Documentation
+
+* **readme:** fix Docker run and Compose examples ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+
+
+### Styles
+
+* **cache:** remove unused eslint-disable directives ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+
+
+### Tests
+
+* **logging:** use teleproto Logger ([d52e94a](https://github.com/PetroVoronov/telegram-forward-user-bot/commit/d52e94ae3cfbb9245cbb4b9a0f798b7b5d613d15))
+
 ## [1.7.3](https://github.com/PetroVoronov/telegram-forward-user-bot/compare/v1.7.2...v1.7.3) (2026-01-06)
 
 ### Code Refactoring
