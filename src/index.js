@@ -393,7 +393,7 @@ const topicIdPresence = (item, path) => {
             break;
           }
           case 'group': {
-            dialogs = clientDialogs.filter((dialog) => dialog.isGroup === true && dialog.isChannel !== true);
+            dialogs = clientDialogs.filter((dialog) => dialog.isGroup === true /* && dialog.isChannel !== true */ /* supergroup has isChannel = true */);
             break;
           }
           case 'channel': {
@@ -494,7 +494,7 @@ const topicIdPresence = (item, path) => {
               }
               case 'group': {
                 result =
-                  dialog.isGroup === true && dialog.isChannel !== true && dialog.isUser !== true && typeof data[item].topicId !== 'number';
+                  dialog.isGroup === true && /*dialog.isChannel !== true &&*/ /* supergroup is channel=true */ dialog.isUser !== true && typeof data[item].topicId !== 'number';
                 break;
               }
               case 'channel': {
