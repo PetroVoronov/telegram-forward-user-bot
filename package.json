@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "jest",
-    "lint": "eslint . && markdownlint-cli2 \"*.md\"",
+    "lint": "eslint . && markdownlint-cli2 \"*.md\" \"#CHANGELOG.md\"",
     "start": "node src/index.js",
     "debug": "node src/index.js --debug",
     "help": "node src/index.js --help"

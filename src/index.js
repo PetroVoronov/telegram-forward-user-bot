@@ -1,6 +1,7 @@
 const {Api, TelegramClient} = require('teleproto');
-const {StringSession, StoreSession} = require('teleproto/sessions');
+const {StoreSession} = require('teleproto/sessions');
 const {Button} = require('teleproto/tl/custom/button');
+const {createHash, randomBytes} = require('node:crypto');
 const readline = require('node:readline/promises');
 const {stdin: input, stdout: output, exit} = require('node:process');
 const stringify = require('json-stringify-safe');
@@ -343,6 +344,11 @@ const storeSession = new StoreSession('data/session');
 // Last processed message is stored per source chat, last forwarded message - per rule (see getRuleKey())
 const lastProcessed = cache.getItem('lastProcessed') || {};
 const lastForwarded = cache.getItem('lastForwarded') || {};
+// Time when the application was active last time (updated on each refresh and on exit). The missed messages are processed only
+// if they are newer, otherwise the outdated "last processed" state can lead to forwarding of very old messages
+const lastActiveTimeStampId = 'lastActiveTimeStamp';
+const lastActiveOnStart = cache.getItem(lastActiveTimeStampId, 'number');
+const missedMessagesTimeMargin = 5 * 60 * 1000;
 // Messages waiting for the anti fast edit delay: rule key -> Map of message id -> {ids, timeout}
 const pendingForwards = {};
 // The last forward request to the destination: destination key -> Promise, see forwardMessage()
@@ -877,6 +883,30 @@ function getRuleLastForwarded(rule) {
   return getMessageState(lastForwarded[getRuleKey(rule)] ?? lastForwarded[rule.from.id]);
 }
 
+const forwardRetryMaxCount = 3;
+const forwardRetryMaxWait = 3600; // seconds
+
+/**
+ * Forward the messages. The FloodWait longer than the client sleeps automatically (floodSleepThreshold) is waited and
+ * the request is repeated, instead of losing the message.
+ * @param {object} forwardMessageInput - The ForwardMessages request parameters
+ * @param {string} logPrefix - The log prefix
+ * @returns {Promise<object>} The request result
+ **/
+async function invokeForwardMessages(forwardMessageInput, logPrefix) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await clientAsUser.invoke(new Api.messages.ForwardMessages(forwardMessageInput));
+    } catch (err) {
+      if (typeof err?.seconds !== 'number' || err.seconds > forwardRetryMaxWait || attempt > forwardRetryMaxCount) {
+        throw err;
+      }
+      log.warn(`${logPrefix}: Flood wait for ${err.seconds} seconds, forward is going to be repeated (attempt ${attempt})!`, logAsUser);
+      await new Promise((resolve) => setTimeout(resolve, (err.seconds + 1) * 1000));
+    }
+  }
+}
+
 function forwardMessage(rule, fromPeer, sourceId, toPeer, messageId, message, messageEditDate, messageIds = [messageId]) {
   // All parts of an album (media group) have to be forwarded in one request, otherwise Telegram delivers them as separate messages
   const forwardMessageInput = {
@@ -899,7 +929,7 @@ function forwardMessage(rule, fromPeer, sourceId, toPeer, messageId, message, me
   // so the messages were delivered not in the original order (i.e. missed messages after restart)
   const destinationKey = `${rule.to.id}:${rule.to.topicId ?? ''}`,
     forwarding = (forwardQueues[destinationKey] ?? Promise.resolve()).then(() =>
-      clientAsUser.invoke(new Api.messages.ForwardMessages(forwardMessageInput)),
+      invokeForwardMessages(forwardMessageInput, `[${rule.label}, ${sourceId}, ${messageId}]`),
     );
   forwardQueues[destinationKey] = forwarding.catch(() => null);
   return forwarding
@@ -1281,7 +1311,10 @@ menuRoot
             if (options.plainLogs) {
               botLogger.setColorsEnabled(false);
             }
-            clientAsBot = new TelegramClient(new StringSession(''), apiId, apiHash, {
+            // The bot session is stored to not log in the bot on each start (it can lead to FloodWait on restarts);
+            // it is per token, so a new token starts with a new session
+            const botSessionName = `data/bot-session-${createHash('sha256').update(botAuthToken).digest('hex').slice(0, 12)}`;
+            clientAsBot = new TelegramClient(new StoreSession(botSessionName), apiId, apiHash, {
               connectionRetries: Infinity,
               autoReconnect: true,
               appVersion: scriptVersion,
@@ -1394,8 +1427,8 @@ menuRoot
   });
 
 function getRandomId() {
-  // eslint-disable-next-line sonarjs/pseudo-random
-  return BigInt(`${Date.now()}${Math.floor(Math.random() * 1000)}`);
+  // Random 64-bit id, the time based one could be duplicated within a millisecond (RANDOM_ID_DUPLICATE, i.e. lost forward)
+  return randomBytes(8).readBigInt64LE();
 }
 
 function printMessageDate(date) {
@@ -1470,6 +1503,9 @@ async function getAPIAttributes() {
 }
 
 async function processClientExit(clients, exitCode = 0) {
+  if (clientAsUser?.connected === true) {
+    cache.setItem(lastActiveTimeStampId, Date.now());
+  }
   for (const client of clients) {
     if (client !== null && client.connected === true) {
       const logAs = client === clientAsBot ? logAsBot : logAsUser;
@@ -1557,6 +1593,9 @@ async function isRuleTopicAvailable(rule, key, dialog) {
  * @param {object} dialogFrom - The dialog of the source chat
  **/
 async function processRuleMissedMessages(rule, dialogFrom) {
+  if (rule.enabled !== true || rule.from.id !== `${dialogFrom?.entity?.id}`) {
+    return;
+  }
   const sourceLastProcessed = getMessageState(lastProcessed[rule.from.id]),
     lastProcessedId = sourceLastProcessed?.id || 0,
     lastProcessedEditDate = sourceLastProcessed?.editDate || 0,
@@ -1588,29 +1627,41 @@ async function processRuleMissedMessages(rule, dialogFrom) {
       }
     }
   }
-  if (lastProcessedId !== 0 && typeof lastSourceId === 'number' && lastProcessedId < lastSourceId) {
+  if (typeof lastActiveOnStart !== 'number' || lastProcessedId === 0) {
+    // First start with this version (or the source is not processed yet): the missed messages are counted from now
+    if (typeof lastSourceId === 'number' && lastSourceId > lastProcessedId) {
+      lastProcessed[rule.from.id] = {id: lastSourceId, editDate: 0};
+      cache.setItem('lastProcessed', lastProcessed);
+    }
+  } else if (typeof lastSourceId === 'number' && lastProcessedId < lastSourceId) {
     log.debug(
       `[${rule.label}]: In "${dialogFrom.title}" the last processed message id: ${lastProcessedId}, last source message id: ${lastSourceId}`,
       logAsUser,
     );
-    const messageCount = Math.min(lastSourceId - lastProcessedId, rule.processMissedMaxCount),
-      messageIds = new Array(messageCount).fill(0).map((_, index) => lastSourceId - messageCount + index + 1),
-      messages = await clientAsUser.getMessages(dialogFrom, {ids: messageIds});
+    // Messages newer than the last processed one. Works for all chat types: in private chats and basic groups the message ids
+    // are counted per account, not per chat, so the range of ids between the last processed and the last message is not usable
+    const messages = await clientAsUser.getMessages(dialogFrom.entity, {minId: lastProcessedId, limit: rule.processMissedMaxCount});
     if (Array.isArray(messages)) {
-      // One by one, to keep the order of the messages in the destination
-      for (const [index, message] of messages.entries()) {
-        if (message !== undefined && message !== null) {
-          log.debug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, logAsUser);
-          await onMessageToForward({message}, true);
-        } else {
-          log.debug(`[${rule.label}]: Missed message [${index}] is undefined!`, logAsUser);
+      // Received from the newest one, forwarded one by one from the oldest one, to keep the order in the destination
+      for (const message of [...messages].sort((first, second) => first.id - second.id)) {
+        const messageSourceId = message.peerId?.channelId || message.peerId?.userId || message.peerId?.chatId;
+        if (rule.from.id !== `${messageSourceId}`) {
+          log.warn(`[${rule.label}]: Message - id: ${message.id} is not from the rule source, skipped!`, logAsUser);
+          continue;
         }
+        if (message.date * 1000 < lastActiveOnStart - missedMessagesTimeMargin) {
+          log.debug(`[${rule.label}]: Message - id: ${message.id} is older than the last application activity, skipped!`, logAsUser);
+          continue;
+        }
+        log.debug(`[${rule.label}]: Missed message - id: ${message.id}, message: ${message.message}`, logAsUser);
+        await onMessageToForward({message}, true);
       }
     }
-  } else if (lastProcessedId === 0 && typeof lastSourceId === 'number') {
-    // The source is not processed yet, so the missed messages are counted from now
-    lastProcessed[rule.from.id] = {id: lastSourceId, editDate: 0};
-    cache.setItem('lastProcessed', lastProcessed);
+    // The skipped outdated messages are not checked again
+    if (lastSourceId > (getMessageState(lastProcessed[rule.from.id])?.id || 0)) {
+      lastProcessed[rule.from.id] = {id: lastSourceId, editDate: 0};
+      cache.setItem('lastProcessed', lastProcessed);
+    }
   }
 }
 
@@ -1632,7 +1683,8 @@ async function refreshDialogsRun() {
   for (const rule of filteredRules) {
     // Each rule is processed separately, so the error in one of them (i.e. FloodWait) doesn't stop the others
     try {
-      const dialogFrom = groupsOrChannels.find((item) => rule.from.id === `${item.entity.id}`),
+      // Source can be any chat (i.e. user or bot), the destination - only group or channel
+      const dialogFrom = dialogs.find((item) => rule.from.id === `${item.entity.id}`),
         dialogTo = groupsOrChannels.find((item) => rule.to.id === `${item.entity.id}`);
       if ((await isRuleTopicAvailable(rule, 'from', dialogFrom)) === false || (await isRuleTopicAvailable(rule, 'to', dialogTo)) === false) {
         log.warn(`[${rule.label}]: Rule is disabled, as the topic is not available!`, logAsUser);
@@ -1654,6 +1706,7 @@ async function refreshDialogsRun() {
   }
   // Saving the rules triggers updateForwardListeners(), which subscribes on the changed sources
   cache.setItem(forwardRulesId, forwardRules);
+  cache.setItem(lastActiveTimeStampId, Date.now());
   log.debug(
     `Dialogs refreshed! Dialogs: ${dialogs.length}, filteredRules: ${filteredRules.length}, IdsToMonitor: ${stringify(fromIds)}`,
     logAsUser,
