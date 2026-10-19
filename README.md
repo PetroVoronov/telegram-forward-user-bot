@@ -197,6 +197,8 @@ The `--login-qr` option is used only when the login is needed, so it is safe to 
 
 Telegram terminates sessions which are not used for a long time (by default - 6 months, see **Settings -> Privacy and Security -> Automatically terminate old sessions** in the Telegram app), or the session can be terminated manually in the list of active sessions. In this case the log contains the error like `AuthKeyUnregisteredError` and the application asks to log in again - just log in again as described above.
 
+If the application is started without a terminal (i.e. Docker container without `-it`, or as a service) and the login or the API credentials are needed, it can't ask for them. In this case it stops with the exit code 1 and the instructions in the log, instead of waiting for the input. The only exception is the `--login-qr` option without two-step verification, as the QR code is printed to the log.
+
 ### Running in Docker
 
 By default the application will run without any additional command-line options.
@@ -272,7 +274,7 @@ docker stop telegram-forward-user-bot
 
 #### Docker repeated login
 
-If Telegram terminated the session (see [Repeated login](#repeated-login)), the container started in the background can't ask for the login code. Log in again in the interactive mode, with the same `data` directory:
+If Telegram terminated the session (see [Repeated login](#repeated-login)), the container started in the background can't ask for the login code, so it stops with the instructions in the log (`docker logs telegram-forward-user-bot`). Log in again in the interactive mode, with the same `data` directory:
 
 ```sh
 docker stop telegram-forward-user-bot
