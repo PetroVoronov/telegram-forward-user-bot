@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
-    "emoji-regex": "^10.6.0",
+    "emoji-regex": "^11.0.0",
     "i18n": "^0.15.4",
     "json-stringify-safe": "^5.0.1",
     "node-localstorage": "^3.0.5",
